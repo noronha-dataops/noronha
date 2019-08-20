@@ -111,9 +111,9 @@ class SwarmCaptain(Captain):
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, alias: str, foreground=False):
         
-        [self.load_vol(v, alias) for v in cargos]
         name = self.with_prefix(alias)
         self.make_name_available(name)
+        [self.load_vol(v, alias) for v in cargos]
         image = self.docker_backend.ImageClass(img.repo, tag=img.tag)
         
         additional_opts = \
