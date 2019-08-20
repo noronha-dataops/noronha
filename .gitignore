@@ -1,4 +1,5 @@
 .idea
+*.egg-info
 noronha/*.egg-info
 noronha/__pycache__
 noronha/*/__pycache__

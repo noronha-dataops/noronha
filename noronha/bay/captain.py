@@ -394,7 +394,6 @@ class KubeCaptain(Captain):
         super().__init__(section)
         self.namespace = self.captain_compass.get_namespace()
         self.api_key = self.captain_compass.get_api_key()
-        self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.timeout = self.captain_compass.api_timeout
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR, api_key=self.api_key)
         self.resources = {'resources': self.captain_compass.get_resource_profile(section)}

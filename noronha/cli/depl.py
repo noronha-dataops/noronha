@@ -91,7 +91,7 @@ def new(params, env_vars, mounts, port: int, n_tasks: int = 1, **kwargs):
         params=assert_dict(params, allow_none=True),
         env_vars=kv_list_to_dict(env_vars),
         mounts=list(mounts),
-        port=int(port),
+        port=None if port is None else int(port),
         tasks=int(n_tasks)
     )
 
