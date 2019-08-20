@@ -1,0 +1,15 @@
+# Those Python packages are required when the framework is installed on guest Docker images (i.e.: "on board").
+# Docker images like these are used to package projects and run notebooks (e.g.: trainings, predictions).
+# In this scope, the framework's tooling assists with miscellaneous functionalities (e.g.: model publish, http, etc)
+
+pyvalid
+kaptan
+mongoengine
+artifactory
+nexus3-cli
+random_name
+gitpython
+blinker
+jupyter
+papermill
+Flask

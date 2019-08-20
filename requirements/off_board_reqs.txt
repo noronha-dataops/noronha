@@ -1,0 +1,15 @@
+# Those Python packages are required when the framework is installed on a host machine or on a custom Docker image
+# that is going to act as an orchestrator (i.e.: "off board"). In this scope, the framework's core is used to actually
+# manage the DataOps architecture (e.g.: databases, repositories, containers, etc).
+
+pyvalid
+kaptan
+mongoengine
+artifactory
+nexus3-cli
+random_name
+gitpython
+blinker
+docker
+click
+conu
