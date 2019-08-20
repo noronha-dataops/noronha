@@ -54,12 +54,12 @@ def router(ctx):
     help="Flag: assume that the required Docker image for setting up this plugin already exists"
 )
 @click.pass_context
-def setup(ctx):
+def setup(ctx, **kwargs):
     
     """Start and configure this plugin"""
     
     CMD.run(
-        API, 'setup',
+        API, 'setup', **kwargs,
         name=ctx.obj['ISLE_NAME'],
         _proj_resolvers=None  # force project resolution skip, since MongoDB may not be running yet
     )
