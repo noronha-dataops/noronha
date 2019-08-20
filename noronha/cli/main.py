@@ -2,7 +2,6 @@
 
 import click
 import logging
-import stackprinter
 
 from noronha.api.island import IslandAPI
 from noronha.cli.bvers import bvers
