@@ -1,8 +1,4 @@
 .idea
-noronha/*.egg-info
-noronha/__pycache__
-noronha/*/__pycache__
-noronha/*/*/__pycache__
-examples/*/.ipynb_checkpoints
-scripts/hdp/HDP_*
-.work
+*.egg-info/
+__pycache__/
+.ipynb_checkpoints/
