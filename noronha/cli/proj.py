@@ -51,7 +51,7 @@ def _list(_filter, expand, **kwargs):
 @click.option('--name', '-n', required=True, help="Name of the project")
 @click.option('--desc', '-d', default='', help="Free text description")
 @click.option('--model', '-m', help="Name of an existing model (further info: nha model --help)")
-@click.option('--repo', '-r',
+@click.option('--repo', '-r', '--repository', 'repo',
               help="""The project's repository. Syntaxes supported: \n"""
                    """local://<path>/<to>/<local>/<directory>\n"""
                    """git://<url>/<to>/<remote>/<git_repo>\n"""
