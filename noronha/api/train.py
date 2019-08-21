@@ -85,15 +85,23 @@ class TrainingExp(ShortExpedition):
         self.ds = ds
         super().__init__(proj=train.proj, tag=tag)
     
-    def close(self):
+    def close(self, ignore=False):
         
-        super().close()
-        
-        if self.captain.interrupted:
-            LOG.warn('Failing training due to an interruption')
-            self.train.reload()
-            self.train.task.state = Task.State.FAILED
-            self.train.save()
+        try:
+            super().close(ignore=ignore)
+            
+            if self.captain.interrupted:
+                LOG.warn('Failing training due to an interruption')
+                self.train.reload()
+                self.train.task.state = Task.State.FAILED
+                self.train.save()
+        except Exception as e:
+            LOG.error("Failed to close training '{}'".format(self.make_alias()))
+            
+            if ignore:
+                LOG.error(e)
+            else:
+                raise e
     
     def make_alias(self):
         
@@ -112,7 +120,7 @@ class TrainingExp(ShortExpedition):
     def make_vols(self):
         
         cargos = []
-        docs = [self.proj, self.bvers, self.train]
+        docs = [self.proj, self.train]
         suffix = '{}-{}'.format(self.proj.name, self.train.name)
         
         if self.ds is not None:

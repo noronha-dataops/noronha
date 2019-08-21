@@ -89,20 +89,31 @@ class ShortExpedition(Expedition):
         
         try:
             super().launch(foreground=foreground, **kwargs)
-        finally:
+        except Exception as e:
+            self.close(ignore=True)
+            raise e
+        else:
             self.close()
     
-    def close(self):
+    def close(self, ignore=False):
         
-        self.captain.dispose_run(self.make_alias(), force=True)
-        
-        for cargo in self.cargos:
-            if isinstance(cargo, LogsCargo) and LOG.debug_mode:
-                LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
+        try:
+            self.captain.dispose_run(self.make_alias(), force=True)
+            
+            for cargo in self.cargos:
+                if isinstance(cargo, LogsCargo) and LOG.debug_mode:
+                    LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
+                else:
+                    self.captain.rm_vol(cargo, force=True)
+            
+            self.captain.close()
+        except Exception as e:
+            LOG.error("Failed to close resource '{}'".format(self.captain.__class__.__name__))
+            
+            if ignore:
+                LOG.error(e)
             else:
-                self.captain.rm_vol(cargo, force=True)
-        
-        self.captain.close()
+                raise e
 
 
 class LongExpedition(Expedition):
@@ -114,21 +125,38 @@ class LongExpedition(Expedition):
         try:
             super().launch(**kwargs)
         except Exception as e:
-            LOG.error(e)
-            self.revert()
+            self.revert(ignore=True)
+            self.close(ignore=True)
+            raise e
         finally:
             self.close()
     
-    def revert(self):
+    def revert(self, ignore=False):
         
-        self.captain.dispose_deploy(self.make_alias(), force=True)
-        
-        for cargo in self.cargos:
-            if isinstance(cargo, LogsCargo) and LOG.debug_mode:
-                LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
+        try:
+            self.captain.dispose_deploy(self.make_alias(), force=True)
+            
+            for cargo in self.cargos:
+                if isinstance(cargo, LogsCargo) and LOG.debug_mode:
+                    LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
+                else:
+                    self.captain.rm_vol(cargo, force=True)
+        except Exception as e:
+            LOG.error("Failed to revert deployment of '{}'".format(self.make_alias()))
+            
+            if ignore:
+                LOG.error(e)
             else:
-                self.captain.rm_vol(cargo, force=True)
+                raise e
     
-    def close(self):
+    def close(self, ignore=False):
         
-        self.captain.close()
+        try:
+            self.captain.close()
+        except Exception as e:
+            LOG.error("Failed to close resource '{}'".format(self.captain.__class__.__name__))
+            
+            if ignore:
+                LOG.error(e)
+            else:
+                raise e

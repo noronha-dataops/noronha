@@ -110,7 +110,7 @@ class DeploymentExp(LongExpedition):
     def make_vols(self):
         
         suffix = '{}-{}'.format(self.proj.name, self.depl.name)
-        docs = [self.proj, self.bvers, self.depl]
+        docs = [self.proj, self.depl]
         
         cargos = [
             MetaCargo(suffix=suffix, docs=docs),

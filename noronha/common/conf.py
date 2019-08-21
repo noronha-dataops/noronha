@@ -2,8 +2,8 @@
 
 import os
 from kaptan import Kaptan
-from noronha.common.annotations import Lazy
-from noronha.common.constants import Package, Config, HostUser, OnBoard
+from noronha.common.annotations import Lazy, ready
+from noronha.common.constants import Package, Config, HostUser
 from noronha.common.utils import join_dicts, am_i_on_board
 
 
@@ -38,6 +38,15 @@ class LazyConf(Lazy, dict):
     def setup(self):
         
         self.load()
+    
+    def as_dict(self):
+        
+        return dict(**self)
+    
+    @ready
+    def dump(self):
+        
+        return Kaptan().import_config(self.as_dict()).export(handler=Config.FMT)
     
     def load(self):
         

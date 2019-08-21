@@ -12,7 +12,8 @@ from noronha.bay.barrel import Barrel, DatasetBarrel, MoversBarrel
 from noronha.db.ds import Dataset
 from noronha.db.main import PrettyDoc
 from noronha.db.movers import ModelVersion
-from noronha.common.constants import DateFmt, OnBoard, Paths, Config, HostUser
+from noronha.common.conf import AllConf
+from noronha.common.constants import DateFmt, OnBoard, Paths, Config
 
 
 class Content(ABC):
@@ -196,7 +197,7 @@ class ConfCargo(Cargo):
             contents=[
                 LiteralContent(
                     file_name=Config.FILE,
-                    file_content=open(HostUser.CONF).read()
+                    file_content=AllConf.dump()
                 )
             ],
             name='conf-{}'.format(suffix),
