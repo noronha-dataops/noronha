@@ -29,17 +29,23 @@ class NotebookRunner(object):
     def set_progress(self, perc: float):
         
         if self.train.name is not None:
-            self.train.task.progress = perc
-            self.train.save()
+            self.train.reload()
+            
+            if perc > self.train.task.progress:
+                self.train.task.progress = perc
+                self.train.save()
     
     def set_state(self, state: str):
         
         if self.train.name is not None:
-            self.train.task.state = state
-            self.train.save()
+            self.train.reload()
+            
+            if self.train.task.state not in Task.State.END_STATES:
+                self.train.task.state = state
+                self.train.save()
     
     def __call__(self, note_path: str, params: dict):
-        
+
         if self.train.name is not None:
             NoronhaEngine.progress_callback = lambda x: self.set_progress(x)
         

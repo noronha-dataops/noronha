@@ -258,7 +258,7 @@ class LoggerCompass(Compass):
     @property
     def path_to_log_file(self):
         
-        return os.path.join(self.log_file_dir, LoggerConst.FILE)
+        return os.path.join(self.log_file_dir, self.log_file_name)
     
     @property
     def file_handler_kwargs(self):

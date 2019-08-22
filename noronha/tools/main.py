@@ -35,6 +35,6 @@ class NoronhaEngine(NBConvertEngine):
         cls.nb_man = nb_man
         t = Thread(target=cls.handle_callbacks)
         t.start()
-        super().execute_managed_notebook(nb_man, kernel_name, **kwargs)
+        super().execute_managed_notebook(nb_man, kernel_name, execution_timeout=-1, start_timeout=-1)
         cls.nb_man = None
         t.join()

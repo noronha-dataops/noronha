@@ -95,6 +95,7 @@ class TrainingExp(ShortExpedition):
                 self.train.reload()
                 self.train.task.state = Task.State.FAILED
                 self.train.save()
+
         except Exception:
             LOG.error("Failed to close training '{}'".format(self.make_alias()))
     

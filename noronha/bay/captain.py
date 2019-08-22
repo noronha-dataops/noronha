@@ -505,6 +505,7 @@ class KubeCaptain(Captain):
     
     def rm_vol(self, cargo: Cargo):
         
+        # TODO: removal of volume when user runs "depl rm ..." will never have a ready mule. deal with it
         if self.mule is None:
             LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.full_name))
             return False
