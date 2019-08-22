@@ -61,4 +61,10 @@ app.post('/', (req, cli_res) => {
 });
 
 
+app.get('/', (req, cli_res) => {
+
+    cli_res.status(200).send('OK')
+
+});
+
 app.listen(80);
