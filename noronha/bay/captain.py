@@ -53,17 +53,17 @@ class Captain(ABC, Configured):
         pass
     
     @abstractmethod
-    def dispose_run(self, alias: str, force=False):
+    def dispose_run(self, alias: str):
         
         pass
     
     @abstractmethod
-    def dispose_deploy(self, alias: str, force=False):
+    def dispose_deploy(self, alias: str):
         
         pass
     
     @abstractmethod
-    def rm_vol(self, cargo: Cargo, force=False):
+    def rm_vol(self, cargo: Cargo):
         
         pass
     
@@ -168,29 +168,29 @@ class SwarmCaptain(Captain):
             LOG.debug(kwargs)
             return self.docker_api.update_service(**kwargs)
     
-    def dispose_run(self, alias: str, force=False):
+    def dispose_run(self, alias: str):
         
         name = self.with_prefix(alias)
         cont = self.find_cont(name)
         
         if cont is not None:
-            return self.rm_cont(cont, force=force)
+            return self.rm_cont(cont)
         else:
             return False
     
-    def dispose_deploy(self, alias: str, force=False):
+    def dispose_deploy(self, alias: str):
         
         name = self.with_prefix(alias)
-        return self.rm_depl(name, force=force)
+        return self.rm_depl(name)
     
-    def rm_vol(self, cargo: Cargo, force=False):
+    def rm_vol(self, cargo: Cargo):
         
         try:
-            self.docker_api.remove_volume(name=cargo.full_name, force=force)
+            self.docker_api.remove_volume(name=cargo.full_name, force=True)
         except DockerAPIError as e:
             LOG.error(e)
     
-    def rm_cont(self, x: DockerContainer, force=False):
+    def rm_cont(self, x: DockerContainer):
         
         try:
             x.kill()
@@ -198,23 +198,20 @@ class SwarmCaptain(Captain):
             pass
         
         try:
-            x.delete(force=force)
+            x.delete(force=True)
         except DockerAPIError as e:
             LOG.error(e)
             return False
         else:
             return True
     
-    def rm_depl(self, name: str, force=False):
+    def rm_depl(self, name: str):
         
         try:
             self.docker_api.remove_service(name)
         except Exception as e:
-            if force:
-                LOG.error(e)
-                return False
-            else:
-                raise e
+            LOG.error(e)
+            return False
         else:
             return True
     
@@ -242,7 +239,7 @@ class SwarmCaptain(Captain):
         
         if existing is not None:
             LOG.warn("Removing old container '{}'".format(name))
-            self.rm_cont(existing, force=True)
+            self.rm_cont(existing)
     
     def watch_cont(self, container: DockerContainer):
         
@@ -313,9 +310,9 @@ class SwarmCaptain(Captain):
             if work_path is not None:
                 work_path.dispose()
             if mule is not None:
-                self.rm_cont(mule, force=True)
+                self.rm_cont(mule)
             if error is not None:
-                self.rm_vol(cargo, force=True)
+                self.rm_vol(cargo)
                 raise error
     
     def get_mule(self, cargo: Cargo, mule_alias: str = None):
@@ -494,50 +491,60 @@ class KubeCaptain(Captain):
         self.handle_svc(name, port_defs)
         return depl
     
-    def dispose_run(self, alias: str, force=False):
+    def dispose_run(self, alias: str):
         
         name = self.with_prefix(alias)
-        self.rm_pod(name, force=force)
-        self.rm_svc(name, force=force)
+        self.rm_pod(name)
+        self.rm_svc(name)
     
-    def dispose_deploy(self, alias: str, force=False):
+    def dispose_deploy(self, alias: str):
         
         name = self.with_prefix(alias)
-        self.rm_depl(name, force=force)
-        self.rm_svc(name, force=force)
+        self.rm_depl(name)
+        self.rm_svc(name)
     
-    def rm_vol(self, cargo: Cargo, force=False):
+    def rm_vol(self, cargo: Cargo):
         
         if self.mule is None:
-            if force:
-                self.prepare_mule()
-            else:
-                LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.full_name))
-                return False
+            LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.full_name))
+            return False
         
-        vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.full_name)
-        self._exec_in_pod(self.mule, 'rm -rf {}'.format(vol_path))
-        return True
+        try:
+            vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.full_name)
+            self._exec_in_pod(self.mule, 'rm -rf {}'.format(vol_path))
+            return True
+        except Exception as e:
+            LOG.error(e)
+            return False
     
-    def rm_pod(self, name: str, force=False):
+    def rm_pod(self, name: str):
         
-        extra_kwargs = dict(grace_period_seconds=0) if force else {}
-        self.k8s_backend.core_api.delete_namespaced_pod(name=name, namespace=self.namespace, **extra_kwargs)
+        try:
+            self.k8s_backend.core_api.delete_namespaced_pod(
+                name=name, namespace=self.namespace, grace_period_seconds=0)
+        except Exception as e:
+            LOG.warn(e)
     
-    def rm_depl(self, name: str, force=False):
+    def rm_depl(self, name: str):
         
-        extra_kwargs = dict(grace_period_seconds=0) if force else {}
-        self.k8s_backend.apps_api.delete_namespaced_deployment(name=name, namespace=self.namespace, **extra_kwargs)
+        try:
+            self.k8s_backend.apps_api.delete_namespaced_deployment(
+                name=name, namespace=self.namespace, grace_period_seconds=0)
+        except Exception as e:
+            LOG.warn(e)
     
-    def rm_svc(self, name: str, force=False):
+    def rm_svc(self, name: str):
         
-        extra_kwargs = dict(grace_period_seconds=0) if force else {}
-        self.k8s_backend.core_api.delete_namespaced_service(name=name, namespace=self.namespace, **extra_kwargs)
+        try:
+            self.k8s_backend.core_api.delete_namespaced_service(
+                name=name, namespace=self.namespace, grace_period_seconds=0)
+        except Exception as e:
+            LOG.warn(e)
     
     def close(self):
         
         if self.mule is not None:
-            self.rm_pod(self.mule.name, force=True)
+            self.rm_pod(self.mule.name)
     
     def _find_sth(self, what, name, method, **kwargs):
         
@@ -579,7 +586,7 @@ class KubeCaptain(Captain):
         
         if existing is not None:
             LOG.warn("Removing old pod '{}'".format(name))
-            self.rm_pod(existing.name, force=True)
+            self.rm_pod(existing.name)
     
     def watch_pod(self, pod: Pod):
         

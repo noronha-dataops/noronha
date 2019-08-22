@@ -113,7 +113,7 @@ class NexusWarehouse(Warehouse):
             url=self.compass.address,
             user=self.compass.user,
             password=self.compass.pswd,
-            verify=self.compass.use_ssl
+            verify=self.compass.check_certificate
         )
     
     def assert_repo_exists(self):

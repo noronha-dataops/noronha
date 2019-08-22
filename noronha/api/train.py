@@ -85,23 +85,18 @@ class TrainingExp(ShortExpedition):
         self.ds = ds
         super().__init__(proj=train.proj, tag=tag)
     
-    def close(self, ignore=False):
+    def close(self):
         
         try:
-            super().close(ignore=ignore)
+            super().close()
             
             if self.captain.interrupted:
                 LOG.warn('Failing training due to an interruption')
                 self.train.reload()
                 self.train.task.state = Task.State.FAILED
                 self.train.save()
-        except Exception as e:
+        except Exception:
             LOG.error("Failed to close training '{}'".format(self.make_alias()))
-            
-            if ignore:
-                LOG.error(e)
-            else:
-                raise e
     
     def make_alias(self):
         

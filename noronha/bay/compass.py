@@ -281,6 +281,7 @@ class IslandCompass(ABC, Compass):
     DEFAULT_USER = None
     DEFAULT_PSWD = None
     KEY_SSL = 'use_ssl'
+    KEY_CERT = 'check_certificate'
     KEY_HOST = 'hostname'
     KEY_PORT = 'port'
     KEY_USER = 'user'
@@ -308,6 +309,12 @@ class IslandCompass(ABC, Compass):
     def use_ssl(self):
         
         return self.conf.get(self.KEY_SSL, False)
+    
+    @property
+    def check_certificate(self):
+        
+        default = self.use_ssl
+        return self.conf.get(self.KEY_CERT, default)
     
     @property
     def protocol(self):
