@@ -86,6 +86,16 @@ class Barrel(ABC):
         else:
             return 'partial'
     
+    def get_deployables(self, path_to):
+        
+        return [
+            self.warehouse.get_download_cmd(
+                path_from=self.make_file_path(file_spec.name),
+                path_to=os.path.join(path_to, file_spec.name)
+            )
+            for file_spec in self.schema
+        ]
+    
     @abstractmethod
     def make_file_path(self, file_name):
         

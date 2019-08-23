@@ -286,7 +286,7 @@ class DockerConst(object):
     LOCAL_REGISTRY = 'noronha'
     NETWORK = 'nha-net'
     HANG_CMD = ['tail', '-F', Paths.DEVNULL]
-    MULE_IMG = 'alpine'
+    MULE_IMG = 'debian:stretch'
     STG_MOUNT = '/staging'
     
     class Managers(object):

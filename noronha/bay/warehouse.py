@@ -58,6 +58,11 @@ class Warehouse(ABC, Configured):
     def delete(self, path_to_file):
         
         pass
+    
+    @abstractmethod
+    def get_download_cmd(self, path_from, path_to):
+        
+        pass
 
 
 class ArtifWarehouse(Warehouse):
@@ -90,6 +95,10 @@ class ArtifWarehouse(Warehouse):
         raise NotImplementedError()  # TODO
     
     def delete(self, path_to_file):
+        
+        raise NotImplementedError()  # TODO
+    
+    def get_download_cmd(self, path_from, path_to):
         
         raise NotImplementedError()  # TODO
 
@@ -164,6 +173,23 @@ class NexusWarehouse(Warehouse):
             return True
         else:
             raise NotImplementedError()
+    
+    def get_download_cmd(self, path_from, path_to):
+        
+        curl = "curl {security} -O -u {user}:{pswd} {url}".format(
+            security='' if self.compass.check_certificate else '--insecure',
+            user=self.compass.user,
+            pswd=self.compass.pswd,
+            url=self.format_nexus_path(path_from)
+        )
+        
+        move = "mkdir -p {dir} && mv {file} {path_to}".format(
+            dir=os.path.dirname(path_to),
+            file=os.path.basename(path_to),
+            path_to=os.path.dirname(path_to)
+        )
+        
+        return ' && '.join([curl, move])
 
 
 def get_warehouse(**kwargs):

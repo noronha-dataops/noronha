@@ -14,6 +14,7 @@ from noronha.db.main import PrettyDoc
 from noronha.db.movers import ModelVersion
 from noronha.common.conf import AllConf
 from noronha.common.constants import DateFmt, OnBoard, Paths, Config
+from noronha.common.errors import MisusageError
 
 
 class Content(ABC):
@@ -84,6 +85,10 @@ class BarrelContent(Content):
         
         self.barrel.deploy(path_to=path)
     
+    def get_deployables(self, path):
+        
+        return self.barrel.get_deployables(path_to=path)
+    
     @property
     def estimate_mb(self):
         
@@ -91,8 +96,6 @@ class BarrelContent(Content):
 
 
 class Cargo(object):
-    
-    write_once = True
     
     def __init__(self, name, mount_to: str, mode: str, contents: List[Content] = None, require_mb: int = 10):
         
@@ -220,39 +223,49 @@ class MetaCargo(Cargo):
         )
 
 
-class DatasetCargo(Cargo):
+class HeavyCargo(Cargo):
+    
+    def __init__(self, barrel: Barrel, **kwargs):
+        
+        content = BarrelContent(barrel)
+        super().__init__(require_mb=content.estimate_mb, **kwargs)
+        self.contents: List[BarrelContent] = [content]
+    
+    def deploy(self, path):
+        
+        raise MisusageError(
+            "HeavyCargo should be deployed indirectly with the commands provided by the method 'get_deployables'")
+    
+    def get_deployables(self, path):
+        
+        return self.contents[0].get_deployables(path)
+
+
+class DatasetCargo(HeavyCargo):
     
     def __init__(self, ds: Dataset):
         
-        content = BarrelContent(DatasetBarrel(ds))
         super().__init__(
             name='dataset-{}-{}'.format(ds.model.name, ds.name),
             mount_to=OnBoard.SHARED_DATA_DIR,
             mode='ro',
-            contents=[content],
-            require_mb=content.estimate_mb
+            barrel=DatasetBarrel(ds)
         )
 
 
-class MoversCargo(Cargo):
-    
-    write_once = False  # allow movers volume to be cleared and reloaded even if movers is already deployed
+class MoversCargo(HeavyCargo):
     
     def __init__(self, mv: ModelVersion):
         
-        content = BarrelContent(MoversBarrel(mv))
         super().__init__(
             name='movers-{}-{}'.format(mv.model.name, mv.name),
             mount_to=OnBoard.SHARED_MODEL_DIR,
             mode='rw',
-            contents=[content],
-            require_mb=content.estimate_mb
+            barrel=MoversBarrel(mv)
         )
 
 
 class SharedCargo(Cargo):
-    
-    write_once = False  # no matter the contents, shared cargos can always be overwritten
     
     def __init__(self, name, cargos: List[Cargo]):
         
@@ -264,18 +277,24 @@ class SharedCargo(Cargo):
         )
         
         self.subdirs = []
+        self.types = []
         len_prefix = len(self.mount_to) + 1
         
         for cargo in cargos:
             subdir = cargo.mount_to[len_prefix:]
             self.subdirs += [subdir]*len(cargo.contents)
             self.contents += cargo.contents
+            self.types += [type(cargo)]*len(cargo.contents)
         
         self.estimate_mb = sum([c.estimate_mb for c in self.contents])
     
     def deploy(self, path):
         
-        for subdir, content in zip(self.subdirs, self.contents):
+        for subdir, content, tipe in zip(self.subdirs, self.contents, self.types):
+            
+            if issubclass(tipe, HeavyCargo):
+                continue
+            
             subpath = os.path.join(path, subdir)
             
             if os.path.exists(subpath):
@@ -285,3 +304,16 @@ class SharedCargo(Cargo):
                 os.mkdir(subpath)
             
             content.deploy(subpath)
+    
+    def get_deployables(self, path):
+        
+        for subdir, content, tipe in zip(self.subdirs, self.contents, self.types):
+            
+            if not issubclass(tipe, HeavyCargo):
+                continue
+            
+            assert isinstance(content, BarrelContent), NotImplementedError()
+            subpath = os.path.join(path, subdir)
+            
+            for c in content.get_deployables(subpath):
+                yield c

@@ -16,7 +16,7 @@ from kubernetes.stream import stream
 import random_name
 from typing import Type, List
 
-from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo
+from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo, HeavyCargo
 from noronha.bay.compass import DockerCompass, CaptainCompass, SwarmCompass, KubeCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
@@ -297,11 +297,10 @@ class SwarmCaptain(Captain):
             cargo.deploy(work_path)
             
             for file_name in os.listdir(work_path):
-                self.copy_to(
-                    src=work_path.join(file_name),
-                    dest=DockerConst.STG_MOUNT,
-                    cont=mule
-                )
+                self.copy_to(src=work_path.join(file_name), dest=DockerConst.STG_MOUNT, cont=mule)
+            
+            if isinstance(cargo, HeavyCargo):
+                [self._exec_in_cont(mule, cmd) for cmd in cargo.get_deployables(DockerConst.STG_MOUNT)]
         except Exception as e:
             error = e
         else:
@@ -340,6 +339,10 @@ class SwarmCaptain(Captain):
     def copy_to(self, src: str, dest: str, cont: DockerContainer):
         
         cont.copy_to(src=src, dest=dest)
+    
+    def _exec_in_cont(self, cont: DockerContainer, cmd: str):
+        
+        raise NotImplementedError()  # TODO
     
     def conu_vols(self, vols: List[Cargo]):
         
@@ -652,11 +655,10 @@ class KubeCaptain(Captain):
             cargo.deploy(work_path)
             
             for file_name in os.listdir(work_path):
-                self.copy_to(
-                    src=work_path.join(file_name),
-                    dest=vol_path,
-                    pod=self.mule
-                )
+                self.copy_to(src=work_path.join(file_name), dest=vol_path, pod=self.mule)
+            
+            if isinstance(cargo, HeavyCargo):
+                [self._exec_in_pod(self.mule, cmd) for cmd in cargo.get_deployables(vol_path)]
         except Exception as e:
             self.rm_vol(cargo)
             raise e
