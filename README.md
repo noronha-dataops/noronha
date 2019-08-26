@@ -1,28 +1,24 @@
 # Noronha DataOps
 
-This is an open source framework for hosting Machine Learning projects inside a portable, ready-to-use DataOps architecture, thus helping you benefit from the most trending DataOps practices without having to change much of your usual work behavior.
+This framework hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture, thus helping you benefit from DataOps practices without having to change much of your usual work behavior.
 
-## 1) Prerequisites
-* [Docker](https://docs.docker.com/install/) v17.03+ (with Swarm mode enabled)
+### 1) Prerequisites
+To use Noronha in its most basic configuration all you need to have is [Docker v17+](https://docs.docker.com/install/) with [Swarm mode](https://docs.docker.com/engine/swarm/) enabled and a [Conda v4.5+](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html) environment for installing it.
 
-## 2) Installation
+### 2) Basic installation
 <pre>
-$ pip install git+https://github.com/athosgvag/noronha-dataops
+$ pip install git+https://gitlab.eva.bot/asseteva/noronha-dataops
 $ nha get-me-started
 </pre>
 
 ### 3) Basic usage
----
 Setup your project:
 <pre>
-$ nha model new --name my_lstm --extension h5
-$ nha proj new --name my_proj --base-image py3_default --model my_lstm --auto-host
-</pre>
+$ nha model new --name my-lstm --model-file '{"name": "lstm.h5", "required": true}'
 
-Dockerize it:
-<pre>
-$ nha tmpl docker apply -x default_project
-$ nha proj build
+$ nha proj new --name my-proj --model my-lstm --repo docker://user/image
+
+# obs: repository user/image uses noronha.everis.ai/noronha as base image 
 </pre>
 
 Get to work:
