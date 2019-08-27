@@ -60,7 +60,7 @@ class Warehouse(ABC, Configured):
         pass
     
     @abstractmethod
-    def get_download_cmd(self, path_from, path_to):
+    def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
         pass
 
@@ -98,7 +98,7 @@ class ArtifWarehouse(Warehouse):
         
         raise NotImplementedError()  # TODO
     
-    def get_download_cmd(self, path_from, path_to):
+    def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
         raise NotImplementedError()  # TODO
 
@@ -174,12 +174,17 @@ class NexusWarehouse(Warehouse):
         else:
             raise NotImplementedError()
     
-    def get_download_cmd(self, path_from, path_to):
+    def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
+        
+        if on_board_perspective:
+            compass = self.compass_cls(on_board_perspective=True)
+        else:
+            compass = self.compass
         
         curl = "curl {security} -O -u {user}:{pswd} {url}".format(
-            security='' if self.compass.check_certificate else '--insecure',
-            user=self.compass.user,
-            pswd=self.compass.pswd,
+            security='' if compass.check_certificate else '--insecure',
+            user=compass.user,
+            pswd=compass.pswd,
             url=self.format_nexus_path(path_from)
         )
         

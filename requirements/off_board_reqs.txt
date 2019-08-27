@@ -6,7 +6,7 @@ pyvalid
 kaptan
 mongoengine
 artifactory
-nexus3-cli
+nexus3-cli==1.0.2
 random_name
 gitpython
 blinker

@@ -290,10 +290,11 @@ class IslandCompass(ABC, Compass):
     KEY_MAX_MB = 'disk_allocation_mb'
     DEFAULT_MAX_MB = 100*1024  # 100 GB
     
-    def __init__(self):
+    def __init__(self, on_board_perspective=False):
         
         super().__init__()
         self.captain = CaptainCompass()
+        self.on_board_perspective = on_board_perspective
     
     @property
     def native(self):
@@ -321,6 +322,10 @@ class IslandCompass(ABC, Compass):
         
         return 'https' if self.use_ssl else 'http'
     
+    def am_i_on_board(self):
+        
+        return self.on_board_perspective or am_i_on_board()
+    
     @property
     def host(self):
         
@@ -330,12 +335,12 @@ class IslandCompass(ABC, Compass):
             if self.captain.tipe == DockerConst.Managers.SWARM:
                 if is_it_open_sea():
                     return self.service_name
-                elif am_i_on_board():
+                elif self.am_i_on_board():
                     return find_bridge_ip()
                 else:
                     return self.DEFAULT_HOST
             elif self.captain.tipe == DockerConst.Managers.KUBE:
-                if am_i_on_board():
+                if self.am_i_on_board():
                     return self.service_name
                 else:
                     return self.captain.some_node
@@ -353,12 +358,12 @@ class IslandCompass(ABC, Compass):
             if self.captain.tipe == DockerConst.Managers.SWARM:
                 if is_it_open_sea():
                     return self.ORIGINAL_PORT
-                elif am_i_on_board():
+                elif self.am_i_on_board():
                     return configured
                 else:
                     return configured
             elif self.captain.tipe == DockerConst.Managers.KUBE:
-                if am_i_on_board():
+                if self.am_i_on_board():
                     return self.ORIGINAL_PORT
                 else:
                     return configured
@@ -448,9 +453,9 @@ class WarehouseCompass(IslandCompass):
     ORIGINAL_PORT = 8081
     DEFAULT_PORT = 30023
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         
-        super().__init__()
+        super().__init__(**kwargs)
         assert self.conf.get('type') == self.file_manager_type,\
             ResolutionError("Current file manager type is '{}'".format(self.conf.get('type')))
     

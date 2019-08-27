@@ -231,10 +231,10 @@ class HeavyCargo(Cargo):
         super().__init__(require_mb=content.estimate_mb, **kwargs)
         self.contents: List[BarrelContent] = [content]
     
-    def deploy(self, path):
-        
-        raise MisusageError(
-            "HeavyCargo should be deployed indirectly with the commands provided by the method 'get_deployables'")
+    # def deploy(self, path):
+    #
+    #     raise MisusageError(
+    #         "HeavyCargo should be deployed indirectly with the commands provided by the method 'get_deployables'")
     
     def get_deployables(self, path):
         
@@ -288,11 +288,11 @@ class SharedCargo(Cargo):
         
         self.estimate_mb = sum([c.estimate_mb for c in self.contents])
     
-    def deploy(self, path):
+    def deploy(self, path, include_heavy_cargos=False):
         
         for subdir, content, tipe in zip(self.subdirs, self.contents, self.types):
             
-            if issubclass(tipe, HeavyCargo):
+            if issubclass(tipe, HeavyCargo) and not include_heavy_cargos:
                 continue
             
             subpath = os.path.join(path, subdir)

@@ -6,10 +6,12 @@ purge(){
   nha -q model rm --name iris-clf
 }
 
+set -x
+
 purge
 
 cp -r ${NHA_EXAMPLES}/iris/* .
 
 sh script.sh
 
-purge
+# purge

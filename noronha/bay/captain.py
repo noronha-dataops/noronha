@@ -16,7 +16,7 @@ from kubernetes.stream import stream
 import random_name
 from typing import Type, List
 
-from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo, HeavyCargo
+from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo, HeavyCargo, SharedCargo
 from noronha.bay.compass import DockerCompass, CaptainCompass, SwarmCompass, KubeCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
@@ -244,9 +244,8 @@ class SwarmCaptain(Captain):
     def watch_cont(self, container: DockerContainer):
         
         try:
-            while True:
-                if container.is_running():
-                    time.sleep(1)
+            while container.is_running():
+                time.sleep(1)
         except (KeyboardInterrupt, InterruptedError):
             self.interrupted = True
     
@@ -294,13 +293,12 @@ class SwarmCaptain(Captain):
             mule = self.get_mule(cargo, mule_alias)
             self.clear_mule(mule)
             work_path = Workpath.get_tmp()
-            cargo.deploy(work_path)
+            kwargs = dict(include_heavy_cargos=True) if isinstance(cargo, SharedCargo) else {}
+            cargo.deploy(work_path, **kwargs)
             
             for file_name in os.listdir(work_path):
                 self.copy_to(src=work_path.join(file_name), dest=DockerConst.STG_MOUNT, cont=mule)
-            
-            if isinstance(cargo, HeavyCargo):
-                [self._exec_in_cont(mule, cmd) for cmd in cargo.get_deployables(DockerConst.STG_MOUNT)]
+        
         except Exception as e:
             error = e
         else:
@@ -316,7 +314,8 @@ class SwarmCaptain(Captain):
     
     def get_mule(self, cargo: Cargo, mule_alias: str = None):
         
-        image = self.docker_backend.ImageClass(DockerConst.MULE_IMG)
+        repo, tag = DockerConst.MULE_IMG.split(':')
+        image = self.docker_backend.ImageClass(repo, tag=tag)
         
         kwargs = dict(
             name=self.mule_name(mule_alias),
@@ -342,7 +341,7 @@ class SwarmCaptain(Captain):
     
     def _exec_in_cont(self, cont: DockerContainer, cmd: str):
         
-        raise NotImplementedError()  # TODO
+        cont.execute(cmd.split(' '), blocking=True)
     
     def conu_vols(self, vols: List[Cargo]):
         
@@ -652,13 +651,16 @@ class KubeCaptain(Captain):
             self.prepare_mule(mule_alias)
             self.clear_mule(self.mule, vol_path)
             work_path = Workpath.get_tmp()
-            cargo.deploy(work_path)
             
-            for file_name in os.listdir(work_path):
-                self.copy_to(src=work_path.join(file_name), dest=vol_path, pod=self.mule)
+            if not isinstance(cargo, HeavyCargo):
+                cargo.deploy(work_path)
             
-            if isinstance(cargo, HeavyCargo):
+                for file_name in os.listdir(work_path):
+                    self.copy_to(src=work_path.join(file_name), dest=vol_path, pod=self.mule)
+            
+            if isinstance(cargo, (HeavyCargo, SharedCargo)):
                 [self._exec_in_pod(self.mule, cmd) for cmd in cargo.get_deployables(vol_path)]
+        
         except Exception as e:
             self.rm_vol(cargo)
             raise e

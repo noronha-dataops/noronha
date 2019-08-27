@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # define a model
 nha -v model new \
 --name iris-clf \
@@ -25,13 +27,13 @@ nha -v proj new \
 nha -d proj build
 
 # note that a docker image has been created for you
-docker images noronha/botanics*
+docker images noronha/*botanics*
 
 # and it's also versioned in noronha's database
 nha -v bvers list
 
 # run a notebook for editing and testing your code # all dependencies are included already :)
-nha -d note
+# nha -d note --edit
 
 # execute your first training # this is going to use the training notebook
 nha -d -p train new \
@@ -51,7 +53,8 @@ nha -d -p depl new \
 --port 30050 \
 --model iris-clf \
 --movers experiment-v1 \
---n-tasks 1
+--n-tasks 1 \
+&& sleep 10
 
 # test your api
 curl -X POST --data '[1,2,3,4]' http://127.0.0.1:30050/predict
