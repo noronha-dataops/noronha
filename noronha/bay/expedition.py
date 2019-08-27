@@ -31,7 +31,6 @@ class Expedition(ABC):
             self.launcher = self.captain.deploy
         else:
             self.launcher = self.captain.run
-        
         if img_spec is None:
             self.proj = proj
             self.bvers = BuildVersion().find_one_or_none(tag=tag, proj=proj)

@@ -84,6 +84,7 @@ class TrainingExp(ShortExpedition):
         self.train = train
         self.ds = ds
         super().__init__(proj=train.proj, tag=tag)
+        self.mock = True  # debug
     
     def close(self):
         
