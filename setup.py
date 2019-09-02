@@ -24,7 +24,7 @@ setup(
     packages=find_packages(exclude=[] if os.environ.get('TESTING') else ['tests']),
     include_package_data=True,
     package_data={
-        'noronha.resources': ['conf.yaml', 'entrypoint.sh', 'isle/*/*']
+        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*']
     },
     entry_points={
         'console_scripts': [
