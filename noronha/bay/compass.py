@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from random import randrange
 
 from noronha.common.annotations import Configured
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Config
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst
 from noronha.common.conf import MongoConf, WarehouseConf, LoggerConf, ProjConf, DockerConf, RouterConf, CaptainConf
 from noronha.common.errors import ResolutionError, ConfigurationError
 from noronha.common.utils import am_i_on_board, is_it_open_sea

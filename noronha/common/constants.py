@@ -206,7 +206,7 @@ class Config(object):
     
     FMT = 'yaml'
     EXT = FMT
-    FILE = 'conf.{}'.format(EXT)
+    FILE = 'nha.{}'.format(EXT)
     LOCAL = os.path.join(os.getcwd(), FILE)
     ON_BOARD = os.path.join(OnBoard.CONF_DIR, FILE)
     APP = os.path.join(OnBoard.APP_HOME, FILE)
@@ -216,7 +216,7 @@ class Config(object):
         """Namespaces that may be found inside configuration files"""
         
         DOCKER = 'docker'
-        DOCKER_MANAGER = 'docker.manager'
+        DOCKER_MANAGER = 'container_manager'
         LOGGER = 'logger'
         MONGO = 'mongo'
         PROJECT = 'project'
@@ -242,8 +242,7 @@ class HostUser(object):
     
     """Paths inside the user home on host machines"""
     
-    NAME = os.getenv('USER', 'root')
-    HOME = '/root' if NAME == 'root' else os.path.join('/home', NAME)
+    HOME = os.path.expanduser('~')
     NHA = os.path.join(HOME, '.nha')
     LOG_DIR = os.path.join(NHA, 'logs')
     CONF = os.path.join(NHA, Config.FILE)

@@ -2,8 +2,10 @@
 
 import os
 from kaptan import Kaptan
+
 from noronha.common.annotations import Lazy, ready
 from noronha.common.constants import Package, Config, HostUser
+from noronha.common.errors import ConfigurationError
 from noronha.common.utils import join_dicts, am_i_on_board
 
 
@@ -50,14 +52,20 @@ class LazyConf(Lazy, dict):
     
     def load(self):
         
-        parent = dict()
+        confs = [
+            None if not os.path.exists(src)
+            else Kaptan(handler=Config.FMT).import_config(src).get(self.namespace, {}) or {}
+            for src in self.sources
+        ]
         
-        for source in self.sources:
-            if os.path.exists(source):
-                child = Kaptan(handler=Config.FMT).import_config(source).get(self.namespace, {}) or {}
-                parent = join_dicts(parent, child, allow_overwrite=True)
+        default_conf, env_conf, local_conf = confs
         
-        super().__init__(**parent)
+        assert default_conf is not None,\
+            ConfigurationError("Default configuration not found at {}".format(self.sources[0]))
+        
+        child_conf = local_conf or env_conf  # if local conf was found, env conf is ignored
+        conf = join_dicts(default_conf, child_conf, allow_overwrite=True)
+        super().__init__(**conf)
 
 
 AllConf = LazyConf()

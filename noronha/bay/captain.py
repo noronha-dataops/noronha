@@ -654,7 +654,7 @@ class KubeCaptain(Captain):
             
             if not isinstance(cargo, HeavyCargo):
                 cargo.deploy(work_path)
-            
+                
                 for file_name in os.listdir(work_path):
                     self.copy_to(src=work_path.join(file_name), dest=vol_path, pod=self.mule)
             

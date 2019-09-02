@@ -1,0 +1,32 @@
+project:
+  working_project: null
+
+logger:
+  level: INFO
+  pretty: false
+  join_root: true
+  max_bytes: 1048576  # 1mb
+
+
+mongo:
+  native: true
+  write_concern:
+    w: 1
+    j: true
+    timeout: 5
+
+router:
+  native: true
+
+file_manager:
+  native: true
+  type: artif
+
+docker:
+  daemon_address: unix:/var/run/docker.sock
+  target_registry: null
+
+container_manager:
+  type: swarm
+  namespace: default
+  api_timeout: 60
