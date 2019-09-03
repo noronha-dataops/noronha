@@ -21,7 +21,7 @@ setup(
     install_requires=open('./requirements/{}_reqs.txt'.format(
         'on_board' if os.environ.get('AM_I_ON_BOARD') else 'off_board'
     )).read().split('\n'),
-    packages=find_packages(exclude=[] if os.environ.get('TESTING') else ['tests']),
+    packages=find_packages(exclude=[] if os.environ.get('include_tests') else ['tests']),
     include_package_data=True,
     package_data={
         'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*']
