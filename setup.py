@@ -28,7 +28,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     package_data={
-        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*', 'tests/integrated/*.sh']
+        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*', 'tests/*/*']
     },
     entry_points={
         'console_scripts': [
