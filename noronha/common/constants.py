@@ -235,7 +235,7 @@ class Package(object):
     CONF = os.path.join(RESOURCES, Config.FILE)
     SH = os.path.join(RESOURCES, 'sh')
     ISLE = os.path.join(RESOURCES, 'isle')  # source files for creating plugins
-    TESTS = os.path.abspath(os.path.join(BASE, '../tests'))
+    TESTS = os.path.join(RESOURCES, 'tests')
 
 
 class HostUser(object):

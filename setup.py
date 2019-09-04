@@ -6,6 +6,11 @@ DataOps practices in Machine Learning projects
 
 import os
 from setuptools import find_packages, setup
+from distutils.dir_util import copy_tree
+
+
+if os.environ.get('include_tests'):
+    copy_tree('tests', 'noronha/resources/')
 
 
 setup(
@@ -21,10 +26,10 @@ setup(
     install_requires=open('./requirements/{}_reqs.txt'.format(
         'on_board' if os.environ.get('AM_I_ON_BOARD') else 'off_board'
     )).read().split('\n'),
-    packages=find_packages(exclude=[] if os.environ.get('include_tests') else ['tests']),
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     package_data={
-        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*']
+        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*', 'tests']
     },
     entry_points={
         'console_scripts': [
