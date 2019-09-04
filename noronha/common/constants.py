@@ -236,6 +236,7 @@ class Package(object):
     SH = os.path.join(RESOURCES, 'sh')
     ISLE = os.path.join(RESOURCES, 'isle')  # source files for creating plugins
     TESTS = os.path.join(RESOURCES, 'tests')
+    EXAMPLES = os.path.join(RESOURCES, 'examples')
 
 
 class HostUser(object):

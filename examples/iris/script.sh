@@ -56,5 +56,8 @@ nha -d -p depl new \
 --n-tasks 1 \
 && sleep 10
 
-# test your api
+# test your api (direct call to the service)
 curl -X POST --data '[1,2,3,4]' http://127.0.0.1:30050/predict
+
+# test your api (call through model router)
+curl -X POST --data '{"project": "botanics", "deploy": "homolog", "data": [1,2,3,4]' http://127.0.0.1:30080

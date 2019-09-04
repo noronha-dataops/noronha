@@ -1,17 +1,11 @@
 #!/bin/bash
 
-purge(){
-  nha -q depl rm --name homolog --proj botanics
-  nha -q proj rm --name botanics
-  nha -q model rm --name iris-clf
-}
-
 set -x
 
-purge
+examples=`python -c 'from noronha.common.constants import Package; print(Package.EXAMPLES)'`
 
-cp -r ${NHA_EXAMPLES}/iris/* .
+cp -r ${examples}/iris/* .
 
 sh script.sh
 
-# purge
+exit $?

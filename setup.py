@@ -11,6 +11,7 @@ from distutils.dir_util import copy_tree
 
 if os.environ.get('include_tests'):
     copy_tree('tests', 'noronha/resources/tests')
+    copy_tree('examples', 'noronha/resources/examples')
 
 setup(
     name='noronha-dataops',
@@ -28,7 +29,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     package_data={
-        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*', 'tests/*/*']
+        'noronha.resources': ['nha.yaml', 'entrypoint.sh', 'isle/*/*', 'tests/*/*', 'examples/*/*/*']
     },
     entry_points={
         'console_scripts': [
