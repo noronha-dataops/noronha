@@ -239,7 +239,7 @@ class SwarmCaptain(Captain):
         return self._find_sth(
             what='networks',
             method=self.docker_api.networks,
-            filters=dict(names=[DockerConst.NETWORK]),
+            names=[DockerConst.NETWORK],
             key=lambda _: True,
             name=DockerConst.NETWORK
         )
@@ -262,7 +262,7 @@ class SwarmCaptain(Captain):
     
     def wait_for_net(self):
         
-        for _ in self.timeout:
+        for _ in range(self.timeout):
             if self.find_net() is None:
                 time.sleep(1)
             else:
