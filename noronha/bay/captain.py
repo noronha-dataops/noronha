@@ -39,6 +39,7 @@ class Captain(ABC, Configured):
         self.captain_compass = self.compass_cls()
         self.section = section
         self.interrupted = False
+        self.timeout = self.captain_compass.api_timeout
     
     @abstractmethod
     def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, alias: str,
@@ -232,7 +233,17 @@ class SwarmCaptain(Captain):
             key=lambda _: True,
             name=name
         )
+    
+    def find_net(self):
         
+        return self._find_sth(
+            what='networks',
+            method=self.docker_api.networks,
+            filters=dict(names=[DockerConst.NETWORK]),
+            key=lambda _: True,
+            name=DockerConst.NETWORK
+        )
+    
     def make_name_available(self, name):
         
         existing = self.find_cont(name)
@@ -249,22 +260,33 @@ class SwarmCaptain(Captain):
         except (KeyboardInterrupt, InterruptedError):
             self.interrupted = True
     
+    def wait_for_net(self):
+        
+        for _ in self.timeout:
+            if self.find_net() is None:
+                time.sleep(1)
+            else:
+                break
+        else:
+            raise NhaDockerError("Timed out waiting for Docker network")
+    
     def assert_network(self):
         
-        nets = self.docker_api.networks(names=[DockerConst.NETWORK])
+        if self.find_net() is not None:
+            return
         
-        if len(nets) == 0:
-            self.docker_api.create_network(
-                name=DockerConst.NETWORK,
-                driver="overlay",
-                attachable=False,
-                scope="global",
-                ingress=False
-            )  # standard properties for a network that is meant to be used only by Swarm services
-        elif len(nets) == 1:
-            pass
-        else:
-            raise NotImplementedError()
+        kwargs = dict(
+            name=DockerConst.NETWORK,
+            driver="overlay",
+            attachable=False,
+            scope="global",
+            ingress=False
+        )  # standard properties for a network that is meant to be used only by Swarm services
+        
+        LOG.info("Creating Docker network")
+        LOG.debug(kwargs)
+        self.docker_api.create_network(**kwargs)
+        self.wait_for_net()
     
     def assert_vol(self, cargo: Cargo):
         
@@ -393,7 +415,6 @@ class KubeCaptain(Captain):
         super().__init__(section)
         self.namespace = self.captain_compass.get_namespace()
         self.api_key = self.captain_compass.get_api_key()
-        self.timeout = self.captain_compass.api_timeout
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR, api_key=self.api_key)
         self.resources = {'resources': self.captain_compass.get_resource_profile(section)}
         self.nfs = self.captain_compass.get_nfs_server(section)
