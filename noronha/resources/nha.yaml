@@ -7,19 +7,21 @@ logger:
   join_root: true
   max_bytes: 1048576  # 1mb
 
-
 mongo:
   native: true
+  port: 30017
   write_concern:
     w: 1
     j: true
-    timeout: 5
+    wtimeout: 5
 
 router:
   native: true
+  port: 30080
 
 file_manager:
   native: true
+  port: 30023
   type: artif
 
 docker:

@@ -418,6 +418,7 @@ class KubeCaptain(Captain):
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR, api_key=self.api_key)
         self.resources = {'resources': self.captain_compass.get_resource_profile(section)}
         self.nfs = self.captain_compass.get_nfs_server(section)
+        self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.mule = None
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, alias: str, foreground=False):
@@ -579,6 +580,14 @@ class KubeCaptain(Captain):
             key=lambda i: i.metadata.name == name
         )
     
+    def find_vol(self, cargo: Cargo):
+        
+        return self._find_sth(
+            what='persistent volume claims',
+            method=self.k8s_backend.core_api.list_namespaced_persistent_volume_claim,
+            name=cargo.full_name
+        )
+    
     def find_pod(self, name):
         
         return super()._find_sth(
@@ -637,6 +646,29 @@ class KubeCaptain(Captain):
         else:
             raise NhaDockerError("Timed out waiting for pod '{}'".format(pod.name))
     
+    def assert_vol(self, cargo: Cargo):
+        
+        storage = '{}m'.format(cargo.require_mb)  # e.g.: 100m
+        
+        template = dict(
+            apiVersion="v1",
+            kind="PersistentVolumeClaim",
+            metadata={'name': cargo.full_name},
+            spec=dict(
+                storageClassName=self.stg_cls,
+                accessModes=['ReadWriteOnce'],
+                resources={'requests': {'storage': storage}}
+            )
+        )
+        
+        if self.find_vol(cargo) is None:
+            LOG.info("Creating persistent volume claim '{}'".format(cargo.full_name))
+            LOG.debug(template)
+            self.k8s_backend.core_api.create_namespaced_persistent_volume_claim(self.namespace, template)
+            return True
+        else:
+            return False
+    
     def handle_svc(self, name, port_defs):
         
         if self.find_svc(name) is not None:
@@ -665,6 +697,11 @@ class KubeCaptain(Captain):
     def load_vol(self, cargo: Cargo, mule_alias: str = None):
         
         cargo.prefix = self.section
+        
+        if isinstance(cargo, EmptyCargo):
+            self.assert_vol(cargo)
+            return
+        
         work_path, error = None, None
         vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.full_name)
         
@@ -786,10 +823,18 @@ class KubeCaptain(Captain):
         for cargo in cargos:
             name = cargo.full_name
             
-            if isinstance(cargo, MappedCargo):
-                nfs_path = cargo.src
+            if isinstance(cargo, EmptyCargo):
+                kwargs = dict(persistentVolumeClaim={'claimName': cargo.full_name})
             else:
-                nfs_path = os.path.join(self.nfs['path'], name)
+                if isinstance(cargo, MappedCargo):
+                    nfs_path = cargo.src
+                else:
+                    nfs_path = os.path.join(self.nfs['path'], name)
+                
+                kwargs = dict(nfs={
+                    'server': self.nfs['server'],
+                    'path': nfs_path
+                })
             
             refs.append(dict(
                 name=cargo.full_name,
@@ -798,7 +843,7 @@ class KubeCaptain(Captain):
             
             defs.append(dict(
                 name=cargo.full_name,
-                nfs={'server': self.nfs['server'], 'path': nfs_path}
+                **kwargs
             ))
         
         return refs, defs

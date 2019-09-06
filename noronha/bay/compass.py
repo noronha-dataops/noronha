@@ -120,6 +120,11 @@ class CaptainCompass(Compass):
     def get_nfs_server(self, section: str):
         
         pass
+    
+    @abstractmethod
+    def get_stg_cls(self, section: str):
+        
+        pass
 
 
 class SwarmCompass(CaptainCompass):
@@ -139,6 +144,10 @@ class SwarmCompass(CaptainCompass):
     def get_nfs_server(self, section: str):
         
         raise NotImplementedError("Container manager 'swarm' does not take a NFS server")
+    
+    def get_stg_cls(self, section: str):
+        
+        raise NotImplementedError("Container manager 'swarm' does not take a storage class")
 
 
 class KubeCompass(CaptainCompass):
@@ -146,6 +155,8 @@ class KubeCompass(CaptainCompass):
     KEY_NAMESPACE = 'namespace'
     DEFAULT_NAMESPACE = 'default'
     KEY_PROFILES = 'resource_profiles'
+    KEY_STG_CLS = 'storage_class'
+    DEFAULT_STG_CLS = 'standard'
     KEY_NFS = 'nfs'
     
     def get_api_key(self):
@@ -158,6 +169,13 @@ class KubeCompass(CaptainCompass):
         assert isinstance(namespace, str) and len(namespace) > 0,\
             ConfigurationError("Container manager 'kube' requires an existing namespace to be configured")
         return namespace
+    
+    def get_stg_cls(self, section: str):
+        
+        stg_cls = self.conf.get(self.KEY_STG_CLS, self.DEFAULT_STG_CLS)
+        assert isinstance(stg_cls, str) and len(stg_cls) > 0,\
+            ConfigurationError("Container manager 'kube' requires an existing storage class to be configured")
+        return stg_cls
     
     def get_resource_profile(self, section: str):
         
@@ -400,7 +418,6 @@ class RouterCompass(IslandCompass):
     conf = RouterConf
     
     ORIGINAL_PORT = 80
-    DEFAULT_PORT = 30080
 
 
 class MongoCompass(IslandCompass):
@@ -409,7 +426,6 @@ class MongoCompass(IslandCompass):
     conf = MongoConf
     
     ORIGINAL_PORT = 27017
-    DEFAULT_PORT = 30017
     DEFAULT_DB = 'nha_db'
     DEFAULT_HOST = 'localhost'
     KEY_DB = 'database'
@@ -451,7 +467,6 @@ class WarehouseCompass(IslandCompass):
     KEY_REPO = 'repository'
     DEFAULT_REPO = None
     ORIGINAL_PORT = 8081
-    DEFAULT_PORT = 30023
     
     def __init__(self, **kwargs):
         
