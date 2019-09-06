@@ -22,7 +22,7 @@ from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured
 from noronha.common.conf import CaptainConf
-from noronha.common.constants import DockerConst, Encoding, DateFmt
+from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex
 from noronha.common.errors import ResolutionError, NhaDockerError
 from noronha.common.logging import LOG
 from noronha.common.utils import dict_to_kv_list, run_bash_cmd, StructCleaner
@@ -341,7 +341,7 @@ class SwarmCaptain(Captain):
         
         kwargs = dict(
             name=self.mule_name(mule_alias),
-            command=DockerConst.HANG_CMD,
+            command=DockerConst.MULE_CMD,
             volumes=[(cargo.full_name, DockerConst.STG_MOUNT, 'rw')]
         )
         
@@ -738,7 +738,7 @@ class KubeCaptain(Captain):
         container = dict(
             name=name,
             image=DockerConst.MULE_IMG,
-            command=DockerConst.HANG_CMD,
+            command=DockerConst.MULE_CMD,
             volumeMounts=vol_refs
         )
         
@@ -782,11 +782,14 @@ class KubeCaptain(Captain):
     
     def _exec_in_pod(self, pod: Pod, cmd, stderr=True, stdin=False, stdout=True, tty=False):
         
-        return stream(
-            self.k8s_backend.core_api.connect_get_namespaced_pod_exec,
-            name=pod.name, namespace=self.namespace, command=cmd.split(' '),
-            stderr=stderr, stdin=stdin, stdout=stdout, tty=tty
-        )
+        return '\n'.join([
+            stream(
+                self.k8s_backend.core_api.connect_get_namespaced_pod_exec,
+                name=pod.name, namespace=self.namespace, command=c.strip().split(' '),
+                stderr=stderr, stdin=stdin, stdout=stdout, tty=tty
+            )
+            for c in Regex.CMD_DELIMITER.split(cmd)
+        ])
     
     def mule_mount(self, mule_name):
         

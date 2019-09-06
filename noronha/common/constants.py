@@ -145,6 +145,7 @@ class Regex(object):
     
     ALPHANUM = re.compile(r'^[a-zA-Z0-9]*$')
     DNS_SPECIAL = re.compile(r'[\-\.]')
+    CMD_DELIMITER = re.compile(r'\s+&&\s+|;')
 
 
 class RepoConst(object):
@@ -283,10 +284,12 @@ class DockerConst(object):
     """Docker-related nomenclature standards"""
     
     LATEST = 'latest'
+    NHA_BASE_IMG = 'noronha.everis.ai/noronha:{}'.format(FW_VERSION)
     LOCAL_REGISTRY = 'noronha'
     NETWORK = 'nha-net'
     HANG_CMD = ['tail', '-F', Paths.DEVNULL]
-    MULE_IMG = 'debian:stretch'
+    MULE_CMD = HANG_CMD
+    MULE_IMG = 'appropriate/curl:{}'.format(LATEST)
     STG_MOUNT = '/staging'
     
     class Managers(object):
