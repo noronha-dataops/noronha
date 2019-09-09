@@ -63,6 +63,11 @@ class Warehouse(ABC, Configured):
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
         pass
+    
+    @abstractmethod
+    def list_dir(self, path):
+        
+        pass
 
 
 class ArtifWarehouse(Warehouse):
@@ -99,6 +104,10 @@ class ArtifWarehouse(Warehouse):
         raise NotImplementedError()  # TODO
     
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
+        
+        raise NotImplementedError()  # TODO
+    
+    def list_dir(self, path):
         
         raise NotImplementedError()  # TODO
 
@@ -195,6 +204,11 @@ class NexusWarehouse(Warehouse):
         )
         
         return ' && '.join([curl, move])
+    
+    def list_dir(self, path):
+        
+        path = self.format_nexus_path(path)
+        return self.client.list(path)  # TODO: format list items in order to get only the file names
 
 
 def get_warehouse(**kwargs):
