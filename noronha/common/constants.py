@@ -7,7 +7,7 @@ import pkg_resources
 import re
 
 
-FW_VERSION = '1.0.0'
+FW_VERSION = 'develop'
 
 
 class NoteConst(object):
