@@ -2,10 +2,10 @@
 FROM noronha.everis.ai/noronha:develop
 
 # project depenxencies installation
-ADD requirements.tdt .
+ADD requirements.txt .
 RUN bash -c "source ${CONDA_HOME}/bin/activate ${CONDA_VENV} \
- && pip install -r requirements.tdt \
- && rm -f requirements.tdt"
+ && pip install -r requirements.txt \
+ && rm -f requirements.txt"
 
 # deploying the project's coxe
 ADD . ${APP_HOME}
