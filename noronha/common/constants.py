@@ -7,7 +7,8 @@ import pkg_resources
 import re
 
 
-FW_VERSION = 'develop'
+FW_VERSION = '1.0.0'  # framework version
+FW_TAG = 'develop'  # framework tag
 
 
 class NoteConst(object):
@@ -284,7 +285,7 @@ class DockerConst(object):
     """Docker-related nomenclature standards"""
     
     LATEST = 'latest'
-    NHA_BASE_IMG = 'noronha.everis.ai/noronha:{}'.format(FW_VERSION)
+    NHA_BASE_IMG = 'noronha.everis.ai/noronha:{}'.format(FW_TAG)
     LOCAL_REGISTRY = 'noronha'
     NETWORK = 'nha-net'
     HANG_CMD = ['tail', '-F', Paths.DEVNULL]
