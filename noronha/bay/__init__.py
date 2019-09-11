@@ -1,4 +1,3 @@
 # -*- coding: utf-8 -*-
 
-# from noronha.bay.compass import *
-from noronha.bay.warehouse import *
+__all__ = ['anchor', 'barrel', 'captain', 'cargo', 'compass', 'expedition', 'island', 'utils', 'warehouse']
