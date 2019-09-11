@@ -8,7 +8,7 @@ import re
 
 
 FW_VERSION = '1.0.1'  # framework version
-FW_TAG = 'develop'  # framework tag
+FW_TAG = 'latest'  # framework tag
 
 
 class NoteConst(object):
