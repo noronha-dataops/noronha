@@ -3,6 +3,8 @@
 """Module for handling Docker images"""
 
 import git
+import json
+import re
 from abc import ABC, abstractmethod
 
 from noronha.bay.anchor import Repository, DockerRepository, LocalRepository, GitRepository, resolve_repo
@@ -124,7 +126,14 @@ class DockerTagger(Configured, RepoHandler):
         
         if self.img_spec.pushable:
             LOG.info("Pushing {}".format(self.img_spec.target))
-            self.docker.push(self.img_spec.repo, tag=self.img_spec.tag)
+            log = self.docker.push(self.img_spec.repo, tag=self.img_spec.tag)
+            outcome = json.loads(re.compile(r'[\r\n]+').split(log.strip())[-1])
+            
+            if 'error' in outcome:
+                raise NhaDockerError(
+                    "Failed to push image '{}'. Error: {}"
+                    .format(self.img_spec.target, outcome.get('errorDetail'))
+                )
         else:
             LOG.warn("Remote Docker registry is not configured. Skipping image push")
     
