@@ -52,18 +52,23 @@ class LazyConf(Lazy, dict):
     
     def load(self):
         
-        default_conf, env_conf, local_conf = [
+        default_conf, user_conf, local_conf = [
             None if not os.path.exists(src)
-            else Kaptan(handler=Config.FMT).import_config(src).get()
+            else Kaptan(handler=Config.FMT).import_config(src)
             for src in self.sources
         ]
         
         assert default_conf is not None,\
             ConfigurationError("Default configuration not found at {}".format(self.sources[0]))
         
-        child_conf = env_conf if local_conf is None else local_conf  # if local conf was found, env conf is ignored
-        conf = join_dicts(default_conf, child_conf, allow_overwrite=True).get(self.namespace, {})
-        super().__init__(**conf)
+        # if local conf was found, user conf is ignored
+        child_conf = user_conf if local_conf is None else local_conf
+        
+        super().__init__(**join_dicts(
+            default_conf.get(self.namespace, {}),
+            child_conf.get(self.namespace, {}),
+            allow_overwrite=True
+        ))
 
 
 AllConf = LazyConf()
