@@ -61,8 +61,8 @@ class LazyConf(Lazy, dict):
         assert default_conf is not None,\
             ConfigurationError("Default configuration not found at {}".format(self.sources[0]))
         
-        # if local conf was found, user conf is ignored
-        child_conf = user_conf if local_conf is None else local_conf
+        conf_opts = [local_conf, user_conf, {}]  # if local conf was found, user conf is ignored
+        child_conf = filter(lambda x: x is not None, conf_opts).__next__()  # returns first non empty option
         
         super().__init__(**join_dicts(
             default_conf.get(self.namespace, {}),
