@@ -13,8 +13,7 @@ from noronha.db.ds import Dataset
 from noronha.db.main import PrettyDoc
 from noronha.db.movers import ModelVersion
 from noronha.common.conf import AllConf
-from noronha.common.constants import DateFmt, OnBoard, Paths, Config
-from noronha.common.errors import MisusageError
+from noronha.common.constants import DateFmt, OnBoard, Paths, Config, DockerConst
 
 
 class Content(ABC):
@@ -103,8 +102,14 @@ class Cargo(object):
         self.mount_to = mount_to
         self.mode = mode
         self.contents = contents
-        self.prefix = ''
+        self.prefix = None
         self.require_mb = require_mb
+    
+    def set_prefix(self, prefix: str):
+        
+        assert self.prefix is None
+        assert prefix in DockerConst.Section.ALL
+        self.prefix = prefix
     
     @property
     def mount(self):
@@ -114,7 +119,7 @@ class Cargo(object):
     @property
     def full_name(self):
         
-        return '{}-{}'.format(self.prefix, self.name).lstrip('-')
+        return '{}-{}'.format(self.prefix or '', self.name).lstrip('-')
     
     def deploy(self, path):
         

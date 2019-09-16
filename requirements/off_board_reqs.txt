@@ -13,3 +13,4 @@ blinker
 docker
 click
 conu
+pyOpenSSL

@@ -13,3 +13,4 @@ blinker
 jupyter
 papermill
 Flask
+pyOpenSSL

@@ -64,7 +64,7 @@ class Captain(ABC, Configured):
         pass
     
     @abstractmethod
-    def rm_vol(self, cargo: Cargo):
+    def rm_vol(self, cargo: Cargo, ignore=False):
         
         pass
     
@@ -184,12 +184,21 @@ class SwarmCaptain(Captain):
         name = self.with_prefix(alias)
         return self.rm_depl(name)
     
-    def rm_vol(self, cargo: Cargo):
+    def rm_vol(self, cargo: Cargo, ignore=False, retry=True):
         
         try:
             self.docker_api.remove_volume(name=cargo.full_name, force=True)
+            return True
         except DockerAPIError as e:
-            LOG.error(e)
+            if ignore:
+                LOG.error(e)
+                return False
+            elif retry:
+                LOG.info("Waiting {} seconds before removing volume '{}'".format(self.timeout, cargo.full_name))
+                time.sleep(self.timeout)
+                return self.rm_vol(cargo, retry=False)
+            else:
+                raise e
     
     def rm_cont(self, x: DockerContainer):
         
@@ -290,7 +299,6 @@ class SwarmCaptain(Captain):
     
     def assert_vol(self, cargo: Cargo):
         
-        cargo.prefix = self.section
         vols = self.docker_api.volumes(dict(name=cargo.full_name))
         
         if len(vols) == 0:
@@ -331,7 +339,7 @@ class SwarmCaptain(Captain):
             if mule is not None:
                 self.rm_cont(mule)
             if error is not None:
-                self.rm_vol(cargo)
+                self.rm_vol(cargo, ignore=True)
                 raise error
     
     def get_mule(self, cargo: Cargo, mule_alias: str = None):
@@ -527,20 +535,25 @@ class KubeCaptain(Captain):
         self.rm_depl(name)
         self.rm_svc(name)
     
-    def rm_vol(self, cargo: Cargo):
+    def rm_vol(self, cargo: Cargo, ignore=False):
         
-        # TODO: removal of volume when user runs "depl rm ..." will never have a ready mule. deal with it
         if self.mule is None:
-            LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.full_name))
-            return False
+            if ignore:
+                LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.full_name))
+                return False
+            else:
+                self.prepare_mule(cargo.name)
         
         try:
             vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.full_name)
             self._exec_in_pod(self.mule, 'rm -rf {}'.format(vol_path))
             return True
         except Exception as e:
-            LOG.error(e)
-            return False
+            if ignore:
+                LOG.error(e)
+                return False
+            else:
+                raise e
     
     def rm_pod(self, name: str):
         
@@ -696,8 +709,6 @@ class KubeCaptain(Captain):
     
     def load_vol(self, cargo: Cargo, mule_alias: str = None):
         
-        cargo.prefix = self.section
-        
         if isinstance(cargo, EmptyCargo):
             self.assert_vol(cargo)
             return
@@ -720,7 +731,7 @@ class KubeCaptain(Captain):
                 [self._exec_in_pod(self.mule, cmd) for cmd in cargo.get_deployables(vol_path)]
         
         except Exception as e:
-            self.rm_vol(cargo)
+            self.rm_vol(cargo, ignore=True)
             raise e
         finally:
             if work_path is not None:

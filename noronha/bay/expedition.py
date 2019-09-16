@@ -23,7 +23,6 @@ class Expedition(ABC):
         
         self.docker_compass = DockerCompass()
         self.captain: Captain = get_captain(section=self.section)
-        self.cargos = []
         self.targets = None
         self.mock = False
         
@@ -38,10 +37,11 @@ class Expedition(ABC):
             self.img_spec = ImageSpec.from_repo_or_bvers(proj, tag, self.bvers)
         else:
             self.img_spec = img_spec
-    
-    def launch(self, env_vars: dict = None, mounts: list = None, ports: list = None, **kwargs):
         
         self.cargos = self.make_vols()
+        [cargo.set_prefix(self.section) for cargo in self.cargos]
+    
+    def launch(self, env_vars: dict = None, mounts: list = None, ports: list = None, **kwargs):
         
         self.launcher(
             alias=self.make_alias(),
@@ -101,7 +101,7 @@ class ShortExpedition(Expedition):
                 if isinstance(cargo, LogsCargo) and LOG.debug_mode:
                     LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
                 else:
-                    self.captain.rm_vol(cargo)
+                    self.captain.rm_vol(cargo, ignore=True)
             
             self.captain.close()
         except Exception:
@@ -117,12 +117,12 @@ class LongExpedition(Expedition):
         try:
             super().launch(**kwargs)
         except Exception as e:
-            self.revert()
+            self.revert(ignore_vols=True)
             raise e
         finally:
             self.close()
     
-    def revert(self):
+    def revert(self, ignore_vols=False):
         
         try:
             self.captain.dispose_deploy(self.make_alias())
@@ -131,7 +131,9 @@ class LongExpedition(Expedition):
                 if isinstance(cargo, LogsCargo) and LOG.debug_mode:
                     LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
                 else:
-                    self.captain.rm_vol(cargo)
+                    self.captain.rm_vol(cargo, ignore=ignore_vols)
+            
+            self.close()
         except Exception as e:
             LOG.error("Failed to revert deployment of '{}'".format(self.make_alias()))
             LOG.error(e)

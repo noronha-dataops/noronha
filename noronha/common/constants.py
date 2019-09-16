@@ -307,3 +307,4 @@ class DockerConst(object):
         TRAIN = 'nha-train'
         DEPL = 'nha-depl'
         PROJ = 'nha-proj'
+        ALL = [ISLE, IDE, TRAIN, DEPL, PROJ]

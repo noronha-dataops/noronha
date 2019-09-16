@@ -36,7 +36,7 @@ nha -v bvers list
 # nha -d note --edit
 
 # execute your first training # this is going to use the training notebook
-nha -d -p train new \
+nha -s -d -p train new \
 --name experiment-v1 \
 --nb notebooks/train \
 --params '{"gamma": 0.001, "kernel": "poly"}' \
@@ -47,7 +47,7 @@ nha -d -p train new \
 nha -v movers list
 
 # deploy everything to homologation
-nha -d -p depl new \
+nha -s -d -p depl new \
 --name homolog \
 --nb notebooks/predict \
 --port 30050 \
