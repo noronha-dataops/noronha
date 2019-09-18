@@ -40,11 +40,16 @@ class DatasetAPI(NoronhaAPI):
         return super().lyst(_filter=_filter, **kwargs)
     
     @validate(name=valid.dns_safe_or_none, files=(dict, None), details=(dict, None))
-    def new(self, model: str = None, path: str = None, files: dict = None, **kwargs):
+    def new(self, name: str = None, model: str = None, path: str = None, files: dict = None, **kwargs):
         
         model = Model().find_one(name=model)
-        ds = super().new(model=model, **kwargs)
         barrel = None
+        ds = super().new(
+            name=name,
+            model=model,
+            **kwargs,
+            _duplicate_filter=dict(name=name, model=model)
+        )
         
         try:
             barrel = DatasetBarrel(ds)

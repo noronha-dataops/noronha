@@ -49,7 +49,7 @@ IPYNB_CKPT_DIR=".ipynb_checkpoints"
 
 # retrieving the model, if a model was shared
 mkdir -p ${LOCAL_MODEL_DIR}
-cp ${SHARED_MODEL_DIR}/* ${LOCAL_MODEL_DIR}/ 2>/dev/null
+cp -r ${SHARED_MODEL_DIR}/* ${LOCAL_MODEL_DIR}/ 2>/dev/null
 
 # retrieving the dataset, if a dataset was shared
 mkdir -p ${LOCAL_DATA_DIR}

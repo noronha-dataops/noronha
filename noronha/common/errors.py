@@ -79,3 +79,8 @@ class MisusageError(PrettyError):
 class NhaStorageError(PrettyError):
 
     pass
+
+
+class NhaConsistencyError(PrettyError):
+    
+    pass

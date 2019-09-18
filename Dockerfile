@@ -7,10 +7,7 @@ RUN apt -y update \
 
 # environment variables
 ENV AM_I_ON_BOARD Yes
-ENV NHA_HOME /nha
-ENV SHARED_MODEL_DIR ${NHA_HOME}/model
 ENV LOCAL_MODEL_DIR /model
-ENV SHARED_DATA_DIR ${NHA_HOME}/data
 ENV LOCAL_DATA_DIR /data
 ENV LOG_DIR /logs
 ENV APP_HOME /app

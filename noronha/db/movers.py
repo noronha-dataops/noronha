@@ -32,6 +32,7 @@ class ModelVersion(DocMeta, PrettyDoc, Document):
     train = EmbeddedDocumentField(EmbeddedTraining, default=None)
     ds = EmbeddedDocumentField(EmbeddedDataset, default=None)
     details = DictField(default={})
+    pretrained = EmbeddedDocumentField(EmbeddedModelVersion, default=None)
     
     def _make_id(self):
         
@@ -39,6 +40,17 @@ class ModelVersion(DocMeta, PrettyDoc, Document):
             name=self.name,
             model=self.model.name
         )
+    
+    @property
+    def reference(self):
+        
+        return '{}:{}'.format(self.model.name, self.name)
+    
+    @classmethod
+    def from_reference(cls, reference: str):
+        
+        model_name, name = reference.split(':')
+        return cls().find_one(name=name, model=model_name)
     
     class EmbeddedModelVersion(EmbeddedModelVersion):
         

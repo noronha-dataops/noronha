@@ -180,12 +180,16 @@ class OnBoard(object):
     """Paths and files inside a managed container"""
     
     NHA_HOME = '/nha'
-    SHARED_MODEL_DIR = os.path.join(NHA_HOME, 'model')
     SHARED_DATA_DIR = os.path.join(NHA_HOME, 'data')
+    SHARED_MODEL_DIR = os.path.join(NHA_HOME, 'model')
+    SHARED_DEPL_MODEL_DIR = os.path.join(SHARED_MODEL_DIR, 'deployed')  # deployed model files
+    SHARED_PRET_MODEL_DIR = os.path.join(SHARED_MODEL_DIR, 'pretrain')  # pre-trained model files
     META_DIR = os.path.join(NHA_HOME, 'meta')
     CONF_DIR = os.path.join(NHA_HOME, 'conf')
-    LOCAL_MODEL_DIR = os.path.join('/model')
     LOCAL_DATA_DIR = os.path.join('/data')
+    LOCAL_MODEL_DIR = os.path.join('/model')
+    LOCAL_DEPL_MODEL_DIR = os.path.join(LOCAL_MODEL_DIR, 'deployed')  # deployed model files
+    LOCAL_PRET_MODEL_DIR = os.path.join(LOCAL_MODEL_DIR, 'pretrain')  # pre-trained model files
     APP_HOME = '/app'
     LOG_DIR = '/logs'
     ENTRYPOINT = '/entrypoint.sh'

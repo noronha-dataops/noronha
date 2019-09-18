@@ -53,7 +53,8 @@ class ModelVersionAPI(NoronhaAPI):
         return super().lyst(_filter=_filter, **kwargs)
     
     @validate(name=valid.dns_safe_or_none, details=(dict, None))
-    def new(self, model: str = None, train: str = None, ds: str = None, path: str = None, **kwargs):
+    def new(self, name: str = None, model: str = None, train: str = None, ds: str = None, path: str = None,
+            pretrained: str = None, **kwargs):
         
         if path is None:
             raise NhaAPIError("Cannot publish model version if path to model files is not provided")
@@ -69,7 +70,17 @@ class ModelVersionAPI(NoronhaAPI):
             else:
                 kwargs['train'] = Training().find_one(name=train, proj=self.proj.name).to_embedded()
         
-        mv = super().new(model=model, **kwargs)
+        if pretrained is not None:
+            kwargs['pretrained'] = ModelVersion.from_reference(pretrained).to_embedded()
+            LOG.info("Model version used pre-trained model '{}'".format(pretrained))
+        
+        mv = super().new(
+            name=name,
+            model=model,
+            **kwargs,
+            _duplicate_filter=dict(name=name, model=model)
+        )
+        
         barrel = None
         
         try:

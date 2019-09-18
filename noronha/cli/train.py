@@ -80,6 +80,11 @@ def _list(_filter, expand, **kwargs):
                    """Example: /home/user/data:/data:rw\n""")
 @click.option('--dataset', 'ds', help="Name of a dataset to be mounted on the training container")
 @click.option('--model', help="To be used along with 'dataset': name of the model to which the dataset belongs")
+@click.option(
+    '--pretrained', help=
+    """Reference to a model version that may be used as a pre-trained model during this training. """
+    """Syntax: <model_name>:<model_version>. Example: word2vec:en-us-v1"""
+)
 def new(params, env_vars, mounts, **kwargs):
     
     """Execute a new training"""

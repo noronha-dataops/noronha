@@ -3,7 +3,7 @@
 import json
 
 from noronha.api.main import NoronhaAPI
-from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo
+from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo
 from noronha.bay.expedition import ShortExpedition
 from noronha.common.annotations import validate, projected
 from noronha.common.constants import DockerConst, Extension, OnBoard, Task
@@ -12,6 +12,7 @@ from noronha.common.logging import LOG
 from noronha.common.utils import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
 from noronha.db.ds import Dataset
+from noronha.db.movers import ModelVersion
 from noronha.db.train import Training
 
 
@@ -47,7 +48,8 @@ class TrainingAPI(NoronhaAPI):
         params=(dict, None)
     )
     def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = None, details: dict = None,
-            params: dict = None, ds: str = None, model: str = None, _replace: bool = None, **kwargs):
+            params: dict = None, ds: str = None, model: str = None, _replace: bool = None, pretrained: str = None,
+            **kwargs):
         
         if ds is not None:
             if model is None:
@@ -62,6 +64,12 @@ class TrainingAPI(NoronhaAPI):
         
         bv = BuildVersion().find_one_or_none(tag=tag, proj=self.proj)
         
+        if pretrained is not None:
+            mv = ModelVersion.from_reference(pretrained)
+            LOG.info("Pre-trained model version '{}' will be available in this training".format(pretrained))
+        else:
+            mv = None
+        
         train: Training = super().new(
             name=name,
             proj=self.proj,
@@ -71,7 +79,7 @@ class TrainingAPI(NoronhaAPI):
             _duplicate_filter=dict(name=name, proj=self.proj)
         )
         
-        TrainingExp(train, ds, tag).launch(**kwargs)
+        TrainingExp(train, ds, mv, tag).launch(**kwargs)
         return train.reload()
 
 
@@ -79,10 +87,11 @@ class TrainingExp(ShortExpedition):
     
     section = DockerConst.Section.TRAIN
     
-    def __init__(self, train: Training, ds: Dataset = None, tag=DockerConst.LATEST):
+    def __init__(self, train: Training, ds: Dataset = None, mv: ModelVersion = None, tag=DockerConst.LATEST):
         
         self.train = train
         self.ds = ds
+        self.mv = mv
         super().__init__(proj=train.proj, tag=tag)
     
     def close(self):
@@ -119,16 +128,21 @@ class TrainingExp(ShortExpedition):
         docs = [self.proj, self.train]
         suffix = '{}-{}'.format(self.proj.name, self.train.name)
         
+        if self.bvers is not None:
+            docs.append(self.bvers)
+        
         if self.ds is not None:
             docs.append(self.ds)
             cargos.append(DatasetCargo(self.ds))
         
-        if self.bvers is not None:
-            docs.append(self.bvers)
+        if self.mv is not None:
+            docs.append(self.mv)
+            cargos.append(MoversCargo(self.mv, pretrained=True))
         
         cargos += [
             MetaCargo(suffix=suffix, docs=docs),
             ConfCargo(suffix=suffix),
+            MoversCargo(self.mv)
         ]
         
         return [

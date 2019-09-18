@@ -3,6 +3,7 @@
 """Module for handling Docker volumes"""
 
 import os
+import pathlib
 import random_name
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -260,11 +261,11 @@ class DatasetCargo(HeavyCargo):
 
 class MoversCargo(HeavyCargo):
     
-    def __init__(self, mv: ModelVersion):
+    def __init__(self, mv: ModelVersion, pretrained=False):
         
         super().__init__(
             name='movers-{}-{}'.format(mv.model.name, mv.name),
-            mount_to=OnBoard.SHARED_MODEL_DIR,
+            mount_to=OnBoard.SHARED_PRET_MODEL_DIR if pretrained else OnBoard.SHARED_DEPL_MODEL_DIR,
             mode='rw',
             barrel=MoversBarrel(mv)
         )
@@ -306,7 +307,7 @@ class SharedCargo(Cargo):
                 if os.path.isfile(subpath):
                     raise IOError("Expected path '' to be a directory, not file".format(subpath))
             else:
-                os.mkdir(subpath)
+                pathlib.Path(subpath).mkdir(parents=True, exist_ok=True)
             
             content.deploy(subpath)
     
