@@ -61,7 +61,7 @@ class Expedition(ABC):
     def make_env_vars(self):
         
         return {
-            # env vars to set inside the container
+            'CONTAINER_PURPOSE': self.section
         }
     
     def make_vols(self):

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import pathlib
+import shutil
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -47,6 +49,22 @@ class Barrel(ABC):
                     continue
             else:
                 self._store_file(file_spec.name, path_from=file_path)
+    
+    def move(self, path_from, path_to):
+        
+        if not os.path.isdir(path_to):
+            pathlib.Path(path_to).mkdir(parents=True, exist_ok=True)
+        
+        for file_spec in self.schema:
+            file_path = os.path.join(path_from, file_spec.name)
+            
+            if not os.path.exists(file_path) or not os.path.isfile(file_path):
+                if file_spec.required:
+                    raise NhaStorageError("File '{}' not found in path: {}".format(file_spec.name, path_from))
+                else:
+                    continue
+            else:
+                shutil.move(file_path, os.path.join(path_to, file_spec.name))
     
     def _store_file(self, file_name, **kwargs):
         

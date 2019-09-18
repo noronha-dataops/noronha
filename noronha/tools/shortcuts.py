@@ -2,7 +2,7 @@
 
 import os
 
-from noronha.common.constants import OnBoard, Paths
+from noronha.common.constants import EnvVar, OnBoard, Paths, DockerConst
 
 
 def tmp_path(file_name: str = ''):
@@ -37,3 +37,10 @@ def depl_mdl_path(file_name: str = ''):
     """Shortcut for addressing the deployed model directory"""
     
     return model_path(file_name, pretrain=False)
+
+
+def get_purpose():
+    
+    purpose = os.environ.get(EnvVar.CONTAINER_PURPOSE) or None
+    assert purpose in DockerConst.Section.ALL or purpose is None
+    return purpose

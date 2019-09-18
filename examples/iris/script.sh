@@ -32,7 +32,7 @@ docker images noronha/*botanics*
 # and it's also versioned in noronha's database
 nha -v bvers list
 
-# run a notebook for editing and testing your code # all dependencies are included already :)
+# run a notebook for editing and testing your code at http://localhost:30088
 # nha -d note --edit
 
 # execute your first training # this is going to use the training notebook

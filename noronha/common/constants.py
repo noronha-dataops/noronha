@@ -115,6 +115,7 @@ class EnvVar(object):
     
     ON_BOARD = 'AM_I_ON_BOARD'
     OPEN_SEA = 'IS_IT_OPEN_SEA'
+    CONTAINER_PURPOSE = 'CONTAINER_PURPOSE'
 
 
 class DateFmt(object):
