@@ -48,7 +48,7 @@ class Logger(Configured, Lazy):
         
         self._logger = None
         self.pretty = False
-        self.cleaner = StructCleaner(depth=3, keep_order=True)
+        self.cleaner = StructCleaner(depth=3)
     
     def __getattribute__(self, attr_name):
         

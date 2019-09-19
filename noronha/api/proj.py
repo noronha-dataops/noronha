@@ -10,9 +10,9 @@ from noronha.common.annotations import projected, validate
 from noronha.common.constants import DockerConst
 from noronha.common.errors import NhaAPIError, MisusageError
 from noronha.common.logging import LOG
-from noronha.db.model import Model
 from noronha.db.proj import Project
 from noronha.db.bvers import BuildVersion
+from noronha.db.model import Model
 
 
 class ProjectAPI(NoronhaAPI):
@@ -30,15 +30,8 @@ class ProjectAPI(NoronhaAPI):
         
         return self.proj.delete()
     
-    def lyst(self, _filter: dict = None, model: str = None, **kwargs):
-        
-        if model is not None:
-            kwargs['model'] = model
-        
-        return super().lyst(_filter=_filter, **kwargs)
-    
     @validate(name=valid.dns_safe)
-    def new(self, repo=None, model=None, **kwargs):
+    def new(self, repo=None, models: list = None, **kwargs):
         
         if repo is None:
             if self.scope == self.Scope.CLI:
@@ -47,19 +40,28 @@ class ProjectAPI(NoronhaAPI):
             else:
                 raise NhaAPIError("Project's repository cannot be None")
         
-        if model is not None:
-            kwargs['model'] = Model().find_one(name=model)
+        if not models:
+            models = []
+            LOG.warn(
+                "No models specified for the new project. "
+                "When publishing a model version this project must specify its model name."
+            )
+        else:
+            finder = Model().find_one
+            models = [finder(name=model_name) for model_name in models]
         
         return super().new(
             repo=resolve_repo(repo, implicit_local=True).address,
+            models=models,
             **kwargs
         )
     
     @projected
-    def update(self, model, **kwargs):
+    def update(self, models: list = None, **kwargs):
         
-        if model is not None:
-            kwargs['model'] = Model().find_one(name=model)
+        if models:
+            finder = Model().find_one
+            kwargs['models'] = [finder(name=model_name) for model_name in models]
         
         return super().update(
             filter_kwargs=dict(name=self.proj.name),

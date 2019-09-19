@@ -11,7 +11,7 @@ nha -v model new \
 --data-file '{"name": "species.csv"}'
 
 # record a dataset
-nha -v ds new \
+nha -s -v ds new \
 --model iris-clf \
 --name iris-data-v0 \
 --details '{"extraction_date": "2019-04-01"}' \
@@ -43,10 +43,10 @@ nha -s -d -p train new \
 --model iris-clf \
 --dataset iris-data-v0
 
-# check out which model versions have been produced so far # which one should we choose?
+# check out which model versions have been produced so far
 nha -v movers list
 
-# deploy everything to homologation
+# deploy a model version to homologation
 nha -s -d -p depl new \
 --name homolog \
 --nb notebooks/predict \

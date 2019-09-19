@@ -5,7 +5,6 @@
 import os
 import random_name
 from bson import ObjectId
-from collections import OrderedDict
 from datetime import datetime
 from mongoengine import Document, ReferenceField, EmbeddedDocumentField, DateTimeField
 from mongoengine.base import BaseList
@@ -144,7 +143,7 @@ class DocInterface(Document):
     def as_dict(self, depth=0):
         
         assert depth <= DBConst.MAX_EXPAND_DEPTH
-        dyct = OrderedDict([
+        dyct = dict([
             (key, self._format_val(val, depth))
             for key, val in [(key, getattr(self, key)) for key in self._fields_ordered]
         ])

@@ -13,10 +13,9 @@ from noronha.common.constants import Encoding, DateFmt
 
 class StructCleaner(object):
     
-    def __init__(self, keep_order=False, depth=1, nones: list = None):
+    def __init__(self, depth=1, nones: list = None):
         
         self.depth = depth
-        self.keep_order = keep_order
         self.nones = nones or [None, [], {}, (), '']
     
     def __call__(self, x, _depth=5):
@@ -30,7 +29,7 @@ class StructCleaner(object):
     
     def clear_dict(self, x, _depth: int):
         
-        out = (OrderedDict if self.keep_order else dict)()
+        out = dict()
         
         for k, v in x.items():
             v = self(v, _depth=_depth)

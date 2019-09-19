@@ -30,9 +30,13 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     
     def set_proj(self, ref_to_proj, resolvers: list = (), ignore=False):
         
+        if isinstance(ref_to_proj, Project):
+            self.proj = ref_to_proj
+            return self
+        
         if resolvers is None:
             LOG.warn("Skipping project resolution")
-            return
+            return self
         
         resolver_obj = ProjResolver()
         resolvers = resolvers or ProjResolver.ALL

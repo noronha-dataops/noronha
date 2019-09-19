@@ -141,8 +141,7 @@ class TrainingExp(ShortExpedition):
         
         cargos += [
             MetaCargo(suffix=suffix, docs=docs),
-            ConfCargo(suffix=suffix),
-            MoversCargo(self.mv)
+            ConfCargo(suffix=suffix)
         ]
         
         return [

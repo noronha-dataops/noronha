@@ -8,7 +8,7 @@ It can be built and/or tagged as a docker image, which is mapped to a build vers
 """
 
 from mongoengine import Document, EmbeddedDocument, DENY
-from mongoengine.fields import StringField, ReferenceField
+from mongoengine.fields import StringField, ListField, ReferenceField
 
 from noronha.common.constants import DBConst, OnBoard
 from noronha.db.main import DocMeta, PrettyDoc
@@ -29,7 +29,7 @@ class Project(DocMeta, PrettyDoc, Document):
     name = StringField(primary_key=True, max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
     repo = StringField(required=True)
-    model = ReferenceField(Model, required=True, reverse_delete_rule=DENY)
+    models = ListField(ReferenceField(Model, reverse_delete_rule=DENY))
     
     class EmbeddedProject(EmbeddedProject):
         

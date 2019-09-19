@@ -35,7 +35,6 @@ def rm(**kwargs):
 @click.command('list')
 @click.option('--filter', '-f', '_filter', help="Query in MongoDB's JSON syntax")
 @click.option('--expand', '-e', default=False, is_flag=True, help="Flag: expand each record's fields")
-@click.option('--model', '-m', help="Only projects that use this model will be listed")
 def _list(_filter, expand, **kwargs):
     
     """List hosted projects"""
@@ -50,7 +49,10 @@ def _list(_filter, expand, **kwargs):
 @click.command()
 @click.option('--name', '-n', required=True, help="Name of the project")
 @click.option('--desc', '-d', default='', help="Free text description")
-@click.option('--model', '-m', help="Name of an existing model (further info: nha model --help)")
+@click.option(
+    '--model', '-m', 'models', multiple=True,
+    help="Name of an existing model. May be specified more than once (further info: nha model --help)"
+)
 @click.option('--repo', '-r', '--repository', 'repo',
               help="""The project's repository. Syntaxes supported: \n"""
                    """local://<path>/<to>/<local>/<directory>\n"""
@@ -70,7 +72,10 @@ def new(**kwargs):
     help="Name of the project you want to update (default: current working project)"
 )
 @click.option('--desc', '-d', help="Free text description")
-@click.option('--model', '-m', help="Name of an existing model (further info: nha model --help)")
+@click.option(
+    '--model', '-m', 'models', multiple=True,
+    help="Name of an existing model. May be specified more than once (further info: nha model --help)"
+)
 @click.option('--repo', '-r',
               help="""The project's repository. Syntaxes supported: \n"""
                    """local://<path>/<to>/<local>/<directory>\n"""
