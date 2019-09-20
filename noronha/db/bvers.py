@@ -11,11 +11,16 @@ from mongoengine import signals
 from mongoengine.fields import StringField, DateTimeField, ReferenceField
 
 from noronha.common.constants import DBConst, OnBoard
-from noronha.db.main import DocMeta, PrettyDoc
+from noronha.db.main import SmartDoc
 from noronha.db.proj import Project
 
 
-class EmbeddedBuildVersion(DocMeta, PrettyDoc, EmbeddedDocument):
+class _BuildVersion(SmartDoc):
+    
+    _PK_FIELDS = ['proj.name', 'tag']
+
+
+class EmbeddedBuildVersion(_BuildVersion, EmbeddedDocument):
     
     tag = StringField(max_length=DBConst.MAX_NAME_LEN)
     docker_id = StringField()
@@ -23,11 +28,10 @@ class EmbeddedBuildVersion(DocMeta, PrettyDoc, EmbeddedDocument):
     built_at = DateTimeField()
 
 
-class BuildVersion(DocMeta, PrettyDoc, Document):
+class BuildVersion(_BuildVersion, Document):
     
-    _file_name = OnBoard.Meta.BVERS  # used when a document of this type is dumped to a file
-    
-    _id = StringField(primary_key=True)  # hash from make_id
+    _FILE_NAME = OnBoard.Meta.BVERS
+    _EMBEDDED_SCHEMA = EmbeddedBuildVersion
     
     tag = StringField(max_length=DBConst.MAX_NAME_LEN)
     proj = ReferenceField(Project, required=True, reverse_delete_rule=CASCADE)
@@ -35,22 +39,12 @@ class BuildVersion(DocMeta, PrettyDoc, Document):
     git_version = StringField()
     built_at = DateTimeField(required=True)
     
-    def _make_id(self):
-        
-        return dict(
-            tag=self.tag,
-            proj=self.proj.name
-        )
-    
-    class EmbeddedBuildVersion(EmbeddedBuildVersion):
-        
-        pass
-    
     @classmethod
     def pre_delete(cls, sender, document, **kwargs):
         
         from noronha.bay.shipyard import DockerTagger  # lazy import
         
+        document.clean()
         DockerTagger(target_tag=document.tag, target_name=document.proj.name).untag()
 
 

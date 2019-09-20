@@ -5,7 +5,7 @@ from typing import Type
 from mongoengine import Document
 
 from noronha.api.utils import ProjResolver, DefaultValidation
-from noronha.db.main import PrettyDoc
+from noronha.db.main import SmartDoc
 from noronha.db.proj import Project
 from noronha.common.annotations import Documented, Interactive, Projected, Scoped, Validated, validate
 from noronha.common.errors import NhaAPIError
@@ -14,7 +14,7 @@ from noronha.common.logging import LOG
 
 class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     
-    doc: (Type[PrettyDoc], Type[Document]) = None
+    doc: (Type[SmartDoc], Type[Document]) = None
     proj: Project = None
     valid = DefaultValidation
     
@@ -62,7 +62,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     
     def info(self, **kwargs):
         
-        return self.doc().find_one(**kwargs).expanded()
+        return self.doc().find_one(**kwargs).pretty()
     
     def rm(self, **kwargs):
         

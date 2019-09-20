@@ -11,7 +11,7 @@ from typing import List
 
 from noronha.bay.barrel import Barrel, DatasetBarrel, MoversBarrel
 from noronha.db.ds import Dataset
-from noronha.db.main import PrettyDoc
+from noronha.db.main import SmartDoc
 from noronha.db.movers import ModelVersion
 from noronha.common.conf import AllConf
 from noronha.common.constants import DateFmt, OnBoard, Paths, Config, DockerConst
@@ -216,7 +216,7 @@ class ConfCargo(Cargo):
 
 class MetaCargo(Cargo):
     
-    def __init__(self, suffix: str, docs: List[PrettyDoc]):
+    def __init__(self, suffix: str, docs: List[SmartDoc]):
         
         super().__init__(
             name='metadata-{}'.format(suffix),

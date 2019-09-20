@@ -3,7 +3,7 @@
 from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import *
 
-from noronha.db.main import DocMeta, PrettyDoc
+from noronha.db.main import SmartDoc
 from noronha.db.utils import FileDoc
 from noronha.common.constants import DBConst
 
@@ -18,7 +18,7 @@ class DatasetFile(FileDoc):
     pass
 
 
-class EmbeddedModel(DocMeta, PrettyDoc, EmbeddedDocument):
+class EmbeddedModel(SmartDoc, EmbeddedDocument):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN)
@@ -26,13 +26,11 @@ class EmbeddedModel(DocMeta, PrettyDoc, EmbeddedDocument):
     data_files = EmbeddedDocumentListField(DatasetFile, default=[])
 
 
-class Model(DocMeta, PrettyDoc, Document):
+class Model(SmartDoc, Document):
     
-    name = StringField(primary_key=True, max_length=DBConst.MAX_NAME_LEN)
+    _EMBEDDED_SCHEMA = EmbeddedModel
+    
+    name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN)
     model_files = EmbeddedDocumentListField(ModelFile, default=[])
     data_files = EmbeddedDocumentListField(DatasetFile, default=[])
-    
-    class EmbeddedModel(EmbeddedModel):
-        
-        pass

@@ -11,26 +11,23 @@ from mongoengine import Document, EmbeddedDocument, DENY
 from mongoengine.fields import StringField, ListField, ReferenceField
 
 from noronha.common.constants import DBConst, OnBoard
-from noronha.db.main import DocMeta, PrettyDoc
+from noronha.db.main import SmartDoc
 from noronha.db.model import Model
 
 
-class EmbeddedProject(DocMeta, PrettyDoc, EmbeddedDocument):
+class EmbeddedProject(SmartDoc, EmbeddedDocument):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
     repo = StringField()
 
 
-class Project(DocMeta, PrettyDoc, Document):
+class Project(SmartDoc, Document):
     
-    _file_name = OnBoard.Meta.PROJ  # used when a document of this type is dumped to a file
+    _FILE_NAME = OnBoard.Meta.PROJ
+    _EMBEDDED_SCHEMA = EmbeddedProject
     
-    name = StringField(primary_key=True, max_length=DBConst.MAX_NAME_LEN)
+    name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
     repo = StringField(required=True)
     models = ListField(ReferenceField(Model, reverse_delete_rule=DENY))
-    
-    class EmbeddedProject(EmbeddedProject):
-        
-        pass

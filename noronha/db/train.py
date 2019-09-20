@@ -4,7 +4,7 @@ from mongoengine import Document, EmbeddedDocument, CASCADE
 from mongoengine.fields import *
 
 from noronha.db.bvers import EmbeddedBuildVersion
-from noronha.db.main import DocMeta, PrettyDoc
+from noronha.db.main import SmartDoc
 from noronha.db.proj import Project, EmbeddedProject
 from noronha.db.utils import TaskDoc
 from noronha.common.constants import DBConst, OnBoard
@@ -15,7 +15,12 @@ class TrainTask(TaskDoc):
     pass
 
 
-class EmbeddedTraining(DocMeta, PrettyDoc, EmbeddedDocument):
+class _Training(SmartDoc):
+    
+    _PK_FIELDS = ['proj.name', 'name']
+
+
+class EmbeddedTraining(_Training, EmbeddedDocument):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     proj = EmbeddedDocumentField(EmbeddedProject, default=None)
@@ -24,11 +29,10 @@ class EmbeddedTraining(DocMeta, PrettyDoc, EmbeddedDocument):
     details = DictField(default={})
 
 
-class Training(DocMeta, PrettyDoc, Document):
+class Training(_Training, Document):
     
-    _file_name = OnBoard.Meta.TRAIN  # used when a document of this type is dumped to a file
-    
-    _id = StringField(primary_key=True)  # hash from make_id
+    _FILE_NAME = OnBoard.Meta.TRAIN
+    _EMBEDDED_SCHEMA = EmbeddedTraining
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     proj = ReferenceField(Project, required=True, reverse_delete_rule=CASCADE)
@@ -36,14 +40,3 @@ class Training(DocMeta, PrettyDoc, Document):
     notebook = StringField(required=True)
     task = EmbeddedDocumentField(TrainTask, default=TrainTask())
     details = DictField(default={})
-    
-    def _make_id(self):
-        
-        return dict(
-            name=self.name,
-            proj=self.proj.name
-        )
-    
-    class EmbeddedTraining(EmbeddedTraining):
-        
-        pass

@@ -2,13 +2,22 @@
 
 from datetime import datetime
 from mongoengine import EmbeddedDocument
-from mongoengine.fields import *
+from mongoengine.fields import StringField, BooleanField, FloatField, DateTimeField, IntField
 
-from noronha.db.main import DocMeta, PrettyDoc
 from noronha.common.constants import WarehouseConst, DBConst, Task
+from noronha.db.main import SmartDoc
 
 
-class FileDoc(DocMeta, PrettyDoc, EmbeddedDocument):
+class SimpleDoc(SmartDoc, EmbeddedDocument):
+    
+    def show(self):
+        
+        pretty = self.pretty()
+        pretty.pop('modified', None)
+        return pretty
+
+
+class FileDoc(SimpleDoc):
     
     name = StringField(max_length=WarehouseConst.MAX_FILE_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN)
@@ -16,7 +25,7 @@ class FileDoc(DocMeta, PrettyDoc, EmbeddedDocument):
     max_mb = IntField(default=WarehouseConst.MAX_FILE_SIZE_MB)
 
 
-class TaskDoc(DocMeta, PrettyDoc, EmbeddedDocument):
+class TaskDoc(SimpleDoc):
     
     state = StringField(default=Task.State.WAITING)
     progress = FloatField(min_value=0.0, max_value=1.0, default=0.0)

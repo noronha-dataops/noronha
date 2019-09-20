@@ -23,7 +23,7 @@ class ProjectAPI(NoronhaAPI):
     @projected
     def info(self):
         
-        return self.proj.expanded()
+        return self.proj.pretty()
     
     @projected
     def rm(self):

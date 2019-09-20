@@ -148,6 +148,7 @@ class Regex(object):
     ALPHANUM = re.compile(r'^[a-zA-Z0-9]*$')
     DNS_SPECIAL = re.compile(r'[\-\.]')
     CMD_DELIMITER = re.compile(r'\s+&&\s+|;')
+    YAML_BREAK = re.compile(r'\n[^- ]')
 
 
 class RepoConst(object):
@@ -199,12 +200,12 @@ class OnBoard(object):
         
         """Nomenclature for metadata files"""
         
-        PROJ = 'proj.{}'.format(Extension.META)  # project
-        BVERS = 'bvers.{}'.format(Extension.META)  # build version
-        MOVERS = 'movers.{}'.format(Extension.META)  # model version
-        TRAIN = 'train.{}'.format(Extension.META)  # training
-        DEPL = 'depl.{}'.format(Extension.META)  # deployment
-        DS = 'ds.{}'.format(Extension.META)  # dataset
+        PROJ = 'proj.{}'.format(Extension.JSON)  # project
+        BVERS = 'bvers.{}'.format(Extension.JSON)  # build version
+        MOVERS = 'movers.{}'.format(Extension.JSON)  # model version
+        TRAIN = 'train.{}'.format(Extension.JSON)  # training
+        DEPL = 'depl.{}'.format(Extension.JSON)  # deployment
+        DS = 'ds.{}'.format(Extension.JSON)  # dataset
 
 
 class Config(object):

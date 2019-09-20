@@ -2,7 +2,6 @@
 
 import logging
 import pathlib
-from collections import OrderedDict
 from datetime import datetime
 from kaptan import Kaptan
 from logging.handlers import RotatingFileHandler
@@ -11,7 +10,7 @@ from noronha.bay.compass import LoggerCompass
 from noronha.common.annotations import Configured, Lazy, ready
 from noronha.common.conf import LoggerConf
 from noronha.common.constants import DateFmt, LoggerConst
-from noronha.common.utils import assert_json, assert_str, StructCleaner
+from noronha.common.utils import assert_json, assert_str, StructCleaner, order_yaml
 
 
 _DEFAULT_NAME = 'nha'
@@ -139,9 +138,11 @@ class Logger(Configured, Lazy):
         elif hasattr(msg, 'pretty'):
             msg = getattr(msg, 'pretty')()
         
-        if isinstance(msg, (dict, OrderedDict)):
-            return Kaptan().import_config(self.cleaner(msg))\
-                .export(handler=LoggerConst.PRETTY_FMT, explicit_start=True)
+        if isinstance(msg, dict):
+            clean_dyct = self.cleaner(msg)
+            kaptan = Kaptan().import_config(clean_dyct)
+            yaml = kaptan.export(handler=LoggerConst.PRETTY_FMT, explicit_start=True)
+            return order_yaml(yaml)
         
         msg = assert_str(msg, allow_none=True)
         

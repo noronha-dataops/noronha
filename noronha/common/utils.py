@@ -8,7 +8,7 @@ from datetime import datetime
 from subprocess import Popen, PIPE
 
 from noronha.common import EnvVar
-from noronha.common.constants import Encoding, DateFmt
+from noronha.common.constants import Encoding, DateFmt, Regex
 
 
 class StructCleaner(object):
@@ -50,6 +50,14 @@ class StructCleaner(object):
                 out.append(v)
         
         return out
+
+
+def order_yaml(yaml: str):
+    
+    index = [0] + [i.start() for i in Regex.YAML_BREAK.finditer(yaml)] + [None]
+    parts = [yaml[index[i]:index[i+1]].strip() for i in range(len(index)-1)]
+    pairs = sorted([(len(p), p) for p in parts], key=lambda p: p[0])
+    return '\n'.join([p[1] for p in pairs])
 
 
 def kv_list_to_dict(x: list):
