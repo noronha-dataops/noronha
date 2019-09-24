@@ -5,21 +5,17 @@ from mongoengine import EmbeddedDocument
 from mongoengine.fields import StringField, BooleanField, FloatField, DateTimeField, IntField
 
 from noronha.common.constants import WarehouseConst, DBConst, Task
-from noronha.db.main import SmartDoc
+from noronha.db.main import PrettyDoc
 
 
-class SimpleDoc(SmartDoc, EmbeddedDocument):
+class SimpleDoc(PrettyDoc, EmbeddedDocument):
     
-    def show(self):
-        
-        pretty = self.pretty()
-        pretty.pop('modified', None)
-        return pretty
+    pass
 
 
 class FileDoc(SimpleDoc):
     
-    name = StringField(max_length=WarehouseConst.MAX_FILE_NAME_LEN)
+    name = StringField(required=True, max_length=WarehouseConst.MAX_FILE_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN)
     required = BooleanField(default=True)
     max_mb = IntField(default=WarehouseConst.MAX_FILE_SIZE_MB)
@@ -45,5 +41,3 @@ class TaskDoc(SimpleDoc):
         
         if self.start_time is None:
             self.start_time = self.update_time
-        
-        return super().clean()

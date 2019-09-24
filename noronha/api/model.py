@@ -24,7 +24,7 @@ class ModelAPI(NoronhaAPI):
         
         return super().lyst(_filter=_filter, **kwargs)
     
-    @validate(name=valid.dns_safe, model_files=valid.list_of_dicts, data_files=valid.list_of_dicts_or_none)
+    @validate(name=valid.dns_safe, model_files=valid.list_of_dicts_or_none, data_files=valid.list_of_dicts_or_none)
     def new(self, **kwargs):
         
         return super().new(**kwargs)

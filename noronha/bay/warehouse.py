@@ -11,6 +11,7 @@ Objects handled:
 import os
 from abc import ABC, abstractmethod
 from nexuscli import nexus_client
+from artifactory import ArtifactoryPath
 from typing import Type
 
 from noronha.bay.compass import WarehouseCompass, ArtifCompass, NexusCompass
@@ -69,47 +70,100 @@ class Warehouse(ABC, Configured):
         
         pass
 
+    def make_local_file(self, basename, content):
+        work = Workpath.get_tmp()
+        work.deploy_text_file(name=basename, content=content)
+        path_from = work.join(basename)
+        return path_from
+
 
 class ArtifWarehouse(Warehouse):
     
     compass_cls = ArtifCompass
     
     def get_client(self):
-        
-        raise NotImplementedError()  # TODO
-    
+
+        return ArtifactoryPath(os.path.join(self.compass.address, 'artifactory', self.repo),
+                               auth=(self.compass.user, self.compass.pswd),
+                               verify=False)
+
     def assert_repo_exists(self):
-        
-        raise NotImplementedError()  # TODO
-    
-    def format_wh_path(self, path):
-        
-        return os.path.join(
-            self.compass.address,  # http://host:port
-            self.repo,  # example-repo-local or some other pre-configured, existing repo
-            self.section,  # datasets | models | notebooks
-            path  # ds_name/file_name | model_name/version_name | proj_name/path/to/notebook.ipynb
-        )
+
+        assert self.client.exists(), NhaStorageError("""The {} repository does not exist""".format(self.repo))
+
+    def format_artif_path(self, path):
+
+        return self.client.joinpath(self.section, path)
     
     def upload(self, path_to, path_from=None, content=None):
-        
-        raise NotImplementedError()  # TODO
+
+        work = None
+
+        try:
+            if path_from is None:
+                work = Workpath.get_tmp()
+                file_name = os.path.basename(path_to)
+                work.deploy_text_file(name=file_name, content=content)
+                path_from = work.join(file_name)
+                # path_from = self.make_local_file(os.path.basename(path_to), content)
+                
+            dest_path = self.format_artif_path(path_to)
+            dest_path.deploy_file(path_from)
+        except Exception as e:
+            raise NhaStorageError("Upload failed. Check if the artifact´s path is correct") from e
+        finally:
+            if work is not None:
+                work.dispose()
     
     def download(self, path_from, path_to):
         
-        raise NotImplementedError()  # TODO
-    
-    def delete(self, path_to_file):
+        uri = self.format_artif_path(path_from)
         
-        raise NotImplementedError()  # TODO
+        try:
+            with uri.open() as src:
+                with open(path_to, "wb") as out:
+                    out.write(src.read())
+        except Exception as e:
+            raise NhaStorageError("Download failed. Check if the remote artifact exists in the repository") from e
+
+    def delete(self, path_to_file):
+
+        uri = self.format_artif_path(path_to_file)
+
+        if not uri.is_dir():
+            try:
+                uri.unlink()
+            except FileNotFoundError as e:
+                raise NhaStorageError("Delete failed. Remote artifact does not exists in the repository") from e
+        else:
+            raise NhaStorageError("Delete failed. Cannot remove directory")
     
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
-        raise NotImplementedError()  # TODO
+        if on_board_perspective:
+            compass = self.compass_cls(on_board_perspective=True)
+        else:
+            compass = self.compass
+
+        curl = "curl {security} -O -u {user}:{pswd} {url}".format(
+            security='' if compass.check_certificate else '--insecure',
+            user=compass.user,
+            pswd=compass.pswd,
+            url=self.format_artif_path(path_from)
+        )
+
+        move = "mkdir -p {dir} && mv {file} {path_to}".format(
+            dir=os.path.dirname(path_to),
+            file=os.path.basename(path_to),
+            path_to=os.path.dirname(path_to)
+        )
+
+        return ' && '.join([curl, move])
     
     def list_dir(self, path):
-        
-        raise NotImplementedError()  # TODO
+
+        path = self.format_artif_path(path)
+        return [x.name for x in path.iterdir() if not x.is_dir()]
 
 
 class NexusWarehouse(Warehouse):
@@ -150,7 +204,8 @@ class NexusWarehouse(Warehouse):
                 file_name = os.path.basename(path_to)
                 work.deploy_text_file(name=file_name, content=content)
                 path_from = work.join(file_name)
-            
+                # path_from = self.make_local_file(os.path.basename(path_to), content)
+
             dest_path = os.path.join(self.repo, self.section, path_to)
             self.client.upload(path_from, dest_path)
         except Exception as e:
@@ -170,7 +225,7 @@ class NexusWarehouse(Warehouse):
     
     def delete(self, path_to_file, ignore=False):
         
-        nexus_path = os.path.join(self.repo, self.section, path_to_file)
+        nexus_path = os.path.join(self.repo, self.section, path_to_file)  # TODO use format_nexus_path function
         del_count = self.client.delete(nexus_path)
         
         if del_count == 0:

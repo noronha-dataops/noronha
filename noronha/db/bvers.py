@@ -8,11 +8,11 @@ including all metadata related to that particular build.
 
 from mongoengine import Document, EmbeddedDocument, CASCADE
 from mongoengine import signals
-from mongoengine.fields import StringField, DateTimeField, ReferenceField
+from mongoengine.fields import StringField, DateTimeField, ReferenceField, EmbeddedDocumentField
 
 from noronha.common.constants import DBConst, OnBoard
 from noronha.db.main import SmartDoc
-from noronha.db.proj import Project
+from noronha.db.proj import Project, EmbeddedProject
 
 
 class _BuildVersion(SmartDoc):
@@ -23,6 +23,7 @@ class _BuildVersion(SmartDoc):
 class EmbeddedBuildVersion(_BuildVersion, EmbeddedDocument):
     
     tag = StringField(max_length=DBConst.MAX_NAME_LEN)
+    proj = EmbeddedDocumentField(EmbeddedProject, default=None)
     docker_id = StringField()
     git_version = StringField()
     built_at = DateTimeField()

@@ -19,9 +19,9 @@ class NotebookRunner(object):
     def __init__(self, debug=False):
         
         self.debug = debug
-        self.proj = Project().load()
-        self.train = Training().load(ignore=True)
-        self.depl = Deployment().load(ignore=True)
+        self.proj = Project.load()
+        self.train = Training.load(ignore=True)
+        self.depl = Deployment.load(ignore=True)
         
         if self.debug:
             LOG.debug_mode = True

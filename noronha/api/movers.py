@@ -40,7 +40,7 @@ class ModelVersionAPI(NoronhaAPI):
             if self.proj is None:
                 raise NhaAPIError("Cannot filter by training name if no working project is set")
             else:
-                train = Training().find_one(name=train, proj=self.proj.name)
+                train = Training.find_one(name=train, proj=self.proj.name)
                 _filter['train.name'] = train.name
                 _filter['train.bvers.proj.name'] = train.bvers.proj.name
         
@@ -48,7 +48,7 @@ class ModelVersionAPI(NoronhaAPI):
             if model is None:
                 raise NhaAPIError("Cannot filter by dataset name if no model was specified")
             else:
-                ds = Dataset().find_one(name=ds, model=model)
+                ds = Dataset.find_one(name=ds, model=model)
                 _filter['ds.name'] = ds.name
                 _filter['ds.model'] = ds.model.name
         
@@ -61,22 +61,22 @@ class ModelVersionAPI(NoronhaAPI):
         if path is None:
             raise NhaAPIError("Cannot publish model version if path to model files is not provided")
         
-        model = Model().find_one(name=model)
+        model = Model.find_one(name=model)
         
         if ds is not None:
-            kwargs['ds'] = Dataset().find_one(name=ds, model=model).to_embedded()
+            kwargs['ds'] = Dataset.find_one(name=ds, model=model).to_embedded()
         
         if train is not None:
             if self.proj is None:
                 raise NhaAPIError("Cannot determine parent training if no working project is set")
             else:
-                kwargs['train'] = Training().find_one(name=train, proj=self.proj.name).to_embedded()
+                kwargs['train'] = Training.find_one(name=train, proj=self.proj.name).to_embedded()
         
         if pretrained is not None:
-            kwargs['pretrained'] = ModelVersion.from_reference(pretrained).to_embedded()
+            kwargs['pretrained'] = ModelVersion.find_by_pk(pretrained).to_embedded()
             LOG.info("Model version used pre-trained model '{}'".format(pretrained))
         
-        mv = super().new(
+        mv: ModelVersion = super().new(
             name=name,
             model=model,
             **kwargs,
@@ -88,6 +88,9 @@ class ModelVersionAPI(NoronhaAPI):
         try:
             barrel = MoversBarrel(mv)
             barrel.store_from_path(path)
+            
+            if barrel.schema is None:
+                LOG.warn("Publishing model version '{}' without a strict file definition".format(mv.get_pk()))
         except Exception as e:
             LOG.error(e)
             LOG.warn("Reverting creation of model version '{}'".format(mv.name))

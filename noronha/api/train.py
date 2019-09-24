@@ -65,7 +65,7 @@ class TrainingAPI(NoronhaAPI):
         bv = BuildVersion().find_one_or_none(tag=tag, proj=self.proj)
         
         if pretrained is not None:
-            mv = ModelVersion.from_reference(pretrained)
+            mv = ModelVersion.find_by_pk(pretrained)
             LOG.info("Pre-trained model version '{}' will be available in this training".format(pretrained))
         else:
             mv = None

@@ -21,11 +21,13 @@ class NoronhaEngine(NBConvertEngine):
             
             if callable(cls.progress_callback):
                 pbar = nb_man.pbar
-                prog = pbar.n/pbar.total
                 
-                if prog > curr_prog:
-                    curr_prog = prog
-                    cls.progress_callback(prog)
+                if pbar is not None:
+                    prog = pbar.n/pbar.total
+                
+                    if prog > curr_prog:
+                        curr_prog = prog
+                        cls.progress_callback(prog)
             
             time.sleep(1)
     
