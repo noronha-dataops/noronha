@@ -3,7 +3,7 @@
 """Documents related to MoVers (short for Model Versions)"""
 
 from mongoengine import Document, EmbeddedDocument, CASCADE
-from mongoengine.fields import StringField, DictField, ReferenceField, EmbeddedDocumentField
+from mongoengine.fields import StringField, DictField, ReferenceField, EmbeddedDocumentField, BooleanField
 
 from noronha.common.constants import DBConst, OnBoard
 from noronha.db.main import SmartDoc
@@ -23,6 +23,7 @@ class EmbeddedModelVersion(_ModelVersion, EmbeddedDocument):
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
     train = EmbeddedDocumentField(EmbeddedTraining, default=None)
     ds = EmbeddedDocumentField(EmbeddedDataset, default=None)
+    compressed = BooleanField(default=False)
     details = DictField(default={})
 
 
@@ -35,5 +36,6 @@ class ModelVersion(_ModelVersion, Document):
     model = ReferenceField(Model, required=True, reverse_delete_rule=CASCADE)
     train = EmbeddedDocumentField(EmbeddedTraining, default=None)
     ds = EmbeddedDocumentField(EmbeddedDataset, default=None)
+    compressed = BooleanField(default=False)
     details = DictField(default={})
     pretrained = EmbeddedDocumentField(EmbeddedModelVersion, default=None)

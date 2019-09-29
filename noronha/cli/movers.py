@@ -69,6 +69,10 @@ def _list(_filter, expand, **kwargs):
     """Reference to another model version that was used as a pre-trained model for training this one. """
     """Syntax: <model_name>:<model_version>. Example: word2vec:en-us-v1"""
 )
+@click.option(
+    '--compress', '-c', 'compressed', default=False, is_flag=True,
+    help="Flag: compress all model files to a single tar.gz archive"
+)
 def new(details, path=None, **kwargs):
     
     """Record a new model version in the framework"""
@@ -94,6 +98,15 @@ def new(details, path=None, **kwargs):
 @click.option('--dataset', 'ds', help="Name of the dataset that trained this model version")
 @click.option('--train', help="Name of the training that produced this model version")
 @click.option('--proj', help="To be used along with 'train': name of the project to which this training belongs")
+@click.option(
+    '--pretrained', help=
+    """Reference to another model version that was used as a pre-trained model for training this one. """
+    """Syntax: <model_name>:<model_version>. Example: word2vec:en-us-v1"""
+)
+@click.option(
+    '--compress', '-c', 'compressed', default=False, is_flag=True,
+    help="Flag: compress all model files to a single tar.gz archive"
+)
 def update(details, path, **kwargs):
     
     """Update a model version's details or files"""

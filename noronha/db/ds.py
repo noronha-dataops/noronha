@@ -18,6 +18,7 @@ class EmbeddedDataset(_Dataset, EmbeddedDocument):
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
     stored = BooleanField(default=True)
+    compressed = BooleanField(default=False)
     details = DictField(default={})
 
 
@@ -29,4 +30,5 @@ class Dataset(_Dataset, Document):
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     model = ReferenceField(Model, required=True, reverse_delete_rule=CASCADE)
     stored = BooleanField(default=True)
+    compressed = BooleanField(default=False)
     details = DictField(default={})

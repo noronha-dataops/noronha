@@ -6,6 +6,7 @@ import os
 from collections import OrderedDict
 from datetime import datetime
 from subprocess import Popen, PIPE
+from typing import List
 
 from noronha.common import EnvVar
 from noronha.common.constants import Encoding, DateFmt, Regex
@@ -58,6 +59,13 @@ def order_yaml(yaml: str):
     parts = [yaml[index[i]:index[i+1]].strip() for i in range(len(index)-1)]
     pairs = sorted([(len(p), p) for p in parts], key=lambda p: p[0])
     return '\n'.join([p[1] for p in pairs])
+
+
+def cape_list(lyst: List[str], max_chars: int = 100):
+    
+    lyst = str(lyst)[1:-1]
+    suffix = '...' if len(lyst) > max_chars else ''
+    return lyst[:max_chars] + suffix
 
 
 def kv_list_to_dict(x: list):

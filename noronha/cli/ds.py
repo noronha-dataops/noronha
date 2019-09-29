@@ -61,6 +61,10 @@ def _list(_filter, expand, **kwargs):
     '--path', '-p',
     help="Path to the directory that contains the dataset files (default: current working directory)"
 )
+@click.option(
+    '--compress', '-c', 'compressed', default=False, is_flag=True,
+    help="Flag: compress all dataset files to a single tar.gz archive"
+)
 def new(details, path=None, **kwargs):
     
     """Add a new dataset"""
@@ -82,6 +86,10 @@ def new(details, path=None, **kwargs):
 @click.option(
     '--path', '-p',
     help="Path to the directory that contains the dataset files (default: current working directory)"
+)
+@click.option(
+    '--compress', '-c', 'compressed', default=False, is_flag=True,
+    help="Flag: compress all dataset files to a single tar.gz archive"
 )
 def update(details, path, **kwargs):
     

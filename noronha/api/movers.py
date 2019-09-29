@@ -54,6 +54,16 @@ class ModelVersionAPI(NoronhaAPI):
         
         return super().lyst(_filter=_filter, **kwargs)
     
+    def _store(self, mv: ModelVersion, path: str = None):
+        
+        barrel = MoversBarrel(mv)
+        
+        if barrel.schema is None:
+            LOG.warn("Publishing model version '{}' without a strict file definition".format(mv.get_pk()))
+        
+        barrel.store_from_path(path)
+        return barrel
+    
     @validate(name=valid.dns_safe_or_none, details=(dict, None))
     def new(self, name: str = None, model: str = None, train: str = None, ds: str = None, path: str = None,
             pretrained: str = None, **kwargs):
@@ -86,11 +96,7 @@ class ModelVersionAPI(NoronhaAPI):
         barrel = None
         
         try:
-            barrel = MoversBarrel(mv)
-            barrel.store_from_path(path)
-            
-            if barrel.schema is None:
-                LOG.warn("Publishing model version '{}' without a strict file definition".format(mv.get_pk()))
+            barrel = self._store(mv, path)
         except Exception as e:
             LOG.error(e)
             LOG.warn("Reverting creation of model version '{}'".format(mv.name))
@@ -122,9 +128,7 @@ class ModelVersionAPI(NoronhaAPI):
             update_kwargs=kwargs
         )
         
-        barrel = MoversBarrel(mv)
-        
         if path is not None:
-            barrel.store_from_path(path)
+            self._store(mv, path)
         
         return mv

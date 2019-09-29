@@ -3,12 +3,16 @@
 import os
 import pathlib
 import shutil
+import tarfile
 from abc import ABC, abstractmethod
 from typing import List
 
 from noronha.bay.warehouse import get_warehouse
+from noronha.bay.utils import Workpath
 from noronha.common.constants import WarehouseConst, Extension
 from noronha.common.errors import NhaStorageError
+from noronha.common.logging import LOG
+from noronha.common.utils import cape_list
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion
 from noronha.db.proj import Project
@@ -31,10 +35,12 @@ class FileSpec(FileDoc):
 class Barrel(ABC):
     
     section: str = None
+    subject = None
     
-    def __init__(self, schema: List[FileSpec] = None):
+    def __init__(self, schema: List[FileSpec] = None, compress_to: str = None):
         
         self.warehouse = get_warehouse(section=self.section)
+        self.compressed = None if not compress_to else '{}.tar.gz'.format(compress_to)
         
         if schema is None:
             self.schema = None
@@ -46,10 +52,18 @@ class Barrel(ABC):
         else:
             raise NotImplementedError()
     
+    def _print_files(self, schema: List[FileSpec]):
+        
+        files = [f.name for f in schema]
+        caped = cape_list(files)
+        LOG.info("Files: {}".format(caped))
+    
     def infer_schema_from_dict(self, dyct):
         
         if self.schema is None:
-            return [FileSpec(name=name) for name in dyct.keys()]
+            schema = [FileSpec(name=name) for name in dyct.keys()]
+            self._print_files(schema)
+            return schema
         else:
             return self.schema
     
@@ -61,14 +75,17 @@ class Barrel(ABC):
             if os.path.isdir(path):
                 schema = [FileSpec(name=name) for name in os.listdir(path)]
             else:
-                path = os.path.dirname(path)
                 schema = [FileSpec(name=os.path.basename(path))]
+                path = os.path.dirname(path)
+            self._print_files(schema)
         else:
             schema = self.schema
             
             if os.path.isfile(path):
                 if len(schema) == 1:
                     schema = [FileSpec(name=schema[0].name, alias=os.path.basename(path))]
+                    path = os.path.dirname(path)
+                    LOG.warn("File '{}' will be renamed to '{}'".format(schema[0].alias, schema[0].name))
                 else:
                     n_reqs = len(list(filter(lambda f: f.required, schema)))
                     assert n_reqs == 1, NhaStorageError("Cannot find all required files in path {}".format(path))
@@ -78,29 +95,47 @@ class Barrel(ABC):
     def infer_schema_from_repo(self):
         
         if self.schema is None:
-            return [
+            LOG.warn("Deploying {} without a strict definition of files".format(self.subject))
+            schema = [
                 FileSpec(name=name) for name in
                 self.warehouse.list_dir(self.make_file_path())
             ]
+            self._print_files(schema)
         else:
-            return self.schema
+            schema = self.schema
+        
+        return schema
     
     def store_from_dict(self, dyct: dict = None):
         
-        for file_spec in self.infer_schema_from_dict(dyct):
-            file_content = dyct.get(file_spec.name)
-            
-            if file_content is None:
-                if file_spec.required:
-                    raise NhaStorageError("File '{}' is required".format(file_spec.name))
+        to_compress = []
+        work = None if not self.compressed else Workpath.get_tmp()
+        
+        try:
+            for file_spec in self.infer_schema_from_dict(dyct):
+                file_content = dyct.get(file_spec.name)
+                
+                if file_content is None:
+                    if file_spec.required:
+                        raise NhaStorageError("File '{}' is required".format(file_spec.name))
+                    else:
+                        continue
+                elif self.compressed:
+                    work.deploy_text_file(name=file_spec.name, content=file_content)
+                    to_compress.append(file_spec)
                 else:
-                    continue
-            else:
-                self._store_file(file_spec.name, content=file_content)
+                    self._store_file(file_spec.name, content=file_content)
+            
+            if self.compressed:
+                self._compress_and_store(work, to_compress=to_compress)
+        finally:
+            if work is not None:
+                work.dispose()
     
     def store_from_path(self, path):
         
         path, schema = self.infer_schema_from_path(path)
+        to_compress = []
         
         for file_spec in schema:
             file_path = os.path.join(path, file_spec.alias)
@@ -110,8 +145,13 @@ class Barrel(ABC):
                     raise NhaStorageError("File '{}' not found in path: {}".format(file_spec.name, path))
                 else:
                     continue
+            elif self.compressed:
+                to_compress.append(file_spec)
             else:
                 self._store_file(file_spec.name, path_from=file_path)
+        
+        if self.compressed:
+            self._compress_and_store(path, to_compress=to_compress)
     
     def move(self, path_from, path_to):
         
@@ -142,7 +182,7 @@ class Barrel(ABC):
         
         purged = [
             self.warehouse.delete(self.make_file_path(file_spec.name), ignore=ignore)
-            for file_spec in self.schema
+            for file_spec in self.infer_schema_from_repo()
         ]
         
         if True not in purged:
@@ -152,24 +192,69 @@ class Barrel(ABC):
         else:
             return 'partial'
     
+    def _compress_and_store(self, path: str, to_compress: List[FileSpec] = None):
+        
+        work = Workpath.get_tmp()
+        
+        try:
+            target = work.join(self.compressed)
+            
+            with tarfile.open(target, 'w:gz') as f:
+                for file_spec in to_compress:
+                    file_path = os.path.join(path, file_spec.alias)
+                    f.add(file_path, arcname=file_spec.name)
+            
+            self._store_file(self.compressed, path_from=target)
+        finally:
+            work.dispose()
+    
+    def _get_decompressable(self, path: str):
+        
+        if self.compressed:
+            return 'tar -xzf {tgz_file} {path} && rm -f {tgz_file}'.format(
+                tgz_file=self.compressed,
+                path=path
+            )
+    
+    def _decompress(self, path: str):
+        
+        if self.compressed:
+            target_file = os.path.join(path, self.compressed)
+            
+            with tarfile.open(target_file, 'r:gz') as f:
+                f.extractall(path)
+            
+            os.remove(target_file)
+    
+    def _verify_schema(self, path: str):
+        
+        if self.schema:
+            for file_spec in self.schema:
+                assert os.path.isfile(os.path.join(path, file_spec.name)),\
+                    NhaStorageError("Required file '{}' is missing from {}".format(file_spec.name, self.subject))
+    
     def deploy(self, path_to):
         
-        deployed = [
+        if self.compressed:
+            download_schema = [FileSpec(name=self.compressed)]
+        else:
+            download_schema = self.infer_schema_from_repo()
+        
+        for file_spec in download_schema:
             self.warehouse.download(
                 path_from=self.make_file_path(file_spec.name),
                 path_to=os.path.join(path_to, file_spec.name)
             )
-            for file_spec in self.infer_schema_from_repo()
-        ]
         
-        if True not in deployed:
-            return 'not_found'
-        elif False not in deployed:
-            return 'deployed'
-        else:
-            return 'partial'
+        self._decompress(path_to)
+        self._verify_schema(path_to)
     
     def get_deployables(self, path_to, on_board_perspective=True):
+        
+        if self.compressed:
+            download_schema = [FileSpec(name=self.compressed)]
+        else:
+            download_schema = self.infer_schema_from_repo()
         
         return [
             self.warehouse.get_download_cmd(
@@ -177,8 +262,8 @@ class Barrel(ABC):
                 path_to=os.path.join(path_to, file_spec.name),
                 on_board_perspective=on_board_perspective
             )
-            for file_spec in self.infer_schema_from_repo()
-        ]
+            for file_spec in download_schema
+        ] + [self._get_decompressable(path_to)]
     
     @abstractmethod
     def make_file_path(self, file_name: str = None):
@@ -194,7 +279,11 @@ class DatasetBarrel(Barrel):
         
         self.ds_name = ds.name
         self.model_name = ds.model.name
-        super().__init__(schema=ds.model.data_files)
+        self.subject = "dataset '{}'".format(ds.show())
+        super().__init__(
+            schema=ds.model.data_files,
+            compress_to=None if not ds.compressed else ds.name
+        )
     
     def make_file_path(self, file_name: str = None):
         
@@ -209,7 +298,11 @@ class MoversBarrel(Barrel):
         
         self.mv_name = mv.name
         self.model_name = mv.model.name
-        super().__init__(schema=mv.model.model_files)
+        self.subject = "model version '{}'".format(mv.show())
+        super().__init__(
+            schema=mv.model.model_files,
+            compress_to=None if not mv.compressed else mv.name
+        )
     
     def make_file_path(self, file_name: str = None):
         
@@ -224,6 +317,7 @@ class NotebookBarrel(Barrel):
         
         self.proj_name = proj.name
         self.notebook = notebook.rstrip(Extension.IPYNB).rstrip('.')
+        self.subject = "notebook '{}'".format(self.notebook)
         super().__init__(
             schema=[
                 FileSpec(name=file_name, required=True)

@@ -56,7 +56,7 @@ class Warehouse(ABC, Configured):
         pass
     
     @abstractmethod
-    def delete(self, path_to_file):
+    def delete(self, path_to_file, ignore=False):
         
         pass
     
@@ -126,8 +126,9 @@ class ArtifWarehouse(Warehouse):
         except Exception as e:
             raise NhaStorageError("Download failed. Check if the remote artifact exists in the repository") from e
 
-    def delete(self, path_to_file):
-
+    def delete(self, path_to_file, ignore=False):
+        
+        # TODO: @Guilherme: consider 'ignore' flag as in NexusWarehouse
         uri = self.format_artif_path(path_to_file)
 
         if not uri.is_dir():

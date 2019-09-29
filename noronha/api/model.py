@@ -27,6 +27,12 @@ class ModelAPI(NoronhaAPI):
     @validate(name=valid.dns_safe, model_files=valid.list_of_dicts_or_none, data_files=valid.list_of_dicts_or_none)
     def new(self, **kwargs):
         
+        if not kwargs.get('model_files'):
+            LOG.warn("Creating model without a strict model persistence definition")
+        
+        if not kwargs.get('data_files'):
+            LOG.warn("Creating model without a strict dataset files definition")
+        
         return super().new(**kwargs)
     
     @validate(model_files=valid.list_of_dicts_or_none, data_files=valid.list_of_dicts_or_none)

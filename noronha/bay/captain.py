@@ -190,13 +190,13 @@ class SwarmCaptain(Captain):
             self.docker_api.remove_volume(name=cargo.full_name, force=True)
             return True
         except DockerAPIError as e:
-            if ignore:
-                LOG.error(e)
-                return False
-            elif retry:
+            if retry:
                 LOG.info("Waiting {} seconds before removing volume '{}'".format(self.timeout, cargo.full_name))
                 time.sleep(self.timeout)
                 return self.rm_vol(cargo, retry=False)
+            elif ignore:
+                LOG.error(e)
+                return False
             else:
                 raise e
     

@@ -62,18 +62,6 @@ class BinaryContent(Content):
             f.write(self.file_content)
 
 
-class RemoteContent(Content):
-    
-    def __init__(self, file_name: str, file_url: str):
-        
-        super().__init__(file_name=file_name)
-        self.file_url = file_url
-    
-    def deploy(self, path):
-        
-        pass  # TODO: download from file_url to os.path.join(path, self.file_name)
-
-
 class BarrelContent(Content):
     
     def __init__(self, barrel: Barrel):
@@ -92,7 +80,13 @@ class BarrelContent(Content):
     @property
     def estimate_mb(self):
         
-        return sum(fyle.max_mb or 10 for fyle in self.barrel.schema)
+        # TODO:
+        #  implement get_estimate_mb in barrel
+        #  infer by listing of repo. if compressed, multiply by 4
+        if self.barrel.schema is None:
+            return 1024
+        else:
+            return sum(fyle.max_mb or 10 for fyle in self.barrel.schema)
 
 
 class Cargo(object):
@@ -236,11 +230,6 @@ class HeavyCargo(Cargo):
         content = BarrelContent(barrel)
         super().__init__(require_mb=content.estimate_mb, **kwargs)
         self.contents: List[BarrelContent] = [content]
-    
-    # def deploy(self, path):
-    #
-    #     raise MisusageError(
-    #         "HeavyCargo should be deployed indirectly with the commands provided by the method 'get_deployables'")
     
     def get_deployables(self, path):
         

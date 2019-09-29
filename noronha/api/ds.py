@@ -39,6 +39,28 @@ class DatasetAPI(NoronhaAPI):
         
         return super().lyst(_filter=_filter, **kwargs)
     
+    def _store(self, ds: Dataset, path: str = None, files: dict = None):
+        
+        if path or files:  # either is not None
+            barrel = DatasetBarrel(ds)
+            
+            if barrel.schema is None:
+                LOG.warn("Publishing dataset '{}' without a strict file definition".format(ds.get_pk()))
+            
+            if path:
+                barrel.store_from_path(path)
+            elif files:
+                barrel.store_from_dict(files)
+            else:
+                raise NotImplementedError()
+            
+            return barrel
+        else:
+            LOG.warn("Dataset '{}' for model '{}' is not being stored by the framework"
+                     .format(ds.name, ds.model.name))
+            ds.update(stored=False)
+            return None
+    
     @validate(name=valid.dns_safe_or_none, files=(dict, None), details=(dict, None))
     def new(self, name: str = None, model: str = None, path: str = None, files: dict = None, **kwargs):
         
@@ -52,16 +74,7 @@ class DatasetAPI(NoronhaAPI):
         )
         
         try:
-            barrel = DatasetBarrel(ds)
-            
-            if path is not None:
-                barrel.store_from_path(path)
-            elif files is not None:
-                barrel.store_from_dict(files)
-            else:
-                LOG.warn("Dataset '{}' for model '{}' is not being stored by the framework"
-                         .format(ds.name, ds.model.name))
-                ds.update(stored=False)
+            barrel = self._store(ds, path, files)
         except Exception as e:
             LOG.error(e)
             LOG.warn("Reverting creation of dataset '{}'".format(ds.name))
@@ -80,13 +93,5 @@ class DatasetAPI(NoronhaAPI):
             update_kwargs=kwargs
         )
         
-        barrel = DatasetBarrel(ds)
-        
-        if path is not None:
-            barrel.store_from_path(path)
-        elif files is not None:
-            barrel.store_from_dict(files)
-        else:
-            return ds
-        
+        self._store(ds, path, files)
         return ds.update(stored=True)
