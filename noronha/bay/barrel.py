@@ -208,14 +208,6 @@ class Barrel(ABC):
         finally:
             work.dispose()
     
-    def _get_decompressable(self, path: str):
-        
-        if self.compressed:
-            return 'tar -xzf {tgz_file} {path} && rm -f {tgz_file}'.format(
-                tgz_file=self.compressed,
-                path=path
-            )
-    
     def _decompress(self, path: str):
         
         if self.compressed:
@@ -256,14 +248,22 @@ class Barrel(ABC):
         else:
             download_schema = self.infer_schema_from_repo()
         
-        return [
+        cmds = [
             self.warehouse.get_download_cmd(
                 path_from=self.make_file_path(file_spec.name),
                 path_to=os.path.join(path_to, file_spec.name),
                 on_board_perspective=on_board_perspective
             )
             for file_spec in download_schema
-        ] + [self._get_decompressable(path_to)]
+        ]
+        
+        if self.compressed:
+            cmds.append('tar -xzf {tgz_file} {path} && rm -f {tgz_file}'.format(
+                tgz_file=self.compressed,
+                path=path_to
+            ))
+        
+        return cmds
     
     @abstractmethod
     def make_file_path(self, file_name: str = None):

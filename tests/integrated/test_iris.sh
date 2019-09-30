@@ -1,12 +1,14 @@
 #!/bin/bash
 
-examples=`python -c 'from noronha.common.constants import Package; print(Package.EXAMPLES)'`
+set -x
+
+examples=`python -c 'from noronha.common.constants import Package; print(Package.EXAMPLES)'` &>/dev/null
 
 cp -r ${examples}/iris/* .
 
-log=`sh script.sh 2>/dev/null`
+log=`sh script.sh 2>&1`
 
-echo -e "${log}"
+set +x
 
 result=`echo -e "${log}" | tail -n 1`
 
