@@ -10,7 +10,7 @@ echo -e "${log}"
 
 result=`echo -e "${log}" | tail -n 1`
 
-label=`python -c "import json; print(json.loads('${result}').get('result'))"`
+label=`python -c "import json; print(json.loads('${result}').get('result'))" 2>/dev/null`
 
 if [[ "${label}" == "setosa" ]] ; then
     exit 0

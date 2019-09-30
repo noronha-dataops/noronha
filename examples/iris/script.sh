@@ -59,10 +59,12 @@ nha -s -d -p depl new \
 # test your api (direct call to the service)
 curl -X POST \
 --data '[1,2,3,4]' \
-http://127.0.0.1:30050/predict
+http://127.0.0.1:30050/predict \
+&& echo
 
 # test your api (call through model router)
 curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '{"project": "botanics", "deploy": "homolog", "data": [1,2,3,4]}' \
-http://127.0.0.1:30080
+http://127.0.0.1:30080 \
+&& echo
