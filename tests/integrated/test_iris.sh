@@ -3,26 +3,36 @@
 delay=20
 
 examples=`python -c 'from noronha.common.constants import Package; print(Package.EXAMPLES)'` &>/dev/null
-
 cp -r ${examples}/iris/* .
 
-log=`set -x && sh script.sh 2>&1`
+echo -e "TEST LOGS:"
+set -x
+sh script.sh
+set +x
 
-echo -e "TEST LOGS:\n${log}"
-
-result=`echo -e "${log}" | tail -n 1`
-
-echo "Waiting ${delay} seconds"
+echo "Waiting ${delay} seconds..."
 sleep ${delay}
 
-echo -e "TEST RESULT: ${result}"
+output=$(
+    curl -s -w "%{http_code}" -X POST \
+    -H 'Content-Type: application/JSON' \
+    --data '{"project": "botanics", "deploy": "homolog", "data": [1,2,3,4]}' \
+    http://127.0.0.1:30080 2>/dev/null
+)
 
-label=`python -c "import json; print(json.loads('${result}').get('result'))"`
+response=${output::-5}
+code=${output: -3:4}
 
-echo -e "LABEL: ${result}"
+echo -e "RESPONSE TEXT: ${response}"
+echo -e "RESPONSE CODE: ${code}"
 
-if [[ "${label}" == "setosa" ]] ; then
-    exit 0
-else
+if [[ "${code}" != "200" ]] ; then
+    exit 1
+fi
+
+label=`python -c "import json; print(json.loads('${response}').get('result'))"`
+echo -e "LABEL: ${label}"
+
+if [[ "${label}" != "setosa" ]] ; then
     exit 1
 fi
