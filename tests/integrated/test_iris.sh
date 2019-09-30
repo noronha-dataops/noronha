@@ -20,7 +20,7 @@ output=$(
     http://127.0.0.1:30080 2>/dev/null
 )
 
-response=${output::-5}
+response=${output::-3}
 code=${output: -3:4}
 
 echo -e "RESPONSE TEXT: ${response}"
