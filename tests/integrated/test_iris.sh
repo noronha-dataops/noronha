@@ -6,7 +6,7 @@ examples=`python -c 'from noronha.common.constants import Package; print(Package
 
 cp -r ${examples}/iris/* .
 
-log=`sh script.sh`
+log=`sh script.sh 2>/dev/null`
 
 echo -e "${log}"
 
