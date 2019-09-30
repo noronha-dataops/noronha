@@ -66,5 +66,4 @@ http://127.0.0.1:30050/predict \
 curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '{"project": "botanics", "deploy": "homolog", "data": [1,2,3,4]}' \
-http://127.0.0.1:30080 \
-&& echo
+http://127.0.0.1:30080
