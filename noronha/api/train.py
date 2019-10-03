@@ -3,7 +3,6 @@
 import json
 
 from noronha.api.main import NoronhaAPI
-from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo
 from noronha.bay.expedition import ShortExpedition
 from noronha.common.annotations import validate, projected
 from noronha.common.constants import DockerConst, Extension, OnBoard, Task
@@ -47,28 +46,23 @@ class TrainingAPI(NoronhaAPI):
         mounts=list,
         params=(dict, None)
     )
-    def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = None, details: dict = None,
-            params: dict = None, ds: str = None, model: str = None, _replace: bool = None, pretrained: str = None,
+    def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = None, params: dict = None,
+            details: dict = None, datasets: list = None, pretrained: list = None, _replace: bool = None,
             **kwargs):
         
-        if ds is not None:
-            if model is None:
-                raise NhaAPIError("Cannot determine training dataset if parent model is not specified")
-            
-            ds = Dataset().find_one(name=ds, model=model)
-            name = name or ds.name  # letting training name default to dataset name, if not specified
-            assert ds.stored, NhaAPIError(
-                """Dataset '{}' is not stored by the framework, so it cannot be mounted in the training container"""
-                .format(ds.name)
-            )
-        
         bv = BuildVersion().find_one_or_none(tag=tag, proj=self.proj)
+        movers = [ModelVersion.parse_ref(mv) for mv in pretrained or []]
+        datasets = [Dataset.find_by_pk(ds) for ds in datasets or []]
         
-        if pretrained is not None:
-            mv = ModelVersion.find_by_pk(pretrained)
-            LOG.info("Pre-trained model version '{}' will be available in this training".format(pretrained))
-        else:
-            mv = None
+        if name is None:
+            all_names = set([ds.name for ds in datasets])
+            
+            if len(all_names) == 1:
+                name = all_names.pop()
+        
+        for mv in movers:
+            mv.pretrained = True
+            LOG.info("Pre-trained model '{}' will be available in this training".format(mv.show()))
         
         train: Training = super().new(
             name=name,
@@ -79,7 +73,13 @@ class TrainingAPI(NoronhaAPI):
             _duplicate_filter=dict(name=name, proj=self.proj)
         )
         
-        TrainingExp(train, ds, mv, tag).launch(**kwargs)
+        TrainingExp(
+            train=train,
+            tag=tag,
+            datasets=datasets,
+            movers=movers
+        ).launch(**kwargs)
+        
         return train.reload()
 
 
@@ -87,12 +87,15 @@ class TrainingExp(ShortExpedition):
     
     section = DockerConst.Section.TRAIN
     
-    def __init__(self, train: Training, ds: Dataset = None, mv: ModelVersion = None, tag=DockerConst.LATEST):
+    def __init__(self, train: Training, tag=DockerConst.LATEST, **kwargs):
         
         self.train = train
-        self.ds = ds
-        self.mv = mv
-        super().__init__(proj=train.proj, tag=tag)
+        super().__init__(
+            proj=train.proj,
+            tag=tag,
+            docs=[train],
+            **kwargs
+        )
     
     def close(self):
         
@@ -121,30 +124,3 @@ class TrainingExp(ShortExpedition):
             '--params',
             json.dumps(self.train.details['params'])
         ] + (['--debug'] if LOG.debug_mode else [])
-    
-    def make_vols(self):
-        
-        cargos = []
-        docs = [self.proj, self.train]
-        suffix = '{}-{}'.format(self.proj.name, self.train.name)
-        
-        if self.bvers is not None:
-            docs.append(self.bvers)
-        
-        if self.ds is not None:
-            docs.append(self.ds)
-            cargos.append(DatasetCargo(self.ds))
-        
-        if self.mv is not None:
-            docs.append(self.mv)
-            cargos.append(MoversCargo(self.mv, pretrained=True))
-        
-        cargos += [
-            MetaCargo(suffix=suffix, docs=docs),
-            ConfCargo(suffix=suffix)
-        ]
-        
-        return [
-            LogsCargo(suffix=suffix),
-            SharedCargo(suffix, cargos)
-        ]

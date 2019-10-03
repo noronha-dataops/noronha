@@ -4,12 +4,14 @@
 
 import os
 import random_name
+import re
 from bson import ObjectId
 from datetime import datetime
 from mongoengine.base import BaseList, BaseDocument
 from mongoengine.connection import connect
 from mongoengine.fields import StringField, ReferenceField, EmbeddedDocumentField, DateTimeField
 from pymongo.write_concern import WriteConcern
+from string import Template as StringTemplate
 from typing import Type
 
 from noronha.bay.compass import MongoCompass
@@ -93,21 +95,25 @@ class SmartDoc(PrettyDoc):
     
     _fields = {}
     
-    def get(self, key: str, _obj=None):
+    def get(self, key: str, _obj=None, default=None):
         
         _obj = _obj or self
-        keys = key.split('.', 1)
-        val = getattr(_obj, keys[0])
+        keys = (key or '').split('.', 1)
+        
+        if hasattr(_obj, keys[0]):
+            val = getattr(_obj, keys[0])
+        else:
+            return default
         
         if len(keys) == 1:
             return val
         else:
-            return self.get(keys[1], val)
+            return self.get(keys[1], val, default)
     
-    def get_pk(self):
+    def get_pk(self, delimiter: str = ':', default: str = ''):
         
-        return ':'.join([
-            self.get(f)
+        return delimiter.join([
+            self.get(f) or default
             for f in self.get_pk_fields()
         ])
     
@@ -195,6 +201,32 @@ class SmartDoc(PrettyDoc):
             stg['_cls'] = schema.__name__
             return schema(**stg)
     
+    def _basename_to_regex(self, name: str):
+        
+        exp = '\\.'.join([
+            part or '[\\w-]*' for part  # name part or wildcard
+            in name.split('.')  # pk split in parts
+        ])
+        
+        return re.compile(r'' + exp)  # e.g.: some_model.any_ds -> some_model\.\w*
+    
+    def get_dir_name(self):
+        
+        return self.get_pk(delimiter='.')  # e.g.: some_model.some_ds
+    
+    def get_dir_name_regex(self):
+        
+        return self._basename_to_regex(self.get_dir_name())
+    
+    def get_file_name(self):
+        
+        tmpl = StringTemplate(self._FILE_NAME)
+        return tmpl.safe_substitute(name=self.get_dir_name())
+    
+    def get_file_name_regex(self):
+        
+        return self._basename_to_regex(self.get_file_name())
+    
     def to_file_tuple(self) -> (str, str):
         
         if self._FILE_NAME is None:
@@ -203,25 +235,27 @@ class SmartDoc(PrettyDoc):
                 """because a file_name hasn't been defined for its type""".format(self.__class__.__name__)
             )
         else:
-            return self._FILE_NAME, self.to_json()
+            return self.get_file_name(), self.to_json()
     
     @classmethod
     def load(cls, src_path=OnBoard.META_DIR, ignore=False):
         
-        if hasattr(cls, '_FILE_NAME'):
-            src_file = os.path.join(src_path, cls._FILE_NAME)
+        if os.path.isfile(src_path):
+            return cls.from_json(open(src_path).read())
+        elif cls._FILE_NAME is None:
+            raise NotImplementedError(
+                """Document of type {} cannot be loaded from a file tuple """
+                """because a _FILE_NAME hasn't been defined for its type""".format(cls.__class__.__name__)
+            )
+        else:
+            src_file = os.path.join(src_path, cls._FILE_NAME)  # will not work if file name requires pk substitution
             
-            if os.path.exists(src_file):
+            if os.path.isfile(src_file):
                 return cls.from_json(open(src_file).read())
             elif ignore:
                 return cls()
             else:
                 raise FileNotFoundError(src_file)
-        else:
-            raise NotImplementedError(
-                """Document of type {} cannot be loaded from a file tuple """
-                """because a _FILE_NAME hasn't been defined for its type""".format(cls.__class__.__name__)
-            )
     
     def clean(self):
         

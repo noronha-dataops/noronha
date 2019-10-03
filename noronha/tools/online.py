@@ -88,8 +88,8 @@ class OnlinePredict(object):
         
         meta = dict(datetime=datetime.now().strftime(DateFmt.READABLE))
         
-        if self.movers is not None:
-            meta['model_version'] = self.movers.name
+        if self.movers:
+            meta['model_version'] = sorted([mv.show() for mv in self.movers])
         
         return meta
     

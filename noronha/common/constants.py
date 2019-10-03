@@ -202,10 +202,10 @@ class OnBoard(object):
         
         PROJ = 'proj.{}'.format(Extension.JSON)  # project
         BVERS = 'bvers.{}'.format(Extension.JSON)  # build version
-        MOVERS = 'movers.{}'.format(Extension.JSON)  # model version
         TRAIN = 'train.{}'.format(Extension.JSON)  # training
         DEPL = 'depl.{}'.format(Extension.JSON)  # deployment
-        DS = 'ds.{}'.format(Extension.JSON)  # dataset
+        MV = 'mv.${{name}}.{}'.format(Extension.JSON)  # model version. to be filled with model_name.version_name
+        DS = 'ds.${{name}}.{}'.format(Extension.JSON)  # dataset. to be filled with model_name.dataset_name
 
 
 class Config(object):

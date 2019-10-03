@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from abc import ABC
 import random_name
+from abc import ABC
+from typing import List
 
 from noronha.bay.captain import get_captain, Captain
-from noronha.bay.cargo import LogsCargo
+from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo
 from noronha.bay.compass import DockerCompass
 from noronha.bay.shipyard import ImageSpec
-from noronha.common.constants import DockerConst
+from noronha.common.constants import DockerConst, EnvVar
 from noronha.common.logging import LOG
 from noronha.common.utils import join_dicts
 from noronha.db.proj import Project
 from noronha.db.bvers import BuildVersion
+from noronha.db.ds import Dataset
+from noronha.db.main import SmartDoc
+from noronha.db.movers import ModelVersion
 
 
 class Expedition(ABC):
@@ -19,27 +23,38 @@ class Expedition(ABC):
     section = None
     is_fleet = False
     
-    def __init__(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST):
+    def __init__(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST,
+                 movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartDoc] = None):
         
+        self.mock = False
         self.docker_compass = DockerCompass()
         self.captain: Captain = get_captain(section=self.section)
-        self.targets = None
-        self.mock = False
+        self.launcher = self.captain.deploy if self.is_fleet else self.captain.run
+        self.proj, self.bvers, self.img_spec = self._infer_img_spec(img_spec, proj, tag)
+        self.docs = docs or []
+        self.movers = movers or []
+        self.datasets = datasets or []
+        self.docs += self.movers
+        self.docs += self.datasets
         
-        if self.is_fleet:
-            self.launcher = self.captain.deploy
-        else:
-            self.launcher = self.captain.run
+        if self.proj is not None:
+            self.docs.append(self.proj)
         
-        if img_spec is None:
-            self.proj = proj
-            self.bvers = BuildVersion().find_one_or_none(tag=tag, proj=proj)
-            self.img_spec = ImageSpec.from_repo_or_bvers(proj, tag, self.bvers)
-        else:
-            self.img_spec = img_spec
+        if self.bvers is not None:
+            self.docs.append(self.bvers)
         
         self.cargos = self.make_vols()
         [cargo.set_prefix(self.section) for cargo in self.cargos]
+    
+    def _infer_img_spec(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST):
+        
+        if img_spec is None:
+            bvers = BuildVersion.find_one_or_none(tag=tag, proj=proj)
+            img_spec = ImageSpec.from_repo_or_bvers(proj, tag, bvers)
+        else:
+            bvers = None
+        
+        return proj, bvers, img_spec
     
     def launch(self, env_vars: dict = None, mounts: list = None, ports: list = None, **kwargs):
         
@@ -54,6 +69,21 @@ class Expedition(ABC):
             **kwargs
         )
     
+    def make_vols(self):
+        
+        suffix = self.make_alias()
+        conf_cargo = ConfCargo(suffix=suffix)
+        meta_cargo = MetaCargo(suffix=suffix, docs=self.docs)
+        ds_cargos = [DatasetCargo(ds) for ds in self.datasets]
+        mv_cargos = [MoversCargo(mv) for mv in self.movers]
+        return [
+            LogsCargo(suffix=suffix),
+            SharedCargo(
+                name=suffix,
+                cargos=[conf_cargo, meta_cargo] + ds_cargos + mv_cargos
+            )
+        ]
+    
     def make_alias(self):
         
         return random_name.generate_name(separator='-')  # will be used as suffix for the container name
@@ -61,14 +91,8 @@ class Expedition(ABC):
     def make_env_vars(self):
         
         return {
-            'CONTAINER_PURPOSE': self.section
+            EnvVar.CONTAINER_PURPOSE: self.section
         }
-    
-    def make_vols(self):
-        
-        return [
-            # volumes (cargos) to be mounted in the container
-        ]
     
     def make_cmd(self):
         

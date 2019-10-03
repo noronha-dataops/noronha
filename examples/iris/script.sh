@@ -40,8 +40,7 @@ nha -s -d -p train new \
 --name experiment-v1 \
 --nb notebooks/train \
 --params '{"gamma": 0.001, "kernel": "poly"}' \
---model iris-clf \
---dataset iris-data-v0
+--dataset iris-clf:iris-data-v0
 
 # check out which model versions have been produced so far
 nha -v movers list
@@ -51,8 +50,7 @@ nha -s -d -p depl new \
 --name homolog \
 --nb notebooks/predict \
 --port 30050 \
---model iris-clf \
---movers experiment-v1 \
+--movers iris-clf:experiment-v1 \
 --n-tasks 1 \
 && sleep 10
 

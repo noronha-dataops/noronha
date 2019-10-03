@@ -17,7 +17,7 @@ class Deployment(SmartDoc, Document):
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     proj = ReferenceField(Project, required=True, reverse_delete_rule=CASCADE)
-    movers = EmbeddedDocumentField(EmbeddedModelVersion, default=None)
+    movers = ListField(EmbeddedDocumentField(EmbeddedModelVersion, default=None))
     bvers = EmbeddedDocumentField(EmbeddedBuildVersion, default=None)
     notebook = StringField(required=True)
     details = DictField(default={})

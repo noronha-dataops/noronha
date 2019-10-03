@@ -1,47 +1,28 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from noronha.api.movers import ModelVersionAPI
-from noronha.common.constants import OnBoard, Paths
-from noronha.common.errors import NhaConsistencyError, ResolutionError
-from noronha.db.ds import Dataset
-from noronha.db.movers import ModelVersion
+from noronha.common.constants import Paths
+from noronha.common.errors import ResolutionError
 from noronha.db.proj import Project
 from noronha.db.train import Training
+from noronha.tools.shortcuts import dataset_meta, movers_meta
 
 
 class Publisher(object):
     
     def __init__(self):
         
-        self.proj = Project().load()
+        self.proj = Project.load()
+        self.train = Training.load(ignore=True)
         self.mv_api = ModelVersionAPI().set_proj(self.proj)
-        self.ds = Dataset().load(ignore=True)
-        self.train = Training().load(ignore=True)
-        self.pretrained: ModelVersion = ModelVersion().load(ignore=True)
     
-    def __call__(self, src_path: str = Paths.TMP, name: str = None, details: dict = None, model: str = None,
-                 uses_pretrained=False):
+    def _infer_parent_model(self, model_name: str = None):
         
-        return self.mv_api.new(
-            name=name or self.train.name,
-            model=self.validate_parent_model(model),
-            ds=self.ds.name,
-            train=self.train.name,
-            path=src_path,
-            details=details or {},
-            pretrained=self.validate_pretrained(uses_pretrained),
-            _replace=True
-        )
-    
-    def validate_parent_model(self, model: str = None):
-        
-        if model is None:
+        if model_name is None:
             n_models = len(self.proj.models)
             
             if n_models == 1:
-                model = self.proj.models[0].name
+                model_name = self.proj.models[0].name
                 err = None
             elif n_models == 0:
                 err = "Project '{proj}' does not include any models."
@@ -54,18 +35,39 @@ class Publisher(object):
                     + " Please specify which model you are publishing"
                 )
         
-        assert isinstance(model, str) and len(model) > 0
-        return model
+        assert isinstance(model_name, str) and len(model_name) > 0
+        return model_name
     
-    def validate_pretrained(self, uses_pretrained: bool):
+    def _infer_dataset(self, model_name: str, uses_dataset: bool = True, dataset_name: str = None):
         
-        if not uses_pretrained:
-            return None
-        elif not os.path.isdir(OnBoard.LOCAL_PRET_MODEL_DIR) or not os.listdir(OnBoard.LOCAL_PRET_MODEL_DIR):
-            raise NhaConsistencyError(
-                "No files were found in pre-trained model directory. Are you sure your model uses a pre-trained?")
-        elif self.pretrained is None:
-            raise NhaConsistencyError(
-                "No model version was found in metadata directory. Are you sure your model uses a pre-trained?")
+        if uses_dataset:
+            return dataset_meta(model_name=model_name, dataset_name=dataset_name).name
         else:
-            return self.pretrained.reference
+            return None
+    
+    def _infer_pretrained(self, uses_pretrained: bool = False, pretrained_with: str = None):
+        
+        if uses_pretrained:
+            model_name, version_name = (pretrained_with or ':').split(':')
+            mv = movers_meta(model_name=model_name or None, version_name=version_name or None)
+            return mv.show()
+        else:
+            return None
+    
+    def __call__(self, src_path: str = Paths.TMP, details: dict = None,
+                 version_name: str = None, model_name: str = None,
+                 uses_dataset: bool = True, dataset_name: str = None,
+                 uses_pretrained: bool = False, pretrained_with: str = None):
+        
+        model_name = self._infer_parent_model(model_name)
+        
+        return self.mv_api.new(
+            name=version_name or self.train.name,
+            model=model_name,
+            ds=self._infer_dataset(model_name, uses_dataset, dataset_name),
+            train=self.train.name,
+            path=src_path,
+            details=details or {},
+            pretrained=self._infer_pretrained(uses_pretrained, pretrained_with),
+            _replace=True
+        )

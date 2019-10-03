@@ -80,8 +80,11 @@ def _list(_filter, expand, **kwargs):
               help="""A host path or docker volume to mount on each deployment container.\n"""
                    """Syntax: <host_path_or_volume_name>:<container_path>:<rw/ro>\n"""
                    """Example: /home/user/data:/data:rw\n""")
-@click.option('--movers', '--mv', 'movers', help="Name of a model version to be mounted on each deployment container")
-@click.option('--model', help="To be used along with 'movers': name of the model to which the model version belongs")
+@click.option(
+    '--movers', '--mv', 'movers',  multiple=True, help=
+    """Reference to a model version to be mounted on each deployment container. """
+    """Syntax: <model_name>:<version_name>. Example: iris-clf:experiment-v1"""
+)
 def new(params, env_vars, mounts, port: int, n_tasks: int = 1, **kwargs):
     
     """Setup a deployment"""

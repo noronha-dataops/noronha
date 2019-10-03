@@ -70,20 +70,27 @@ def _list(_filter, expand, **kwargs):
     help="Relative path, inside the project's directory structure, to the notebook that will be executed"
 )
 @click.option('--params', '-p', help="JSON with parameters to be injected in the notebook")
-@click.option('--tag', '-t', default='latest',
-              help="""The training runs on top of a Docker image that belongs to the project. """
-                   """You may specify the image's Docker tag or let it default to "latest\"""")
-@click.option('--env-var', '-e', 'env_vars', multiple=True, help="Environment variable in the form KEY=VALUE")
-@click.option('--mount', '-m', 'mounts', multiple=True,
-              help="""A host path or docker volume to mount on the training container.\n"""
-                   """Syntax: <host_path_or_volume_name>:<container_path>:<rw/ro>\n"""
-                   """Example: /home/user/data:/data:rw\n""")
-@click.option('--dataset', 'ds', help="Name of a dataset to be mounted on the training container")
-@click.option('--model', help="To be used along with 'dataset': name of the model to which the dataset belongs")
 @click.option(
-    '--pretrained', help=
-    """Reference to a model version that may be used as a pre-trained model during this training. """
-    """Syntax: <model_name>:<model_version>. Example: word2vec:en-us-v1"""
+    '--tag', '-t', default='latest', help=
+    """The training runs on top of a Docker image that belongs to the project. """
+    """You may specify the image's Docker tag or let it default to 'latest'"""
+)
+@click.option('--env-var', '-e', 'env_vars', multiple=True, help="Environment variable in the form KEY=VALUE")
+@click.option(
+    '--mount', '-m', 'mounts', multiple=True, help=
+    """A host path or docker volume to mount on the training container.\n"""
+    """Syntax: <host_path_or_volume_name>:<container_path>:<rw/ro>\n"""
+    """Example: /home/user/data:/data:rw\n"""
+)
+@click.option(
+    '--dataset', '--ds', 'datasets',  multiple=True, help=
+    """Reference to a dataset to be mounted on the training container. """
+    """Syntax: <model_name>:<dataset_name>. Example: iris-clf:iris-data-v0"""
+)
+@click.option(
+    '--pretrained',  multiple=True, help=
+    """Reference to a model version that will be used as a pre-trained model during this training. """
+    """Syntax: <model_name>:<version_name>. Example: word2vec:en-us-v1"""
 )
 def new(params, env_vars, mounts, **kwargs):
     

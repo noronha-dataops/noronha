@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from noronha.api.main import NoronhaAPI
-from noronha.bay.cargo import MetaCargo, ConfCargo, SharedCargo
 from noronha.bay.expedition import ShortExpedition
 from noronha.common import NoteConst
 from noronha.common.annotations import projected, validate
 from noronha.common.constants import DockerConst, OnBoard
 from noronha.common.logging import LOG
+from noronha.db.ds import Dataset
+from noronha.db.movers import ModelVersion
 
 
 class NotebookAPI(NoronhaAPI):
@@ -15,9 +16,16 @@ class NotebookAPI(NoronhaAPI):
     
     @projected
     @validate(env_vars=dict, mounts=list, port=(int, None), tag=(str, None))
-    def __call__(self, tag: str = DockerConst.LATEST, port: int = NoteConst.HOST_PORT, **kwargs):
+    def __call__(self, tag: str = DockerConst.LATEST, port: int = NoteConst.HOST_PORT,
+                 movers: list = None, datasets: list = None, **kwargs):
         
-        return NotebookExp(port=port, proj=self.proj, tag=tag).launch(**kwargs)
+        return NotebookExp(
+            port=port,
+            proj=self.proj,
+            tag=tag,
+            movers=[ModelVersion.parse_ref(mv) for mv in movers or []],
+            datasets=[Dataset.find_by_pk(ds) for ds in datasets or []]
+        ).launch(**kwargs)
 
 
 class NotebookExp(ShortExpedition):
@@ -43,21 +51,4 @@ class NotebookExp(ShortExpedition):
         
         return [
             '{}:{}'.format(self.port, NoteConst.ORIGINAL_PORT)
-        ]
-    
-    def make_vols(self):
-        
-        suffix = self.proj.name
-        docs = [self.proj]
-        
-        if self.bvers is not None:
-            docs.append(self.bvers)
-        
-        cargos = [
-            MetaCargo(suffix=suffix, docs=docs),
-            ConfCargo(suffix=suffix)
-        ]
-        
-        return [
-            SharedCargo(suffix, cargos)
         ]

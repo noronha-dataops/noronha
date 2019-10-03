@@ -53,7 +53,7 @@ cp -r ${SHARED_MODEL_DIR}/* ${LOCAL_MODEL_DIR}/ 2>/dev/null
 
 # retrieving the dataset, if a dataset was shared
 mkdir -p ${LOCAL_DATA_DIR}
-cp ${SHARED_DATA_DIR}/* ${LOCAL_DATA_DIR}/ 2>/dev/null
+cp -r ${SHARED_DATA_DIR}/* ${LOCAL_DATA_DIR}/ 2>/dev/null
 
 # if no notebook path was provided, just open the notebook IDE
 if [[ "${NOTEBOOK_PATH}" == "" ]] ; then

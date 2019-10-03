@@ -15,6 +15,7 @@ from noronha.db.main import SmartDoc
 from noronha.db.movers import ModelVersion
 from noronha.common.conf import AllConf
 from noronha.common.constants import DateFmt, OnBoard, Paths, Config, DockerConst
+from noronha.common.errors import NhaStorageError
 
 
 class Content(ABC):
@@ -218,9 +219,26 @@ class MetaCargo(Cargo):
             mode='ro',
             contents=[
                 LiteralContent(file_name=x[0], file_content=x[1])
-                for x in [doc.to_file_tuple() for doc in docs]
+                for x in [
+                    doc.to_file_tuple()
+                    for doc in docs
+                ]
             ]
         )
+    
+    def _compatible_with(self, other):
+        
+        return \
+            isinstance(other, self.__class__) and \
+            other.name == self.name and \
+            other.mount_to == self.mount_to and \
+            other.mode == self.mode
+    
+    def __add__(self, other):
+        
+        assert self._compatible_with(other)
+        self.contents += other.contents
+        return self
 
 
 class HeavyCargo(Cargo):
@@ -240,9 +258,16 @@ class DatasetCargo(HeavyCargo):
     
     def __init__(self, ds: Dataset):
         
+        assert ds.stored, NhaStorageError(
+            """Dataset '{}' is not stored by the framework, so it cannot be mounted in a container"""
+            .format(ds.show())
+        )
+        
+        subdir = ds.get_dir_name()
+        dyr = OnBoard.SHARED_DATA_DIR
         super().__init__(
             name='dataset-{}-{}'.format(ds.model.name, ds.name),
-            mount_to=OnBoard.SHARED_DATA_DIR,
+            mount_to=os.path.join(dyr, subdir),
             mode='ro',
             barrel=DatasetBarrel(ds)
         )
@@ -252,9 +277,12 @@ class MoversCargo(HeavyCargo):
     
     def __init__(self, mv: ModelVersion, pretrained=False):
         
+        pretrained = pretrained or (mv.pretrained is True)
+        subdir = mv.get_dir_name()
+        dyr = OnBoard.SHARED_PRET_MODEL_DIR if pretrained else OnBoard.SHARED_DEPL_MODEL_DIR
         super().__init__(
             name='movers-{}-{}'.format(mv.model.name, mv.name),
-            mount_to=OnBoard.SHARED_PRET_MODEL_DIR if pretrained else OnBoard.SHARED_DEPL_MODEL_DIR,
+            mount_to=os.path.join(dyr, subdir),
             mode='rw',
             barrel=MoversBarrel(mv)
         )
