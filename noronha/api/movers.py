@@ -3,14 +3,12 @@
 from noronha.api.main import NoronhaAPI
 from noronha.bay.barrel import MoversBarrel
 from noronha.common.annotations import validate
-from noronha.common.constants import DockerConst, OnBoard
 from noronha.common.errors import NhaAPIError
 from noronha.common.logging import LOG
 from noronha.db.ds import Dataset
 from noronha.db.model import Model
 from noronha.db.movers import ModelVersion
 from noronha.db.train import Training
-from noronha.tools.shortcuts import get_purpose
 
 
 class ModelVersionAPI(NoronhaAPI):
@@ -104,10 +102,6 @@ class ModelVersionAPI(NoronhaAPI):
             if barrel is not None:
                 barrel.purge(ignore=True)
             raise e
-        
-        if get_purpose() == DockerConst.Section.IDE:
-            LOG.info("For testing purposes, model files will be moved to '{}'".format(OnBoard.LOCAL_DEPL_MODEL_DIR))
-            barrel.move(path, OnBoard.LOCAL_DEPL_MODEL_DIR)
         
         return mv
     

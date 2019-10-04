@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from noronha.api.movers import ModelVersionAPI
-from noronha.common.constants import Paths
+from noronha.bay.barrel import MoversBarrel
+from noronha.common.constants import Paths, DockerConst, OnBoard
 from noronha.common.errors import ResolutionError
+from noronha.common.logging import LOG
 from noronha.db.proj import Project
 from noronha.db.train import Training
-from noronha.tools.shortcuts import dataset_meta, movers_meta
+from noronha.tools.shortcuts import dataset_meta, movers_meta, get_purpose
 
 
 class Publisher(object):
@@ -61,7 +63,7 @@ class Publisher(object):
         
         model_name = self._infer_parent_model(model_name)
         
-        return self.mv_api.new(
+        mv = self.mv_api.new(
             name=version_name or self.train.name,
             model=model_name,
             ds=self._infer_dataset(model_name, uses_dataset, dataset_name),
@@ -71,3 +73,9 @@ class Publisher(object):
             pretrained=self._infer_pretrained(uses_pretrained, pretrained_with),
             _replace=True
         )
+        
+        if get_purpose() == DockerConst.Section.IDE:
+            LOG.info("For testing purposes, model files will be moved to '{}'".format(OnBoard.LOCAL_DEPL_MODEL_DIR))
+            MoversBarrel(mv).move(src_path, OnBoard.LOCAL_DEPL_MODEL_DIR)
+        
+        return mv
