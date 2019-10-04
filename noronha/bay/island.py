@@ -130,6 +130,10 @@ class NexusIsland(Island):
 class RouterIsland(Island):
     
     compass_cls = RouterCompass
+    
+    def make_vols(self):
+        
+        return []
 
 
 def get_island(name) -> Island:
