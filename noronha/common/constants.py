@@ -11,6 +11,12 @@ FW_VERSION = '1.2.0'  # framework version
 FW_TAG = 'develop'  # framework tag
 
 
+class Perspective(object):
+    
+    ON_BOARD = 'on_board'
+    OFF_BOARD = 'off_board'
+
+
 class NoteConst(object):
     
     """Constants related to notebook IDE and execution"""

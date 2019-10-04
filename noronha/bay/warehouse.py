@@ -18,7 +18,7 @@ from noronha.bay.compass import WarehouseCompass, ArtifCompass, NexusCompass
 from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured
 from noronha.common.conf import LazyConf
-from noronha.common.constants import Config
+from noronha.common.constants import Config, Perspective
 from noronha.common.errors import ResolutionError, NhaStorageError
 
 
@@ -142,7 +142,7 @@ class ArtifWarehouse(Warehouse):
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
         if on_board_perspective:
-            compass = self.compass_cls(on_board_perspective=True)
+            compass = self.compass_cls(perspective=Perspective.ON_BOARD)
         else:
             compass = self.compass
 
@@ -242,7 +242,7 @@ class NexusWarehouse(Warehouse):
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
         if on_board_perspective:
-            compass = self.compass_cls(on_board_perspective=True)
+            compass = self.compass_cls(perspective=Perspective.ON_BOARD)
         else:
             compass = self.compass
         

@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from random import randrange
 
 from noronha.common.annotations import Configured
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective
 from noronha.common.conf import MongoConf, WarehouseConf, LoggerConf, ProjConf, DockerConf, RouterConf, CaptainConf
 from noronha.common.errors import ResolutionError, ConfigurationError
 from noronha.common.utils import am_i_on_board, is_it_open_sea
@@ -308,11 +308,19 @@ class IslandCompass(ABC, Compass):
     KEY_MAX_MB = 'disk_allocation_mb'
     DEFAULT_MAX_MB = 100*1024  # 100 GB
     
-    def __init__(self, on_board_perspective=False):
+    def __init__(self, perspective=None):
         
         super().__init__()
         self.captain = CaptainCompass()
-        self.on_board_perspective = on_board_perspective
+        
+        if perspective is None:
+            self.on_board = am_i_on_board()
+        elif perspective == Perspective.ON_BOARD:
+            self.on_board = True
+        elif perspective == Perspective.OFF_BOARD:
+            self.on_board = False
+        else:
+            raise ValueError("Unrecognized perspective reference: {}".format(perspective))
     
     @property
     def native(self):
@@ -340,10 +348,6 @@ class IslandCompass(ABC, Compass):
         
         return 'https' if self.use_ssl else 'http'
     
-    def am_i_on_board(self):
-        
-        return self.on_board_perspective or am_i_on_board()
-    
     @property
     def host(self):
         
@@ -353,12 +357,12 @@ class IslandCompass(ABC, Compass):
             if self.captain.tipe == DockerConst.Managers.SWARM:
                 if is_it_open_sea():
                     return self.service_name
-                elif self.am_i_on_board():
+                elif self.on_board:
                     return find_bridge_ip()
                 else:
                     return self.DEFAULT_HOST
             elif self.captain.tipe == DockerConst.Managers.KUBE:
-                if self.am_i_on_board():
+                if self.on_board:
                     return self.service_name
                 else:
                     return self.captain.some_node
@@ -376,12 +380,12 @@ class IslandCompass(ABC, Compass):
             if self.captain.tipe == DockerConst.Managers.SWARM:
                 if is_it_open_sea():
                     return self.ORIGINAL_PORT
-                elif self.am_i_on_board():
+                elif self.on_board:
                     return configured
                 else:
                     return configured
             elif self.captain.tipe == DockerConst.Managers.KUBE:
-                if self.am_i_on_board():
+                if self.on_board:
                     return self.ORIGINAL_PORT
                 else:
                     return configured
