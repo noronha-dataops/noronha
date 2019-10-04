@@ -10,6 +10,7 @@ from noronha.bay.expedition import LongExpedition
 from noronha.bay.shipyard import LocalBuilder
 from noronha.common.constants import DockerConst, FW_TAG, Package
 from noronha.common.errors import ResolutionError, MisusageError
+from noronha.common.logging import LOG
 
 
 class Island(LongExpedition):
@@ -29,21 +30,24 @@ class Island(LongExpedition):
         )
         super().__init__(img_spec=self.builder.img_spec)
     
-    def launch(self, tasks=1, skip_build=False, **_):
+    def launch(self, tasks=1, skip_build=False, just_build=False, **_):
         
-        assert self.scallable or tasks == 1, MisusageError(
-            "Plugin '{}' is not scallable".format(self.alias)
-        )
-        
-        assert self.isle_compass.native, MisusageError(
-            "There is no point in setting up the plugin '{}' because it's configured in 'foreign mode'"
-            .format(self.alias)
-        )
+        if not just_build:
+            assert self.scallable or tasks == 1, MisusageError(
+                "Plugin '{}' is not scallable".format(self.alias)
+            )
+            
+            assert self.isle_compass.native, MisusageError(
+                "There is no point in setting up the plugin '{}' because it's configured in 'foreign mode'"
+                .format(self.alias)
+            )
         
         if not skip_build:
             self.builder(self.repo)
         
-        super().launch(tasks=tasks)
+        if not just_build:
+            super().launch(tasks=tasks)
+            LOG.info("Mapping plugin '{}' to port {}".format(self.alias, self.isle_compass.port))
     
     @property
     def alias(self):

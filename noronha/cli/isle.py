@@ -53,6 +53,10 @@ def router(ctx):
     '--skip-build', '-s', default=False, is_flag=True,
     help="Flag: assume that the required Docker image for setting up this plugin already exists"
 )
+@click.option(
+    '--just-build', '-b', default=False, is_flag=True,
+    help="Flag: do not start a service, just build the image"
+)
 @click.pass_context
 def setup(ctx, **kwargs):
     

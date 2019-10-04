@@ -19,6 +19,7 @@ class NotebookAPI(NoronhaAPI):
     def __call__(self, tag: str = DockerConst.LATEST, port: int = NoteConst.HOST_PORT,
                  movers: list = None, datasets: list = None, **kwargs):
         
+        LOG.info("Notebook IDE will be mapped to port {}".format(port))
         return NotebookExp(
             port=port,
             proj=self.proj,
