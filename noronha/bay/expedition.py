@@ -68,6 +68,8 @@ class Expedition(ABC):
             cmd=DockerConst.HANG_CMD if self.mock else self.make_cmd(),
             **kwargs
         )
+        
+        return True
     
     def make_vols(self):
         
@@ -111,18 +113,20 @@ class ShortExpedition(Expedition):
     
     def launch(self, foreground: bool = True, **kwargs):
         
+        completed = False
+        
         try:
-            super().launch(foreground=foreground, **kwargs)
+            completed = super().launch(foreground=foreground, **kwargs)
         finally:
-            self.close()
+            self.close(completed)
     
-    def close(self):
+    def close(self, completed: bool = False):
         
         try:
             self.captain.dispose_run(self.make_alias())
             
             for cargo in self.cargos:
-                if isinstance(cargo, LogsCargo) and LOG.debug_mode:
+                if isinstance(cargo, LogsCargo) and (LOG.debug_mode or not completed):
                     LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
                 else:
                     self.captain.rm_vol(cargo, ignore=True)

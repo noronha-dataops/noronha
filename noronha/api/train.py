@@ -6,7 +6,6 @@ from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import ShortExpedition
 from noronha.common.annotations import validate, projected
 from noronha.common.constants import DockerConst, Extension, OnBoard, Task
-from noronha.common.errors import NhaAPIError
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
@@ -50,7 +49,7 @@ class TrainingAPI(NoronhaAPI):
             details: dict = None, datasets: list = None, pretrained: list = None, _replace: bool = None,
             **kwargs):
         
-        bv = BuildVersion().find_one_or_none(tag=tag, proj=self.proj)
+        bv = BuildVersion.find_one_or_none(tag=tag, proj=self.proj)
         movers = [ModelVersion.parse_ref(mv) for mv in pretrained or []]
         datasets = [Dataset.find_by_pk(ds) for ds in datasets or []]
         
@@ -97,12 +96,12 @@ class TrainingExp(ShortExpedition):
             **kwargs
         )
     
-    def close(self):
+    def close(self, completed: bool = False):
         
         try:
-            super().close()
+            super().close(completed)
             
-            if self.captain.interrupted:
+            if self.captain.interrupted or not completed:
                 LOG.warn('Failing training due to an interruption')
                 self.train.reload()
                 self.train.task.state = Task.State.FAILED
