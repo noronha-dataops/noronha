@@ -661,7 +661,7 @@ class KubeCaptain(Captain):
     
     def assert_vol(self, cargo: Cargo):
         
-        storage = '{}m'.format(cargo.require_mb)  # e.g.: 100m
+        storage = '{}Gi'.format(max(int(cargo.require_mb/1024), 1))
         
         template = dict(
             apiVersion="v1",
