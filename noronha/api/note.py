@@ -25,7 +25,8 @@ class NotebookAPI(NoronhaAPI):
             proj=self.proj,
             tag=tag,
             movers=[ModelVersion.parse_ref(mv) for mv in movers or []],
-            datasets=[Dataset.find_by_pk(ds) for ds in datasets or []]
+            datasets=[Dataset.find_by_pk(ds) for ds in datasets or []],
+            resource_profile=kwargs.get('resource_profile')
         ).launch(**kwargs)
 
 

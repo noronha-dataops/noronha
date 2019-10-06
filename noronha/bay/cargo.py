@@ -117,7 +117,9 @@ class Cargo(object):
         
         return '{}-{}'.format(self.prefix or '', self.name).lstrip('-')
     
-    def deploy(self, path):
+    def deploy(self, path: str = None):
+        
+        path = path or self.mount_to
         
         for c in self.contents:
             c.deploy(path)
@@ -211,8 +213,9 @@ class ConfCargo(Cargo):
 
 class MetaCargo(Cargo):
     
-    def __init__(self, suffix: str, docs: List[SmartDoc]):
+    def __init__(self, docs: List[SmartDoc], suffix: str = None):
         
+        suffix = suffix or '-'.join([d.get_pk(delimiter='-') for d in docs])
         super().__init__(
             name='metadata-{}'.format(suffix),
             mount_to=OnBoard.META_DIR,
@@ -249,6 +252,13 @@ class HeavyCargo(Cargo):
         super().__init__(require_mb=content.estimate_mb, **kwargs)
         self.contents: List[BarrelContent] = [content]
     
+    def move(self, src_path):
+        
+        self.contents[0].barrel.move(
+            path_from=src_path,
+            path_to=self.mount_to
+        )
+    
     def get_deployables(self, path):
         
         return self.contents[0].get_deployables(path)
@@ -275,11 +285,22 @@ class DatasetCargo(HeavyCargo):
 
 class MoversCargo(HeavyCargo):
     
-    def __init__(self, mv: ModelVersion, pretrained=False):
+    def __init__(self, mv: ModelVersion, pretrained=False, local=False):
         
         pretrained = pretrained or (mv.pretrained is True)
         subdir = mv.get_dir_name()
-        dyr = OnBoard.SHARED_PRET_MODEL_DIR if pretrained else OnBoard.SHARED_DEPL_MODEL_DIR
+        
+        dyr = {
+            'local': {
+                'pretrain': OnBoard.LOCAL_PRET_MODEL_DIR,
+                'deployed': OnBoard.LOCAL_DEPL_MODEL_DIR
+            },  # deploy files to the container's local file system instead of using the nfs mounted path
+            'shared': {
+                'pretrain': OnBoard.SHARED_PRET_MODEL_DIR,
+                'deployed': OnBoard.SHARED_DEPL_MODEL_DIR
+            }
+        }.get('local' if local else 'shared').get('pretrain' if pretrained else 'deployed')
+        
         super().__init__(
             name='movers-{}-{}'.format(mv.model.name, mv.name),
             mount_to=os.path.join(dyr, subdir),

@@ -129,6 +129,8 @@ class CaptainCompass(Compass):
 
 class SwarmCompass(CaptainCompass):
     
+    DEFAULT_TIMEOUT = 20
+    
     def get_api_key(self):
         
         raise NotImplementedError("Container manager 'swarm' does not take an API Key")
@@ -179,17 +181,11 @@ class KubeCompass(CaptainCompass):
     
     def get_resource_profile(self, section: str):
         
-        prof = self.conf.get(self.KEY_PROFILES, {})
+        prof = self.conf.get(self.KEY_PROFILES, {}).get(section)
+        keys = {'limits', 'requests'}
         
-        if sorted(list(prof.keys())) == ['limits', 'requests']:
-            pass  # a resource profile is defined for all sections
-        elif section in prof:
-            prof = prof.get(section)  # a resource profile is defined for this specific section
-        else:
-            return None  # no resource profile is defined for this specific section
-        
-        assert isinstance(prof, dict) and sorted(list(prof.keys())) == ['limits', 'requests'],\
-            ConfigurationError("Resource profile must be a mapping in the form {'requests': {...}, 'limits': {...}}")
+        assert prof is None or (isinstance(prof, dict) and set(prof) == keys),\
+            ConfigurationError("Resource profile must be a mapping with the keys {}".format(keys))
         
         return prof
     

@@ -55,7 +55,7 @@ def _list(_filter, expand, **kwargs):
     CMD.run(
         API, 'lyst', **kwargs,
         _filter=assert_dict(_filter, allow_none=True),
-        _response_callback=ListingCallback(obj_title='Deployment', obj_attr='name', expand=expand)
+        _response_callback=ListingCallback(obj_title='Deployment', expand=expand)
     )
 
 
@@ -84,6 +84,11 @@ def _list(_filter, expand, **kwargs):
     '--movers', '--mv', 'movers',  multiple=True, help=
     """Reference to a model version to be mounted on each deployment container. """
     """Syntax: <model_name>:<version_name>. Example: iris-clf:experiment-v1"""
+)
+@click.option(
+    '--resource-profile', '--rp', 'resource_profile', help=
+    """Name of a resource profile to be applied for each container. """
+    """This profile should be configured in your nha.yaml file"""
 )
 def new(params, env_vars, mounts, port: int, n_tasks: int = 1, **kwargs):
     

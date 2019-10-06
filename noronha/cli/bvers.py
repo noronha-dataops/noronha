@@ -55,7 +55,7 @@ def _list(_filter, expand, **kwargs):
     CMD.run(
         API, 'lyst', **kwargs,
         _filter=assert_dict(_filter, allow_none=True),
-        _response_callback=ListingCallback(obj_title='Build Version', obj_attr='tag', expand=expand)
+        _response_callback=ListingCallback(obj_title='Build Version', expand=expand)
     )
 
 

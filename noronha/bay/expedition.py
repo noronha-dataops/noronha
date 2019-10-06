@@ -24,11 +24,12 @@ class Expedition(ABC):
     is_fleet = False
     
     def __init__(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST,
-                 movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartDoc] = None):
+                 movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartDoc] = None,
+                 **kwargs):
         
         self.mock = False
         self.docker_compass = DockerCompass()
-        self.captain: Captain = get_captain(section=self.section)
+        self.captain: Captain = get_captain(section=self.section, **kwargs)
         self.launcher = self.captain.deploy if self.is_fleet else self.captain.run
         self.proj, self.bvers, self.img_spec = self._infer_img_spec(img_spec, proj, tag)
         self.docs = docs or []

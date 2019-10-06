@@ -31,4 +31,3 @@ docker:
 container_manager:
   type: swarm
   namespace: default
-  api_timeout: 60

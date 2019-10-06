@@ -57,6 +57,11 @@ def router(ctx):
     '--just-build', '-b', default=False, is_flag=True,
     help="Flag: do not start a service, just build the image"
 )
+@click.option(
+    '--resource-profile', '--rp', 'resource_profile', help=
+    """Name of a resource profile to be applied for each container. """
+    """This profile should be configured in your nha.yaml file"""
+)
 @click.pass_context
 def setup(ctx, **kwargs):
     

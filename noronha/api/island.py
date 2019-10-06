@@ -11,7 +11,10 @@ class IslandAPI(NoronhaAPI):
     
     def setup(self, name: str, **kwargs):
         
-        return get_island(name).launch(**kwargs)
+        return get_island(
+            name,
+            resource_profile=kwargs.get('resource_profile')
+        ).launch(**kwargs)
     
     def get_me_started(self, **kwargs):
         

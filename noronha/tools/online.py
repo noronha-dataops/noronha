@@ -9,7 +9,7 @@ from werkzeug.serving import run_simple
 from noronha.common.constants import DateFmt, OnlineConst
 from noronha.common.errors import NhaDataError, PrettyError
 from noronha.common.logging import LOG
-from noronha.common.utils import assert_json
+from noronha.common.utils import assert_json, assert_str
 from noronha.db.depl import Deployment
 
 
@@ -39,12 +39,13 @@ class HealthCheck(object):
 
 class OnlinePredict(object):
     
-    def __init__(self, predict_method):
+    def __init__(self, predict_method, enrich=True):
         
         self._service = Flask(__name__)
         self._predict_method = predict_method
         self._health = HealthCheck()
-        self.movers = Deployment().load(ignore=True).movers
+        self._enrich = enrich
+        self.movers = Deployment.load(ignore=True).movers
         
         @self._service.route('/predict', methods=['POST'])
         def predict():
@@ -66,7 +67,6 @@ class OnlinePredict(object):
             response['metadata'] = self.response_metadata
             code = OnlineConst.ReturnCode.OK
         except Exception as e:
-            
             if isinstance(e, NhaDataError):
                 response['exception'] = e.pretty()
                 code = OnlineConst.ReturnCode.BAD_REQUEST
@@ -80,7 +80,14 @@ class OnlinePredict(object):
             
             LOG.error(response)
         finally:
-            response = assert_json(response, encode=True, encoding=OnlineConst.DEFAULT_CHARSET)
+            if not self._enrich:
+                response = response.get('exception') or response.get('result')
+            
+            if isinstance(response, (dict, list)):
+                response = assert_json(response, encode=True, encoding=OnlineConst.DEFAULT_CHARSET)
+            else:
+                response = assert_str(response)
+            
             return response, code
     
     @property

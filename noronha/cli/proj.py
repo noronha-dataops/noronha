@@ -42,7 +42,7 @@ def _list(_filter, expand, **kwargs):
     CMD.run(
         API, 'lyst', **kwargs,
         _filter=assert_dict(_filter, allow_none=True),
-        _response_callback=ListingCallback(obj_title='Project', obj_attr='name', expand=expand)
+        _response_callback=ListingCallback(obj_title='Project', expand=expand)
     )
 
 
@@ -53,12 +53,14 @@ def _list(_filter, expand, **kwargs):
     '--model', '-m', 'models', multiple=True,
     help="Name of an existing model. May be specified more than once (further info: nha model --help)"
 )
-@click.option('--repo', '-r', '--repository', 'repo',
-              help="""The project's repository. Syntaxes supported: \n"""
-                   """local://<path>/<to>/<local>/<directory>\n"""
-                   """git://<url>/<to>/<remote>/<git_repo>\n"""
-                   """docker://<address>/<of>/<remote>/<docker_registry>\n"""
-                   """(default: current working directory)""")
+@click.option(
+    '--repo', '-r', help=
+    """The project's repository. Syntaxes supported: \n"""
+    """local://<path>/<to>/<local>/<directory>\n"""
+    """git://<url>/<to>/<remote>/<git_repo>\n"""
+    """docker://<address>/<of>/<remote>/<docker_registry>\n"""
+    """(default: current working directory)"""
+)
 def new(**kwargs):
     
     """Host a new project in the framework"""
@@ -76,12 +78,14 @@ def new(**kwargs):
     '--model', '-m', 'models', multiple=True,
     help="Name of an existing model. May be specified more than once (further info: nha model --help)"
 )
-@click.option('--repo', '-r',
-              help="""The project's repository. Syntaxes supported: \n"""
-                   """local://<path>/<to>/<local>/<directory>\n"""
-                   """git://<url>/<to>/<remote>/<git_repo>\n"""
-                   """docker://<address>/<of>/<remote>/<docker_registry>\n"""
-                   """(default: current working directory)""")
+@click.option(
+    '--repo', '-r', help=
+    """The project's repository. Syntaxes supported: \n"""
+    """local://<path>/<to>/<local>/<directory>\n"""
+    """git://<url>/<to>/<remote>/<git_repo>\n"""
+    """docker://<address>/<of>/<remote>/<docker_registry>\n"""
+    """(default: current working directory)"""
+)
 def update(**kwargs):
     
     """Updates a projects in the database"""

@@ -42,6 +42,11 @@ from noronha.common.utils import kv_list_to_dict
     """Any flag in the third position means that this model is going to be used as a pre-trained asset. """
     """Syntax: <model_name>:<version_name>:<is_pretrained>. Example: word2vec:en-us-v1:true"""
 )
+@click.option(
+    '--resource-profile', '--rp', 'resource_profile', help=
+    """Name of a resource profile to be applied for each container. """
+    """This profile should be configured in your nha.yaml file"""
+)
 def note(env_vars: list, mounts: list, port: int, edit: bool = False, **kwargs):
     
     """Access to an interactive notebook (IDE)"""

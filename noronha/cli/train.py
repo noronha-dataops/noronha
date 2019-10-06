@@ -55,7 +55,7 @@ def _list(_filter, expand, **kwargs):
     CMD.run(
         API, 'lyst', **kwargs,
         _filter=assert_dict(_filter, allow_none=True),
-        _response_callback=ListingCallback(obj_title='Training Execution', obj_attr='name', expand=expand)
+        _response_callback=ListingCallback(obj_title='Training Execution', expand=expand)
     )
 
 
@@ -91,6 +91,11 @@ def _list(_filter, expand, **kwargs):
     '--pretrained',  multiple=True, help=
     """Reference to a model version that will be used as a pre-trained model during this training. """
     """Syntax: <model_name>:<version_name>. Example: word2vec:en-us-v1"""
+)
+@click.option(
+    '--resource-profile', '--rp', 'resource_profile', help=
+    """Name of a resource profile to be applied for each container. """
+    """This profile should be configured in your nha.yaml file"""
 )
 def new(params, env_vars, mounts, **kwargs):
     

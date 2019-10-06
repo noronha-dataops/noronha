@@ -19,7 +19,7 @@ class Island(LongExpedition):
     scallable = False
     section = DockerConst.Section.ISLE
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         
         self.isle_compass = self.compass_cls(perspective=Perspective.OFF_BOARD)
         self.repo = LocalRepository(address='local://' + self.source)
@@ -28,7 +28,10 @@ class Island(LongExpedition):
             target_tag=FW_TAG,
             section=DockerConst.Section.ISLE
         )
-        super().__init__(img_spec=self.builder.img_spec)
+        super().__init__(
+            img_spec=self.builder.img_spec,
+            **kwargs
+        )
     
     def launch(self, tasks=1, skip_build=False, just_build=False, **_):
         
@@ -136,7 +139,7 @@ class RouterIsland(Island):
         return []
 
 
-def get_island(name) -> Island:
+def get_island(name, **kwargs) -> Island:
     
     cls_lookup = {
         'mongo': MongoIsland,
@@ -153,4 +156,4 @@ def get_island(name) -> Island:
             .format(name, list(cls_lookup.keys()))
         )
     else:
-        return isle_cls()
+        return isle_cls(**kwargs)

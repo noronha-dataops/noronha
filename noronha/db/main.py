@@ -170,8 +170,10 @@ class SmartDoc(PrettyDoc):
         pk_fields = [f.split('.', 1)[0] for f in cls.get_pk_fields()]
         
         if len(pk_parts) != len(pk_fields):
-            raise DBError("{} document has invalid primary key definition: {}, {}"
-                          .format(cls.__class__.__name__, pk_fields, pk_parts))
+            raise DBError(
+                "invalid primary key for a {}: {}. Expected format is {}"
+                .format(cls.__class__.__name__, pk, ':'.join(pk_fields))
+            )
         
         return cls.find_one(**dict(zip(pk_fields, pk_parts)))
     

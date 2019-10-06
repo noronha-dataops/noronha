@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from noronha.api.movers import ModelVersionAPI
-from noronha.bay.barrel import MoversBarrel
-from noronha.common.constants import Paths, DockerConst, OnBoard
+from noronha.bay.cargo import MoversCargo, MetaCargo
+from noronha.common.constants import Paths, DockerConst
 from noronha.common.errors import ResolutionError
 from noronha.common.logging import LOG
 from noronha.db.proj import Project
@@ -75,7 +75,8 @@ class Publisher(object):
         )
         
         if get_purpose() == DockerConst.Section.IDE:
-            LOG.info("For testing purposes, model files will be moved to '{}'".format(OnBoard.LOCAL_DEPL_MODEL_DIR))
-            MoversBarrel(mv).move(src_path, OnBoard.LOCAL_DEPL_MODEL_DIR)
+            LOG.info("For testing purposes, model files will be moved to the deployed model path")
+            MoversCargo(mv, local=True).move(src_path)
+            MetaCargo(docs=[mv]).deploy()
         
         return mv

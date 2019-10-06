@@ -33,7 +33,7 @@ class Captain(ABC, Configured):
     conf = CaptainConf
     compass_cls: Type[CaptainCompass] = None
     
-    def __init__(self, section: str):
+    def __init__(self, section: str, **kwargs):
         
         self.docker_compass = DockerCompass()
         self.captain_compass = self.compass_cls()
@@ -103,7 +103,7 @@ class SwarmCaptain(Captain):
     
     compass_cls = SwarmCompass
     
-    def __init__(self, section: str):
+    def __init__(self, section: str, **_):
         
         super().__init__(section)
         LOG.warn("Using Docker Swarm as container manager. This is not recommended for distributed environments")
@@ -418,13 +418,13 @@ class KubeCaptain(Captain):
     
     compass_cls = KubeCompass
     
-    def __init__(self, section: str):
+    def __init__(self, section: str, resource_profile: str = None):
         
         super().__init__(section)
         self.namespace = self.captain_compass.get_namespace()
         self.api_key = self.captain_compass.get_api_key()
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR, api_key=self.api_key)
-        self.resources = {'resources': self.captain_compass.get_resource_profile(section)}
+        self.resources = {'resources': self.captain_compass.get_resource_profile(resource_profile or section)}
         self.nfs = self.captain_compass.get_nfs_server(section)
         self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.mule = None
@@ -536,6 +536,10 @@ class KubeCaptain(Captain):
         self.rm_svc(name)
     
     def rm_vol(self, cargo: Cargo, ignore=False):
+        
+        if isinstance(cargo, EmptyCargo):  # PVC
+            self.k8s_backend.core_api.delete_namespaced_persistent_volume_claim(cargo.full_name, self.namespace)
+            return True
         
         if self.mule is None:
             if ignore:
@@ -897,7 +901,7 @@ class KubeCaptain(Captain):
         ]
 
 
-def get_captain(section: str):
+def get_captain(section: str, **kwargs):
     
     manager_ref = CaptainCompass().tipe
     cls_lookup = {
@@ -913,4 +917,4 @@ def get_captain(section: str):
             .format(manager_ref, list(cls_lookup.keys()))
         )
     else:
-        return capitain_cls(section)
+        return capitain_cls(section, **kwargs)

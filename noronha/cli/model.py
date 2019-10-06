@@ -58,7 +58,7 @@ def _list(_filter, expand):
     CMD.run(
         API, 'lyst',
         _filter=assert_dict(_filter, allow_none=True),
-        _response_callback=ListingCallback(obj_title='Model Record', obj_attr='name', expand=expand)
+        _response_callback=ListingCallback(obj_title='Model Record', expand=expand)
     )
 
 
@@ -99,14 +99,16 @@ def new(model_files, data_files, **kwargs):
     help="""JSON describing a file that is used for training this model. """
          """Example: {}""".format(json.dumps(DATA_FILE_EXAMPLE))
 )
-def update(model_files, data_files, **kwargs):
+@click.option('--no-model-files', default=False, is_flag=True, help="Flag: disable the tracking of model files")
+@click.option('--no-ds-files', default=False, is_flag=True, help="Flag: disable the tracking of dataset files")
+def update(model_files, data_files, no_model_files: bool = False, no_ds_files: bool = False, **kwargs):
     
     """Update a model record"""
     
     CMD.run(
         API, 'update', **kwargs,
-        model_files=[assert_dict(f) for f in model_files] or None,
-        data_files=[assert_dict(f) for f in data_files] or None
+        model_files=[] if no_model_files else [assert_dict(f) for f in model_files] or None,
+        data_files=[] if no_ds_files else [assert_dict(f) for f in data_files] or None
     )
 
 

@@ -46,7 +46,7 @@ def _list(_filter, expand, **kwargs):
     CMD.run(
         API, 'lyst', **kwargs,
         _filter=assert_dict(_filter, allow_none=True),
-        _response_callback=ListingCallback(obj_title='Dataset', obj_attr='name', expand=expand)
+        _response_callback=ListingCallback(obj_title='Dataset', expand=expand)
     )
 
 

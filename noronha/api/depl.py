@@ -62,7 +62,13 @@ class DeploymentAPI(NoronhaAPI):
         )
         
         # TODO: check consistensy of project, docker tag and git version between depl.bvers and movers.bvers
-        DeploymentExp(depl, port, tag).launch(**kwargs)
+        DeploymentExp(
+            depl,
+            port,
+            tag,
+            resource_profile=kwargs.get('resource_profile')
+        ).launch(**kwargs)
+        
         return depl
 
 
@@ -70,7 +76,7 @@ class DeploymentExp(LongExpedition):
     
     section = DockerConst.Section.DEPL
     
-    def __init__(self, depl: Deployment, port: int = None, tag=DockerConst.LATEST):
+    def __init__(self, depl: Deployment, port: int = None, tag=DockerConst.LATEST, **kwargs):
         
         self.depl = depl
         self.port = port
@@ -78,7 +84,8 @@ class DeploymentExp(LongExpedition):
             proj=depl.proj,
             tag=tag,
             movers=self.depl.movers,
-            docs=[depl]
+            docs=[depl],
+            **kwargs
         )
     
     def make_ports(self):
