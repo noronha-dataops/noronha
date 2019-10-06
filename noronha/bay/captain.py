@@ -40,6 +40,7 @@ class Captain(ABC, Configured):
         self.section = section
         self.interrupted = False
         self.timeout = self.captain_compass.api_timeout
+        self.cleaner = StructCleaner()
     
     @abstractmethod
     def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, alias: str,
@@ -143,7 +144,7 @@ class SwarmCaptain(Captain):
         name = self.with_prefix(alias)
         depl = self.find_depl(name)
         
-        kwargs = dict(
+        kwargs = self.cleaner(dict(
             name=name,
             endpoint_spec=self.swarm_ports(ports),
             networks=[DockerConst.NETWORK],
@@ -157,7 +158,7 @@ class SwarmCaptain(Captain):
                     mounts=mounts + [v.mount for v in cargos]
                 )
             )
-        )
+        ))
         
         if depl is None:
             LOG.debug("Creating container service '{}' with kwargs:".format(name))
@@ -408,10 +409,20 @@ class SwarmCaptain(Captain):
     
     def swarm_ports(self, ports):
         
-        return dict(Ports=[
-            dict(PublishedPort=int(p_from), TargetPort=int(p_to), Protocol='tcp')
-            for p_from, p_to in [p.split(':') for p in ports]
-        ])
+        port_specs = []
+        
+        for p in ports:
+            if ':' in p:
+                p_from, p_to = p.split(':')
+                port_specs.append(dict(
+                    PublishedPort=int(p_from),
+                    TargetPort=int(p_to),
+                    Protocol='tcp'
+                ))
+            else:
+                continue  # single port exposure is not necessary in swarm mode
+        
+        return port_specs
 
 
 class KubeCaptain(Captain):
@@ -869,7 +880,6 @@ class KubeCaptain(Captain):
     def kube_svc_ports(self, name: str, ports: List[str]):
         
         refs, defs = [], []
-        cleaner = StructCleaner()
         
         for port in ports:
             parts = port.split(':')
@@ -884,7 +894,7 @@ class KubeCaptain(Captain):
                 raise NotImplementedError()
             
             refs.append({'containerPort': tgt})
-            defs.append(cleaner({
+            defs.append(self.cleaner({
                 'name': '{}-{}'.format(name, tgt),
                 'port': tgt,
                 'targetPort': tgt,

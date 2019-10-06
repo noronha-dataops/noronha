@@ -7,6 +7,7 @@ import random_name
 import re
 from bson import ObjectId
 from datetime import datetime
+from mongoengine import EmbeddedDocument
 from mongoengine.base import BaseList, BaseDocument
 from mongoengine.connection import connect
 from mongoengine.fields import StringField, ReferenceField, EmbeddedDocumentField, DateTimeField
@@ -277,4 +278,12 @@ class SmartDoc(PrettyDoc):
     
     def show(self):
         
-        return self.get_pk()
+        pk = self.get_pk()
+        
+        if issubclass(self.__class__, EmbeddedDocument):
+            return ':'.join([
+                pk,
+                self.modified.strftime(DateFmt.READABLE)
+            ])
+        else:
+            return pk

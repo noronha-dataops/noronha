@@ -50,7 +50,9 @@ class Island(LongExpedition):
         
         if not just_build:
             super().launch(tasks=tasks)
-            LOG.info("Mapping plugin '{}' to port {}".format(self.alias, self.isle_compass.port))
+            
+            if self.isle_compass.port is not None:
+                LOG.info("Mapping plugin '{}-{}' to port {}".format(self.section, self.alias, self.isle_compass.port))
     
     @property
     def alias(self):
@@ -72,9 +74,14 @@ class Island(LongExpedition):
     
     def make_ports(self):
         
-        return [
-            '{}:{}'.format(self.isle_compass.port, self.isle_compass.ORIGINAL_PORT)
-        ]
+        mapped_port = self.isle_compass.port
+        
+        if mapped_port is None:
+            mapping = str(self.isle_compass.ORIGINAL_PORT)
+        else:
+            mapping = '{}:{}'.format(mapped_port, self.isle_compass.ORIGINAL_PORT)
+        
+        return [mapping]
 
 
 class MongoIsland(Island):
