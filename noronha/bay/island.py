@@ -52,7 +52,7 @@ class Island(LongExpedition):
             super().launch(tasks=tasks)
             
             if self.isle_compass.port is not None:
-                LOG.info("Mapping plugin '{}-{}' to port {}".format(self.section, self.alias, self.isle_compass.port))
+                LOG.info("Mapping service '{}' to port {}".format(self.make_name(), self.isle_compass.port))
     
     @property
     def alias(self):

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import random_name
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import List
 
 from noronha.bay.captain import get_captain, Captain
@@ -45,7 +44,6 @@ class Expedition(ABC):
             self.docs.append(self.bvers)
         
         self.cargos = self.make_vols()
-        [cargo.set_prefix(self.section) for cargo in self.cargos]
     
     def _infer_img_spec(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST):
         
@@ -60,7 +58,7 @@ class Expedition(ABC):
     def launch(self, env_vars: dict = None, mounts: list = None, ports: list = None, **kwargs):
         
         self.launcher(
-            alias=self.make_alias(),
+            name=self.make_name(),
             img=self.img_spec,
             env_vars=join_dicts(env_vars or {}, self.make_env_vars(), allow_overwrite=False),
             mounts=(mounts or []),
@@ -74,22 +72,36 @@ class Expedition(ABC):
     
     def make_vols(self):
         
-        suffix = self.make_alias()
-        conf_cargo = ConfCargo(suffix=suffix)
-        meta_cargo = MetaCargo(suffix=suffix, docs=self.docs)
-        ds_cargos = [DatasetCargo(ds) for ds in self.datasets]
-        mv_cargos = [MoversCargo(mv) for mv in self.movers]
+        kwargs = dict(section=self.section, alias=self.make_alias())
+        conf_cargo = ConfCargo(**kwargs)
+        meta_cargo = MetaCargo(**kwargs, docs=self.docs)
+        
+        ds_cargos = [
+            DatasetCargo(ds, section=self.section)
+            for ds in self.datasets
+        ]
+        
+        mv_cargos = [
+            MoversCargo(mv, section=self.section)
+            for mv in self.movers
+        ]
+        
         return [
-            LogsCargo(suffix=suffix),
+            LogsCargo(**kwargs),
             SharedCargo(
-                name=suffix,
+                **kwargs,
                 cargos=[conf_cargo, meta_cargo] + ds_cargos + mv_cargos
             )
         ]
     
+    @abstractmethod
     def make_alias(self):
         
-        return random_name.generate_name(separator='-')  # will be used as suffix for the container name
+        pass
+    
+    def make_name(self):
+        
+        return '{}-{}'.format(self.section, self.make_alias())
     
     def make_env_vars(self):
         
@@ -110,7 +122,7 @@ class Expedition(ABC):
         ]
 
 
-class ShortExpedition(Expedition):
+class ShortExpedition(Expedition, ABC):
     
     def launch(self, foreground: bool = True, **kwargs):
         
@@ -124,11 +136,11 @@ class ShortExpedition(Expedition):
     def close(self, completed: bool = False):
         
         try:
-            self.captain.dispose_run(self.make_alias())
+            self.captain.dispose_run(self.make_name())
             
             for cargo in self.cargos:
                 if isinstance(cargo, LogsCargo) and (LOG.debug_mode or not completed):
-                    LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
+                    LOG.debug("Keeping logs from volume '{}'".format(cargo.name))
                 else:
                     self.captain.rm_vol(cargo, ignore=True)
             
@@ -137,7 +149,7 @@ class ShortExpedition(Expedition):
             LOG.warn("Failed to close resource '{}'".format(self.captain.__class__.__name__))
 
 
-class LongExpedition(Expedition):
+class LongExpedition(Expedition, ABC):
     
     is_fleet = True
     
@@ -154,11 +166,11 @@ class LongExpedition(Expedition):
     def revert(self, ignore_vols=False):
         
         try:
-            self.captain.dispose_deploy(self.make_alias())
+            self.captain.dispose_deploy(self.make_name())
             
             for cargo in self.cargos:
                 if isinstance(cargo, LogsCargo) and LOG.debug_mode:
-                    LOG.debug("Keeping logs from volume '{}'".format(cargo.full_name))
+                    LOG.debug("Keeping logs from volume '{}'".format(cargo.name))
                 else:
                     self.captain.rm_vol(cargo, ignore=ignore_vols)
             

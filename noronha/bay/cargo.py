@@ -92,30 +92,20 @@ class BarrelContent(Content):
 
 class Cargo(object):
     
-    def __init__(self, name, mount_to: str, mode: str, contents: List[Content] = None, require_mb: int = 10):
+    def __init__(self, section: str, alias: str, mount_to: str, mode: str, contents: List[Content] = None,
+                 require_mb: int = 10):
         
-        self.name = name
+        assert section in DockerConst.Section.ALL
+        self.name = '{}-{}'.format(section, alias)
         self.mount_to = mount_to
         self.mode = mode
         self.contents = contents
-        self.prefix = None
         self.require_mb = require_mb
-    
-    def set_prefix(self, prefix: str):
-        
-        assert self.prefix is None
-        assert prefix in DockerConst.Section.ALL
-        self.prefix = prefix
     
     @property
     def mount(self):
         
-        return '{}:{}:{}'.format(self.full_name, self.mount_to, self.mode)
-    
-    @property
-    def full_name(self):
-        
-        return '{}-{}'.format(self.prefix or '', self.name).lstrip('-')
+        return '{}:{}:{}'.format(self.name, self.mount_to, self.mode)
     
     def deploy(self, path: str = None):
         
@@ -154,7 +144,7 @@ class TimezoneCargo(Cargo):
     #  an implementation of docker secrets should do the job instead, by allowing to inject a file without
     #  replacing a whole directory. The secrets handling module could be called 'bottle'
     
-    def __init__(self, suffix: str):
+    def __init__(self, alias: str, **kwargs):
         
         super().__init__(
             mode='ro',
@@ -164,20 +154,22 @@ class TimezoneCargo(Cargo):
                     file_content=open(Paths.TZ_FILE_PATH, 'rb').read()
                 )
             ],
-            name='tz-{}'.format(suffix),
-            mount_to=Paths.ETC
+            alias='tz-{}'.format(alias),
+            mount_to=Paths.ETC,
+            **kwargs
         )
 
 
 class LogsCargo(Cargo):
     
-    def __init__(self, suffix: str):
+    def __init__(self, alias: str, **kwargs):
         
         super().__init__(
             mode='rw',
             contents=[],
-            name='logs-{}'.format(suffix),
-            mount_to=OnBoard.LOG_DIR
+            alias='logs-{}'.format(alias),
+            mount_to=OnBoard.LOG_DIR,
+            **kwargs
         )
 
 
@@ -186,7 +178,7 @@ class AnonymousCargo(Cargo):
     def __init__(self, **kwargs):
         
         super().__init__(
-            name='anon-{alias}-{dt}'.format(
+            alias='anon-{alias}-{dt}'.format(
                 alias=random_name.generate_name(separator='_'),
                 dt=datetime.now().strftime(DateFmt.SYSTEM)
             ),
@@ -196,7 +188,7 @@ class AnonymousCargo(Cargo):
 
 class ConfCargo(Cargo):
     
-    def __init__(self, suffix: str):
+    def __init__(self, alias: str, **kwargs):
         
         super().__init__(
             mode='ro',
@@ -206,18 +198,19 @@ class ConfCargo(Cargo):
                     file_content=AllConf.dump()
                 )
             ],
-            name='conf-{}'.format(suffix),
-            mount_to=OnBoard.CONF_DIR
+            alias='conf-{}'.format(alias),
+            mount_to=OnBoard.CONF_DIR,
+            **kwargs
         )
 
 
 class MetaCargo(Cargo):
     
-    def __init__(self, docs: List[SmartDoc], suffix: str = None):
+    def __init__(self, docs: List[SmartDoc], alias: str = None, **kwargs):
         
-        suffix = suffix or '-'.join([d.get_pk(delimiter='-') for d in docs])
+        alias = alias or '-'.join([d.get_pk(delimiter='-') for d in docs])
         super().__init__(
-            name='metadata-{}'.format(suffix),
+            alias='metadata-{}'.format(alias),
             mount_to=OnBoard.META_DIR,
             mode='ro',
             contents=[
@@ -226,7 +219,8 @@ class MetaCargo(Cargo):
                     doc.to_file_tuple()
                     for doc in docs
                 ]
-            ]
+            ],
+            **kwargs
         )
     
     def _compatible_with(self, other):
@@ -266,7 +260,7 @@ class HeavyCargo(Cargo):
 
 class DatasetCargo(HeavyCargo):
     
-    def __init__(self, ds: Dataset):
+    def __init__(self, ds: Dataset, section: str):
         
         assert ds.stored, NhaStorageError(
             """Dataset '{}' is not stored by the framework, so it cannot be mounted in a container"""
@@ -276,16 +270,17 @@ class DatasetCargo(HeavyCargo):
         subdir = ds.get_dir_name()
         dyr = OnBoard.SHARED_DATA_DIR
         super().__init__(
-            name='dataset-{}-{}'.format(ds.model.name, ds.name),
+            alias='dataset-{}'.format(ds.get_pk()),
             mount_to=os.path.join(dyr, subdir),
             mode='ro',
-            barrel=DatasetBarrel(ds)
+            barrel=DatasetBarrel(ds),
+            section=section
         )
 
 
 class MoversCargo(HeavyCargo):
     
-    def __init__(self, mv: ModelVersion, pretrained=False, local=False):
+    def __init__(self, mv: ModelVersion, section: str, pretrained=False, local=False):
         
         pretrained = pretrained or (mv.pretrained is True)
         subdir = mv.get_dir_name()
@@ -302,22 +297,24 @@ class MoversCargo(HeavyCargo):
         }.get('local' if local else 'shared').get('pretrain' if pretrained else 'deployed')
         
         super().__init__(
-            name='movers-{}-{}'.format(mv.model.name, mv.name),
+            alias='movers-{}'.format(mv.get_pk()),
             mount_to=os.path.join(dyr, subdir),
             mode='rw',
-            barrel=MoversBarrel(mv)
+            barrel=MoversBarrel(mv),
+            section=section
         )
 
 
 class SharedCargo(Cargo):
     
-    def __init__(self, name, cargos: List[Cargo]):
+    def __init__(self, alias: str, cargos: List[Cargo], **kwargs):
         
         super().__init__(
-            name='shared-{}'.format(name),
+            alias='shared-{}'.format(alias),
             mount_to=OnBoard.NHA_HOME,
             contents=[],
-            mode='rw'
+            mode='rw',
+            **kwargs
         )
         
         self.subdirs = []
@@ -332,7 +329,9 @@ class SharedCargo(Cargo):
         
         self.estimate_mb = sum([c.estimate_mb for c in self.contents])
     
-    def deploy(self, path, include_heavy_cargos=False):
+    def deploy(self, path: str = None, include_heavy_cargos=False):
+        
+        path = path or self.mount_to
         
         for subdir, content, tipe in zip(self.subdirs, self.contents, self.types):
             

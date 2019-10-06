@@ -43,13 +43,13 @@ class Captain(ABC, Configured):
         self.cleaner = StructCleaner()
     
     @abstractmethod
-    def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, alias: str,
+    def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
             foreground=False):
         
         pass
     
     @abstractmethod
-    def deploy(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, alias: str,
+    def deploy(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
                tasks: int = 1):
         
         pass
@@ -73,16 +73,10 @@ class Captain(ABC, Configured):
         
         pass
     
-    def with_prefix(self, suffix: str):
-        
-        return '{}-{}'.format(self.section, suffix)
-    
     def mule_name(self, mule_alias: str = None):
         
-        return self.with_prefix(
-            'mule-{}'.format(
-                mule_alias or random_name.generate_name()
-            )
+        return '{}-mule'.format(
+            mule_alias or random_name.generate_name()
         )
     
     def _find_sth(self, what, method, name, key=None, **kwargs):
@@ -111,11 +105,10 @@ class SwarmCaptain(Captain):
         self.docker_api = self.docker_compass.get_api()
         self.docker_backend = DockerBackend(logging_level=logging.ERROR)
     
-    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, alias: str, foreground=False):
+    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
-        name = self.with_prefix(alias)
         self.make_name_available(name)
-        [self.load_vol(v, alias) for v in cargos]
+        [self.load_vol(v, name) for v in cargos]
         image = self.docker_backend.ImageClass(img.repo, tag=img.tag)
         
         additional_opts = \
@@ -137,16 +130,15 @@ class SwarmCaptain(Captain):
         
         return cont
     
-    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, alias: str, tasks: int = 1):
+    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1):
         
-        [self.load_vol(v, alias) for v in cargos]
+        [self.load_vol(v, name) for v in cargos]
         self.assert_network()
-        name = self.with_prefix(alias)
         depl = self.find_depl(name)
         
         kwargs = self.cleaner(dict(
             name=name,
-            endpoint_spec=self.swarm_ports(ports),
+            endpoint_spec=dict(Ports=self.swarm_ports(ports)),
             networks=[DockerConst.NETWORK],
             mode=ServiceMode('replicated', replicas=tasks),
             task_template=TaskTemplate(
@@ -170,9 +162,8 @@ class SwarmCaptain(Captain):
             LOG.debug(kwargs)
             return self.docker_api.update_service(**kwargs)
     
-    def dispose_run(self, alias: str):
+    def dispose_run(self, name: str):
         
-        name = self.with_prefix(alias)
         cont = self.find_cont(name)
         
         if cont is not None:
@@ -180,19 +171,18 @@ class SwarmCaptain(Captain):
         else:
             return False
     
-    def dispose_deploy(self, alias: str):
+    def dispose_deploy(self, name: str):
         
-        name = self.with_prefix(alias)
         return self.rm_depl(name)
     
     def rm_vol(self, cargo: Cargo, ignore=False, retry=True):
         
         try:
-            self.docker_api.remove_volume(name=cargo.full_name, force=True)
+            self.docker_api.remove_volume(name=cargo.name, force=True)
             return True
         except DockerAPIError as e:
             if retry:
-                LOG.info("Waiting {} seconds before removing volume '{}'".format(self.timeout, cargo.full_name))
+                LOG.info("Waiting {} seconds before removing volume '{}'".format(self.timeout, cargo.name))
                 time.sleep(self.timeout)
                 return self.rm_vol(cargo, retry=False)
             elif ignore:
@@ -300,10 +290,10 @@ class SwarmCaptain(Captain):
     
     def assert_vol(self, cargo: Cargo):
         
-        vols = self.docker_api.volumes(dict(name=cargo.full_name))
+        vols = self.docker_api.volumes(dict(name=cargo.name))
         
         if len(vols) == 0:
-            self.docker_api.create_volume(name=cargo.full_name)
+            self.docker_api.create_volume(name=cargo.name)
             
             return True
         elif len(vols) == 1:
@@ -317,7 +307,7 @@ class SwarmCaptain(Captain):
         self.assert_vol(cargo)
         
         if isinstance(cargo, EmptyCargo) or len(cargo.contents) == 0:
-            LOG.debug("Skipping load of volume '{}'".format(cargo.full_name))
+            LOG.debug("Skipping load of volume '{}'".format(cargo.name))
             return False
         
         try:
@@ -351,7 +341,7 @@ class SwarmCaptain(Captain):
         kwargs = dict(
             name=self.mule_name(mule_alias),
             command=DockerConst.MULE_CMD,
-            volumes=[(cargo.full_name, DockerConst.STG_MOUNT, 'rw')]
+            volumes=[(cargo.name, DockerConst.STG_MOUNT, 'rw')]
         )
         
         return image.run_via_binary(**kwargs)
@@ -440,10 +430,9 @@ class KubeCaptain(Captain):
         self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.mule = None
     
-    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, alias: str, foreground=False):
+    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
-        [self.load_vol(v, alias) for v in cargos]
-        name = self.with_prefix(alias)
+        [self.load_vol(v, name) for v in cargos]
         self.make_name_available(name)
         vol_refs, vol_defs = self.kube_vols(cargos)
         mount_refs, mount_defs = self.kube_mounts(mounts)
@@ -481,10 +470,9 @@ class KubeCaptain(Captain):
         
         return pod
     
-    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, alias: str, tasks: int = 1):
+    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1):
         
-        [self.load_vol(v, alias) for v in cargos]
-        name = self.with_prefix(alias)
+        [self.load_vol(v, name) for v in cargos]
         vol_refs, vol_defs = self.kube_vols(cargos)
         mount_refs, mount_defs = self.kube_mounts(mounts)
         port_refs, port_defs = self.kube_svc_ports(name, ports)
@@ -534,33 +522,31 @@ class KubeCaptain(Captain):
         self.handle_svc(name, port_defs)
         return depl
     
-    def dispose_run(self, alias: str):
+    def dispose_run(self, name: str):
         
-        name = self.with_prefix(alias)
         self.rm_pod(name)
         self.rm_svc(name)
     
-    def dispose_deploy(self, alias: str):
+    def dispose_deploy(self, name: str):
         
-        name = self.with_prefix(alias)
         self.rm_depl(name)
         self.rm_svc(name)
     
     def rm_vol(self, cargo: Cargo, ignore=False):
         
         if isinstance(cargo, EmptyCargo):  # PVC
-            self.k8s_backend.core_api.delete_namespaced_persistent_volume_claim(cargo.full_name, self.namespace)
+            self.k8s_backend.core_api.delete_namespaced_persistent_volume_claim(cargo.name, self.namespace)
             return True
         
         if self.mule is None:
             if ignore:
-                LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.full_name))
+                LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.name))
                 return False
             else:
                 self.prepare_mule(cargo.name)
         
         try:
-            vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.full_name)
+            vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.name)
             self._exec_in_pod(self.mule, 'rm -rf {}'.format(vol_path))
             return True
         except Exception as e:
@@ -613,7 +599,7 @@ class KubeCaptain(Captain):
         return self._find_sth(
             what='persistent volume claims',
             method=self.k8s_backend.core_api.list_namespaced_persistent_volume_claim,
-            name=cargo.full_name
+            name=cargo.name
         )
     
     def find_pod(self, name):
@@ -681,7 +667,7 @@ class KubeCaptain(Captain):
         template = dict(
             apiVersion="v1",
             kind="PersistentVolumeClaim",
-            metadata={'name': cargo.full_name},
+            metadata={'name': cargo.name},
             spec=dict(
                 storageClassName=self.stg_cls,
                 accessModes=['ReadWriteOnce'],
@@ -690,7 +676,7 @@ class KubeCaptain(Captain):
         )
         
         if self.find_vol(cargo) is None:
-            LOG.info("Creating persistent volume claim '{}'".format(cargo.full_name))
+            LOG.info("Creating persistent volume claim '{}'".format(cargo.name))
             LOG.debug(template)
             self.k8s_backend.core_api.create_namespaced_persistent_volume_claim(self.namespace, template)
             return True
@@ -729,7 +715,7 @@ class KubeCaptain(Captain):
             return
         
         work_path, error = None, None
-        vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.full_name)
+        vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.name)
         
         try:
             self.prepare_mule(mule_alias)
@@ -850,10 +836,10 @@ class KubeCaptain(Captain):
         refs, defs = [], []
         
         for cargo in cargos:
-            name = cargo.full_name
+            name = cargo.name
             
             if isinstance(cargo, EmptyCargo):
-                kwargs = dict(persistentVolumeClaim={'claimName': cargo.full_name})
+                kwargs = dict(persistentVolumeClaim={'claimName': cargo.name})
             else:
                 if isinstance(cargo, MappedCargo):
                     nfs_path = cargo.src
@@ -866,12 +852,12 @@ class KubeCaptain(Captain):
                 })
             
             refs.append(dict(
-                name=cargo.full_name,
+                name=cargo.name,
                 mountPath=cargo.mount_to
             ))
             
             defs.append(dict(
-                name=cargo.full_name,
+                name=cargo.name,
                 **kwargs
             ))
         
