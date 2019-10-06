@@ -20,6 +20,7 @@ from noronha.common.annotations import Configured
 from noronha.common.conf import LazyConf
 from noronha.common.constants import Config, Perspective
 from noronha.common.errors import ResolutionError, NhaStorageError
+from noronha.common.logging import LOG
 
 
 class Warehouse(ABC, Configured):
@@ -83,16 +84,18 @@ class ArtifWarehouse(Warehouse):
     
     def get_client(self):
 
-        return ArtifactoryPath(os.path.join(self.compass.address, 'artifactory', self.repo),
-                               auth=(self.compass.user, self.compass.pswd),
-                               verify=False)
+        return ArtifactoryPath(
+            os.path.join(self.compass.address, 'artifactory', self.repo),
+            auth=(self.compass.user, self.compass.pswd),
+            verify=self.compass.check_certificate
+        )
 
     def assert_repo_exists(self):
 
         assert self.client.exists(), NhaStorageError("""The {} repository does not exist""".format(self.repo))
 
     def format_artif_path(self, path):
-
+        
         return self.client.joinpath(self.section, path)
     
     def upload(self, path_to, path_from=None, content=None):
@@ -126,18 +129,25 @@ class ArtifWarehouse(Warehouse):
         except Exception as e:
             raise NhaStorageError("Download failed. Check if the remote artifact exists in the repository") from e
 
-    def delete(self, path_to_file, ignore=False):
+    def delete(self, path, ignore=False):
         
-        # TODO: @Guilherme: consider 'ignore' flag as in NexusWarehouse
-        uri = self.format_artif_path(path_to_file)
-
-        if not uri.is_dir():
-            try:
+        uri = self.format_artif_path(path)
+        
+        try:
+            if uri.is_dir():
+                uri.rmdir()
+            else:
                 uri.unlink()
-            except FileNotFoundError as e:
-                raise NhaStorageError("Delete failed. Remote artifact does not exists in the repository") from e
-        else:
-            raise NhaStorageError("Delete failed. Cannot remove directory")
+            
+            return True
+        except FileNotFoundError as e:
+            message = "Delete from Artifactory failed. Check if the path exists: {}".format(uri)
+            
+            if ignore:
+                LOG.warn(message)
+                return False
+            else:
+                raise NhaStorageError(message) from e
     
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
@@ -226,14 +236,17 @@ class NexusWarehouse(Warehouse):
     
     def delete(self, path_to_file, ignore=False):
         
-        nexus_path = os.path.join(self.repo, self.section, path_to_file)  # TODO use format_nexus_path function
-        del_count = self.client.delete(nexus_path)
+        uri = os.path.join(self.repo, self.section, path_to_file)  # TODO use format_nexus_path function
+        del_count = self.client.delete(uri)
         
         if del_count == 0:
+            message = "Delete from Nexus failed. Check if the path exists: {}".format(uri)
+            
             if ignore:
+                LOG.warn(message)
                 return False
             else:
-                raise NhaStorageError("Delete failed. Check if the remote artifact exists in the repository")
+                raise NhaStorageError(message)
         elif del_count == 1:
             return True
         else:

@@ -25,7 +25,12 @@ class ModelVersionAPI(NoronhaAPI):
         mv = self.doc().find_one(name=name, model=model)
         # TODO: check if movers is not being used in a depl right now
         mv.delete()
-        return dict(record='removed', files=MoversBarrel(mv).purge(ignore=True), name=name, model=model)
+        return dict(
+            name=name,
+            model=model,
+            record='removed',
+            files='purged' if MoversBarrel(mv).purge(ignore=True) else 'not_found'
+        )
     
     def lyst(self, _filter: dict = None, model: str = None, train: str = None, ds: str = None, **kwargs):
         

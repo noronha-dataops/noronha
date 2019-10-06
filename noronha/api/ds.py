@@ -24,13 +24,18 @@ class DatasetAPI(NoronhaAPI):
         ds.delete()
         
         if ds.stored:
-            LOG.info("Purging dataset '{}' from the file manager".format(ds.name))
-            file_status = DatasetBarrel(ds).purge(ignore=True)
+            LOG.info("Purging dataset '{}' from the file manager".format(ds.show()))
+            file_status = 'purged' if DatasetBarrel(ds).purge(ignore=True) else 'not_found'
         else:
-            LOG.info("Dataset '{}' is not stored. Skipping purge".format(ds.name))
+            LOG.info("Dataset '{}' is not stored. Skipping purge".format(ds.show()))
             file_status = 'not_stored'
         
-        return dict(record='removed', files=file_status, name=name, model=model)
+        return dict(
+            name=name,
+            model=model,
+            record='removed',
+            files=file_status
+        )
     
     def lyst(self, _filter: dict = None, model: str = None, **kwargs):
         

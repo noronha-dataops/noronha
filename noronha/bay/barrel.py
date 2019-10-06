@@ -180,17 +180,10 @@ class Barrel(ABC):
     
     def purge(self, ignore=False):
         
-        purged = [
-            self.warehouse.delete(self.make_file_path(file_spec.name), ignore=ignore)
-            for file_spec in self.infer_schema_from_repo()
-        ]
-        
-        if True not in purged:
-            return 'not_found'
-        elif False not in purged:
-            return 'purged'
-        else:
-            return 'partial'
+        return self.warehouse.delete(
+            self.make_file_path(),
+            ignore=ignore
+        )
     
     def _compress_and_store(self, path: str, to_compress: List[FileSpec] = None):
         
