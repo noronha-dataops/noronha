@@ -7,7 +7,7 @@ import pkg_resources
 import re
 
 
-FW_VERSION = '1.2.1'  # framework version
+FW_VERSION = '1.2.2'  # framework version
 FW_TAG = 'develop'  # framework tag
 
 
