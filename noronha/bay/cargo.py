@@ -93,10 +93,14 @@ class BarrelContent(Content):
 class Cargo(object):
     
     def __init__(self, section: str, alias: str, mount_to: str, mode: str, contents: List[Content] = None,
-                 require_mb: int = 10):
+                 require_mb: int = 10, name: str = None):
         
-        assert section in DockerConst.Section.ALL
-        self.name = '{}-{}'.format(section, alias)
+        if name:
+            self.name = name
+        else:
+            assert section in DockerConst.Section.ALL
+            self.name = '{}-{}'.format(section, alias)
+        
         self.mount_to = mount_to
         self.mode = mode
         self.contents = contents
