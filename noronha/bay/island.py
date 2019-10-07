@@ -92,7 +92,8 @@ class MongoIsland(Island):
         
         return [
             EmptyCargo(
-                name=self.with_alias('data'),
+                alias=self.with_alias('data'),
+                section=self.section,
                 mount_to='/data/db',
                 require_mb=self.isle_compass.max_mb
             )
@@ -115,7 +116,8 @@ class ArtifIsland(Island):
         
         return [
             EmptyCargo(
-                name=self.with_alias('data'),
+                alias=self.with_alias('data'),
+                section=self.section,
                 mount_to='/var/opt/jfrog/artifactory',
                 require_mb=self.isle_compass.max_mb
             )
@@ -130,7 +132,8 @@ class NexusIsland(Island):
         
         return [
             EmptyCargo(
-                name=self.with_alias('data'),
+                alias=self.with_alias('data'),
+                section=self.section,
                 mount_to='/nexus-data',
                 require_mb=self.isle_compass.max_mb
             )
