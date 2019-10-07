@@ -1,5 +1,5 @@
 # default public base image for working insixe Noronha
-FROM noronha.everis.ai/noronha:develop
+FROM noronha.everis.ai/noronha:latest
 
 # project depenxencies installation
 ADD requirements.txt .
