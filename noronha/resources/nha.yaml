@@ -6,10 +6,12 @@ logger:
   pretty: false
   join_root: true
   max_bytes: 1048576  # 1mb
+  bkp_count: 1
 
 mongo:
   native: true
   port: 30017
+  database: nha_db
   write_concern:
     w: 1
     j: true
@@ -30,4 +32,3 @@ docker:
 
 container_manager:
   type: swarm
-  namespace: default

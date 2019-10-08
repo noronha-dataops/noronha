@@ -13,14 +13,6 @@ from noronha.common.constants import DateFmt, LoggerConst
 from noronha.common.utils import assert_json, assert_str, StructCleaner, order_yaml
 
 
-_DEFAULT_NAME = 'nha'
-_DEFAULT_LEVEL = logging.INFO
-_DEFAULT_MAX_BYTES = 100000
-_DEFAULT_BKP_COUNT = 0
-_DEV_NULL = '/dev/null'
-_EXTENSION = '.log'
-
-
 class Logger(Configured, Lazy):
     
     conf = LoggerConf

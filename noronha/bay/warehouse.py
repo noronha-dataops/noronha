@@ -32,7 +32,7 @@ class Warehouse(ABC, Configured):
         
         self.section = section
         self.compass: (ArtifCompass, NexusCompass) = self.compass_cls()
-        self.repo = self.compass.get_repo(self.section)
+        self.repo = self.compass.get_repo()
         self.client = self.get_client()
         self.assert_repo_exists()
     

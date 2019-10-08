@@ -75,11 +75,10 @@ class CaptainCompass(Compass):
     
     conf = CaptainConf
     KEY_TYPE = 'type'
-    DEFAULT_TYPE = 'swarm'
     KEY_NODES = 'nodes'
     KEY_API = 'api_key'
     KEY_TIMEOUT = 'api_timeout'
-    DEFAULT_TIMEOUT = 60
+    DEFAULT_TIMEOUT = None
     
     @property
     def api_timeout(self):
@@ -99,12 +98,7 @@ class CaptainCompass(Compass):
     @property
     def tipe(self):
         
-        return self.conf.get(self.KEY_TYPE, self.DEFAULT_TYPE)
-    
-    @abstractmethod
-    def get_api_key(self):
-        
-        pass
+        return self.conf[self.KEY_TYPE]
     
     @abstractmethod
     def get_namespace(self):
@@ -131,10 +125,6 @@ class SwarmCompass(CaptainCompass):
     
     DEFAULT_TIMEOUT = 20
     
-    def get_api_key(self):
-        
-        raise NotImplementedError("Container manager 'swarm' does not take an API Key")
-    
     def get_namespace(self):
         
         raise NotImplementedError("Container manager 'swarm' does not apply namespace isolation")
@@ -155,15 +145,12 @@ class SwarmCompass(CaptainCompass):
 class KubeCompass(CaptainCompass):
     
     KEY_NAMESPACE = 'namespace'
-    DEFAULT_NAMESPACE = 'default'
-    KEY_PROFILES = 'resource_profiles'
     KEY_STG_CLS = 'storage_class'
-    DEFAULT_STG_CLS = 'standard'
+    KEY_PROFILES = 'resource_profiles'
     KEY_NFS = 'nfs'
-    
-    def get_api_key(self):
-        
-        return self.conf.get(self.KEY_API, None)
+    DEFAULT_NAMESPACE = 'default'
+    DEFAULT_STG_CLS = 'standard'
+    DEFAULT_TIMEOUT = 60
     
     def get_namespace(self):
         
@@ -233,25 +220,22 @@ class LoggerCompass(Compass):
     KEY_FILE_NAME = 'file_name'
     KEY_MAX_BYTES = 'max_bytes'
     KEY_BKP_COUNT = 'bkp_count'
-    DEFAULT_MAX_BYTES = 1024*10
-    DEFAULT_BKP_COUNT = 1
-    DEFAULT_LVL = 'INFO'
     
     @property
     def lvl(self):
         
-        lvl_alias = self.conf.get(self.KEY_LVL, self.DEFAULT_LVL).strip().upper()
+        lvl_alias = self.conf[self.KEY_LVL].strip().upper()
         return getattr(logging, lvl_alias)
     
     @property
     def max_bytes(self):
         
-        return self.conf.get(self.KEY_MAX_BYTES, self.DEFAULT_MAX_BYTES)
+        return self.conf[self.KEY_MAX_BYTES]
     
     @property
     def bkp_count(self):
         
-        return self.conf.get(self.KEY_BKP_COUNT, self.DEFAULT_BKP_COUNT)
+        return self.conf[self.KEY_BKP_COUNT]
     
     @property
     def log_file_dir(self):
@@ -290,18 +274,18 @@ class IslandCompass(ABC, Compass):
     conf = None
     
     ORIGINAL_PORT = None
-    DEFAULT_HOST = None
-    DEFAULT_PORT = None
-    DEFAULT_USER = None
-    DEFAULT_PSWD = None
-    KEY_SSL = 'use_ssl'
-    KEY_CERT = 'check_certificate'
+    KEY_NATIVE = 'native'
     KEY_HOST = 'hostname'
     KEY_PORT = 'port'
     KEY_USER = 'user'
     KEY_PSWD = 'pswd'
-    KEY_NATIVE = 'native'
     KEY_MAX_MB = 'disk_allocation_mb'
+    KEY_SSL = 'use_ssl'
+    KEY_CERT = 'check_certificate'
+    DEFAULT_HOST = None
+    DEFAULT_PORT = None
+    DEFAULT_USER = None
+    DEFAULT_PSWD = None
     DEFAULT_MAX_MB = 100*1024  # 100 GB
     
     def __init__(self, perspective=None):
@@ -426,17 +410,16 @@ class MongoCompass(IslandCompass):
     conf = MongoConf
     
     ORIGINAL_PORT = 27017
-    DEFAULT_DB = 'nha_db'
-    DEFAULT_HOST = 'localhost'
     KEY_DB = 'database'
     KEY_CONCERN = 'write_concern'
+    DEFAULT_HOST = 'localhost'
     DEFAULT_CONCERN = {'w': 1, 'j': True, 'wtimeout': 5}
     DEFAULT_MAX_MB = 1*1024  # 1 GB
     
     @property
     def db_name(self):
         
-        return self.conf.get(self.KEY_DB, self.DEFAULT_DB)
+        return self.conf[self.KEY_DB]
     
     @property
     def connect_kwargs(self):
@@ -474,19 +457,9 @@ class WarehouseCompass(IslandCompass):
         assert self.conf.get('type') == self.file_manager_type,\
             ResolutionError("Current file manager type is '{}'".format(self.conf.get('type')))
     
-    def get_repo(self, section):
+    def get_repo(self):
         
-        repo = self.conf.get(self.KEY_REPO)
-        
-        if isinstance(repo, str):
-            return repo
-        elif isinstance(repo, dict):
-            return repo.get(section, self.DEFAULT_REPO)
-        elif repo is None:
-            return self.DEFAULT_REPO
-        else:
-            raise ResolutionError(
-                "Cannot determine file manager repository for section '{}' from reference: {}".format(section, repo))
+        return self.conf.get(self.KEY_REPO, self.DEFAULT_REPO)
     
     @property
     def address(self):
