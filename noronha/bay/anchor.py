@@ -65,6 +65,13 @@ class LocalRepository(Repository):
     _protocol = Protocol(prefix=RepoConst.ProtoPrefix.LOCAL)
     remote = False
     
+    def __init__(self, address):
+        
+        super().__init__(address)
+        path = self.protocol.get_path(address)
+        assert os.path.isdir(path)
+        self.address = self.protocol.prefix + os.path.abspath(path)
+    
     @property
     def git_repo(self):
         

@@ -97,7 +97,9 @@ class Lazy(ABC):
 
 class Interactive(object):
     
-    interactive: bool = False
+    def __init__(self, interactive: bool = False):
+        
+        self.interactive = interactive
     
     def _decide(self, message, default: bool, interrupt=False):
         
@@ -172,8 +174,11 @@ class Scoped(object):
         """{{Explain why it's necessary to define a scope for the Scoped class}}"""
         
         NONE = "{{Describe this scope}}"
+        DEFAULT = NONE
     
-    scope = Scope.NONE
+    def __init__(self, scope: str = None):
+        
+        self.scope = scope or self.Scope.DEFAULT
 
 
 def wrap_validation(arg_name, func):

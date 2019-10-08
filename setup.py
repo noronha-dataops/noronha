@@ -22,7 +22,8 @@ setup(
     description='DataOps for Machine Learning',
     long_description=__doc__,
     zip_safe=False,
-    platforms='any',
+    platforms=['Unix'],
+    license='LGPLv3',
     install_requires=open('./requirements/{}_reqs.txt'.format(
         'on_board' if os.environ.get('AM_I_ON_BOARD') else 'off_board'
     )).read().split('\n'),
@@ -49,13 +50,12 @@ setup(
     },
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Operating System :: Unix',
-        'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Topic :: Software Development :: Libraries :: Application Frameworks'

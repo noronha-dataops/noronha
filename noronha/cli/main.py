@@ -2,6 +2,7 @@
 
 import click
 import logging
+import pkg_resources
 
 from noronha.api.island import IslandAPI
 from noronha.cli.bvers import bvers
@@ -14,7 +15,7 @@ from noronha.cli.movers import movers
 from noronha.cli.note import note
 from noronha.cli.proj import proj
 from noronha.cli.train import train
-from noronha.common.constants import FW_VERSION
+from noronha.common.constants import FrameworkConst
 from noronha.common.logging import LOG
 
 
@@ -51,7 +52,12 @@ def version():
     
     """Framework's version"""
     
-    LOG.echo("Noronha Dataops v%s" % FW_VERSION)
+    LOG.echo("Noronha Dataops v%s" % FrameworkConst.FW_VERSION)
+    pkg = pkg_resources.require(FrameworkConst.FW_NAME)[0]
+    
+    for line in pkg.get_metadata_lines('METADATA'):
+        if not line.startswith('Requires'):
+            LOG.info(line)
 
 
 @click.command()

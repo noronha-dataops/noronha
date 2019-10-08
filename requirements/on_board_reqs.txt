@@ -2,7 +2,7 @@
 # Docker images like these are used to package projects and run notebooks (e.g.: trainings, predictions).
 # In this scope, the framework's tooling assists with miscellaneous functionalities (e.g.: model publish, http, etc)
 
-pyvalid
+pyvalid==0.9.2
 kaptan
 mongoengine
 artifactory

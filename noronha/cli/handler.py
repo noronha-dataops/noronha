@@ -14,13 +14,13 @@ from noronha.common.utils import StructCleaner
 
 class CommandHandler(Interactive):
     
+    interactive: bool = False
+    
     @classmethod
     def run(cls, _api_cls, _method, _proj_resolvers: (list, None) = (), _error_callback=None, _response_callback=None,
             **method_kwargs):
         
         assert issubclass(_api_cls, NoronhaAPI)
-        NoronhaAPI.scope = NoronhaAPI.Scope.CLI
-        NoronhaAPI.interactive = cls.interactive
         method_kwargs = StructCleaner(nones=[None])(method_kwargs)
         api, code, error = None, None, None
         
@@ -35,8 +35,14 @@ class CommandHandler(Interactive):
             proj_resolvers = _proj_resolvers or [ProjResolver.BY_REPO, ProjResolver.BY_CONF]
         
         try:
-            api = _api_cls()
-            api.set_proj(ref_to_proj=ref_to_proj, resolvers=proj_resolvers, ignore=True)
+            api = _api_cls(
+                proj=ref_to_proj,
+                proj_resolvers=proj_resolvers,
+                ignore=True,
+                scope=NoronhaAPI.Scope.CLI,
+                interactive=cls.interactive
+            )
+            
             response = getattr(api, _method)(**method_kwargs)
             
             if isinstance(response, GeneratorType):

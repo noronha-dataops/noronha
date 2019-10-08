@@ -18,6 +18,17 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     proj: Project = None
     valid = DefaultValidation
     
+    def __init__(self, proj: str = None, proj_resolvers: list = (), ignore: bool = False,
+                 scope: str = None, interactive: bool = False):
+        
+        Scoped.__init__(self, scope=scope)
+        Interactive.__init__(self, interactive=interactive)
+        self.set_proj(
+            ref_to_proj=proj,
+            resolvers=proj_resolvers,
+            ignore=True if ignore else proj is None
+        )
+    
     class Scope(object):
         
         """Static marker that indicates where the API was called from"""
@@ -25,8 +36,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
         PYTHON = "Directly instantiating the Python API"
         REST = "HTTP request to a REST API endpoint"
         CLI = "User input to command line interface"
-    
-    scope = Scope.PYTHON
+        DEFAULT = PYTHON
     
     def set_proj(self, ref_to_proj, resolvers: list = (), ignore=False):
         
@@ -35,7 +45,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
             return self
         
         if resolvers is None:
-            LOG.warn("Skipping project resolution")
+            LOG.info("Skipping project resolution")
             return self
         
         resolver_obj = ProjResolver()
@@ -53,7 +63,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
             details = """Resolvers used: {}""".format(resolvers)
             
             if ignore:
-                LOG.warn(message)
+                LOG.info(message)
                 LOG.debug(details)
             else:
                 raise NhaAPIError(message, details)

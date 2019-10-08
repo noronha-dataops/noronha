@@ -8,7 +8,7 @@ from noronha.bay.cargo import EmptyCargo
 from noronha.bay.compass import IslandCompass, MongoCompass, ArtifCompass, NexusCompass, RouterCompass
 from noronha.bay.expedition import LongExpedition
 from noronha.bay.shipyard import LocalBuilder
-from noronha.common.constants import DockerConst, FW_TAG, Package, Perspective
+from noronha.common.constants import DockerConst, FrameworkConst, Package, Perspective
 from noronha.common.errors import ResolutionError, MisusageError
 from noronha.common.logging import LOG
 
@@ -25,7 +25,7 @@ class Island(LongExpedition):
         self.repo = LocalRepository(address='local://' + self.source)
         self.builder = LocalBuilder(
             target_name=self.alias,
-            target_tag=FW_TAG,
+            target_tag=FrameworkConst.FW_TAG,
             section=DockerConst.Section.ISLE
         )
         super().__init__(
