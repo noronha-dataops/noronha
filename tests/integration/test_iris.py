@@ -113,6 +113,20 @@ out = check_output([
 # validation
 assert json.loads(out)['result'] == 'setosa'
 
+# resizing to 2 tasks
+depl_api.new(
+    name='homolog',
+    notebook='notebooks/predict',
+    port=30050,
+    movers=['iris-clf:experiment-v1'],
+    tasks=2
+)
+
+# deployment removal
+depl_api.rm(
+    name='homolog'
+)
+
 # clean
 os.chdir('..')
 rmtree(TEST_CASE)
