@@ -173,7 +173,7 @@ def dataset_meta(model: str = None, dataset: str = None, ignore: bool = False):
     
     return _resolve_metadata(
         doc_cls=Dataset,
-        model_name=model,
+        model=model,
         obj_name=dataset,
         ignore=ignore
     )
@@ -201,7 +201,7 @@ def movers_meta(model: str = None, version: str = None, ignore: bool = False):
     
     return _resolve_metadata(
         doc_cls=ModelVersion,
-        model_name=model,
+        model=model,
         obj_name=version,
         ignore=ignore
     )
