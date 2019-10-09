@@ -43,7 +43,7 @@ class Publisher(object):
     def _infer_dataset(self, model_name: str, uses_dataset: bool = True, dataset_name: str = None):
         
         if uses_dataset:
-            return dataset_meta(model_name=model_name, dataset_name=dataset_name).name
+            return dataset_meta(model=model_name, dataset=dataset_name).name
         else:
             return None
     
@@ -51,7 +51,7 @@ class Publisher(object):
         
         if uses_pretrained:
             model_name, version_name = (pretrained_with or ':').split(':')
-            mv = movers_meta(model_name=model_name or None, version_name=version_name or None)
+            mv = movers_meta(model=model_name or None, version=version_name or None)
             return mv.show()
         else:
             return None
