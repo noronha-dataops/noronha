@@ -41,4 +41,4 @@ For further commands and usage options, see the [CLI reference](https://noronha-
 
 For a better understanding of the relationships between entities (models, versions, trainings, etc...) see the [data model guide](https://noronha-dataops.readthedocs.io/en/latest/guide/data_model.html).
 
-For running in a more robust configuration or setting up different framework behaviours, see the [configuration manual](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html). 
+For running in a more robust configuration set-up or customizing the framework's behaviour, see the [configuration manual](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html). 
