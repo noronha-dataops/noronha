@@ -1,11 +1,10 @@
-# default public base image for working insixe Noronha
+# default public base image for working inside Noronha
 FROM noronha.everis.ai/noronha:develop
 
-# project depenxencies installation
+# project dependencies installation
 ADD requirements.txt .
 RUN bash -c "source ${CONDA_HOME}/bin/activate ${CONDA_VENV} \
- && pip install -r requirements.txt \
- && rm -f requirements.txt"
+ && conda install --file requirements.txt"
 
-# deploying the project's coxe
+# deploying the project's code
 ADD . ${APP_HOME}

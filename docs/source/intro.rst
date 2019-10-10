@@ -3,13 +3,29 @@ Introduction
 ******************
 
 What's this?
-===============
+============
+Noronnha is a framework that hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture.
+The goal here is to help Data Scientists benefit from DataOps practices without having to change much of their usual work behavior.
 
-Noronnha is a framework that hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture. The goal here is to help Data Scientists benefit from DataOps practices without having to change much of their usual work behavior.
+Overview
+========
+The following steps and the diagram bellow describe together the basic training and deploying workflow
+of a Machine Learning project inside Noronha:
+
+    #. Noronha's base image is used as a starting point to provide the tools a project needs to run inside the framework.
+
+    #. The project is packed in a Docker image with its dependencies, a training notebook and a notebook for inference.
+
+    #. Every training is a parameterized execution of the training notebook, inside a container of the project's image.
+
+    #. Every model version produced is published to a versioning system in which MongoDB stores metadata and a file manager like Artifactory               stores raw files and binaries.
+
+    #. When deploying a model, containers of the project's image are created for running the inference notebook as a service. Every asset                  necessary is injected into the containers.
+
+.. image:: workflow.png
 
 Pre-requisites
-===============
-
+==============
 To use Noronha in its most basic configuration all you need is:
 
     - Any recent, stable Unix OS.
@@ -20,8 +36,7 @@ To use Noronha in its most basic configuration all you need is:
 For a more advanced usage of the framework, see the :ref:`configuration guide <configuration-guide>`.
 
 Installation
-===============
-
+============
 .. _installation-intro:
 
 You can easily install Noronha by activating your Conda environment and running the following commands:
@@ -32,22 +47,45 @@ You can easily install Noronha by activating your Conda environment and running 
    
     nha get-me-started
 
-This assumes you're going to use the default plugins (MongoDB and Artifactory) in native mode (auto-generated instances). To use plugins differently, see the :ref:`configuration guide <configuration-guide>`.
+This assumes you're going to use the default plugins (MongoDB and Artifactory) in native mode (auto-generated instances).
+To use plugins differently, see the :ref:`configuration guide <configuration-guide>`.
 
 Basic usage
 ===============
-Setup your project:
+Let's start with the simplest project structure:
 
 .. parsed-literal::
 
-    nha model new --name my-lstm --model-file '{"name": "lstm.h5", "required": true}'
+    project_home:
+    +-- Dockerfile
+    +-- requirements.txt
 
-    nha proj new --name my-proj --model my-lstm --repo docker://user/image
-   
-    # OBS: repository user/image should use noronha.everis.ai/noronha as its base image
-
-Get to work:
+This is what the Dockerfile may look like:
 
 .. parsed-literal::
 
-    nha note
+    # default public base image for working inside Noronha
+    FROM noronha.everis.ai/noronha:develop
+
+    # project dependencies installation
+    ADD requirements.txt .
+    RUN bash -c "source ${CONDA_HOME}/bin/activate ${CONDA_VENV} \
+     && conda install --file requirements.txt"
+
+    # deploying the project's code
+    ADD . ${APP_HOME}
+
+Now record your project's metadata and build it:
+
+.. parsed-literal::
+
+    nha proj new --name my-proj
+    nha proj build --tag develop
+
+Then, run the Jupyter Notebook interface inside your project's image for editing and testing code:
+
+.. parsed-literal::
+
+    nha note --edit --tag develop
+
+For fully-working project templates and end-to-end tutorials, see the `examples directory <https://gitlab.eva.bot/asseteva/noronha-dataops/tree/master/examples>`_.
