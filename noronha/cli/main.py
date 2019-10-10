@@ -55,7 +55,12 @@ def version():
     LOG.echo("Noronha Dataops v%s" % FrameworkConst.FW_VERSION)
     pkg = pkg_resources.require(FrameworkConst.FW_NAME)[0]
     
-    for line in pkg.get_metadata_lines('METADATA'):
+    try:
+        meta = pkg.get_metadata_lines('METADATA')
+    except FileNotFoundError:
+        meta = pkg.get_metadata_lines('PKG-INFO')
+    
+    for line in meta:
         if not line.startswith('Requires'):
             LOG.info(line)
 
