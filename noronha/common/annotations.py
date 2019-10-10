@@ -80,17 +80,15 @@ class Lazy(ABC):
     
     def __getattribute__(self, attr_name):
         
-        if attr_name in super().__getattribute__('_LAZY_PROPERTIES'):
-            if not self.ready:
-                self.setup()
-                self.ready = True
+        if attr_name in super().__getattribute__('_LAZY_PROPERTIES') and not self.ready:
+            self.setup()
+            self.ready = True
         
         attr = super().__getattribute__(attr_name)
         
-        if getattr(attr, Flag.READY, False):
-            if not self.ready:
-                self.setup()
-                self.ready = True
+        if getattr(attr, Flag.READY, False) and not self.ready:
+            self.setup()
+            self.ready = True
         
         return attr
 
@@ -99,11 +97,11 @@ class Interactive(object):
     
     def __init__(self, interactive: bool = False):
         
-        self.interactive = interactive
+        self.interactive_mode = interactive
     
     def _decide(self, message, default: bool, interrupt=False):
         
-        if self.interactive:
+        if self.interactive_mode:
             decision = confirm(text=message)
         else:
             decision = default
@@ -131,7 +129,7 @@ class Projected(object):
 
 class Relaxed(object):
     
-    relaxed: bool = True
+    relaxed_mode: bool = True
     
     def relaxed_wrapper(self, func):
         
@@ -147,7 +145,7 @@ class Relaxed(object):
         
         attr = super().__getattribute__(attr_name)
         
-        if getattr(attr, Flag.RELAXED, False) and self.relaxed:
+        if getattr(attr, Flag.RELAXED, False) and self.relaxed_mode:
             return self.relaxed_wrapper(attr)
         else:
             return attr

@@ -99,17 +99,16 @@ class ArtifWarehouse(Warehouse):
         return self.client.joinpath(self.section, path)
     
     def upload(self, path_to, path_from=None, content=None):
-
+        
         work = None
-
+        
         try:
             if path_from is None:
                 work = Workpath.get_tmp()
                 file_name = os.path.basename(path_to)
                 work.deploy_text_file(name=file_name, content=content)
                 path_from = work.join(file_name)
-                # path_from = self.make_local_file(os.path.basename(path_to), content)
-                
+            
             dest_path = self.format_artif_path(path_to)
             dest_path.deploy_file(path_from)
         except Exception as e:
@@ -215,7 +214,6 @@ class NexusWarehouse(Warehouse):
                 file_name = os.path.basename(path_to)
                 work.deploy_text_file(name=file_name, content=content)
                 path_from = work.join(file_name)
-                # path_from = self.make_local_file(os.path.basename(path_to), content)
 
             dest_path = os.path.join(self.repo, self.section, path_to)
             self.client.upload(path_from, dest_path)

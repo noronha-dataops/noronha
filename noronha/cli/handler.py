@@ -14,7 +14,7 @@ from noronha.common.utils import StructCleaner
 
 class CommandHandler(Interactive):
     
-    interactive: bool = False
+    interactive_mode: bool = False
     
     @classmethod
     def run(cls, _api_cls, _method, _proj_resolvers: (list, None) = (), _error_callback=None, _response_callback=None,
@@ -40,7 +40,7 @@ class CommandHandler(Interactive):
                 proj_resolvers=proj_resolvers,
                 ignore=True,
                 scope=NoronhaAPI.Scope.CLI,
-                interactive=cls.interactive
+                interactive=cls.interactive_mode
             )
             
             response = getattr(api, _method)(**method_kwargs)

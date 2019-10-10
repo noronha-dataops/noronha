@@ -9,30 +9,30 @@ from noronha.db.proj import Project
 
 class ProjResolver(Relaxed):
     
-    BY_NAME = 'by_name'
-    BY_REPO = 'by_repo'
-    BY_REMOTE = 'by_remote'
-    BY_CONF = 'by_conf'
+    BY_NAME = 'resolve_by_name'
+    BY_REPO = 'resolve_by_repo'
+    BY_REMOTE = 'resolve_by_remote'
+    BY_CONF = 'resolve_by_conf'
     ALL = tuple([BY_NAME, BY_REPO, BY_CONF])  # BY_REMOTE is redundant with BY_REPO
     
     @relax
-    def by_name(self, name):
+    def resolve_by_name(self, name):
         
         return Project.objects(name=name)[0]
     
     @relax
-    def by_repo(self, repo, only_remote=False):
+    def resolve_by_repo(self, repo, only_remote=False):
         
         repo = resolve_repo(repo, only_remote=only_remote, implicit_local=not only_remote)
         return Project.objects(repo=str(repo))[0]
     
     @relax
-    def by_remote(self, repo):
+    def resolve_by_remote(self, repo):
         
         return self.by_repo(repo, only_remote=True)
     
     @relax
-    def by_conf(self, _):
+    def resolve_by_conf(self, _):
         
         return self.by_name(name=ProjectCompass().cwp)
 

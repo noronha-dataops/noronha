@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import hashlib
 import json
 import os
 from collections import OrderedDict
@@ -100,29 +99,18 @@ def join_dicts(parent_dyct, child_dyct, allow_overwrite=False):
     return dyct
 
 
-def assert_dict(x, allow_lists=False, allow_none=False, ignore=False):
+def assert_dict(x, allow_none=False):
     
-    if x is None and (allow_none or ignore):
-        return {}
-    
-    if isinstance(x, dict):
-        return x
-    
-    try:
-        x = assert_str(x).strip()
-        x = json.loads(x)
-    except Exception:
-        pass
-    
-    if isinstance(x, dict):
-        return x
-    elif isinstance(x, list) and allow_lists:
-        return x
-    
-    if ignore:
+    if x is None:
+        if allow_none:
+            return {}
+        else:
+            raise ValueError("Expected str, bytes or dict. Got None")
+    elif isinstance(x, dict):
         return x
     else:
-        raise TypeError("Could not convert '{}' to dict" .format(x))
+        x = assert_str(x).strip()
+        return json.loads(x)
 
 
 def assert_json(x, depth=0, indent=None, encode=False, encoding=None):
@@ -158,12 +146,6 @@ def assert_str(x, encoding=Encoding.UTF_8, allow_none=False, allow_empty=True):
         raise ValueError("Expected a non empty str")
     
     return x
-
-
-def dict_to_hash(x: dict):
-    
-    j = assert_json(x, encode=True, encoding=Encoding.UTF_8)
-    return hashlib.sha224(j).hexdigest()
 
 
 def assert_extension(x, ext):

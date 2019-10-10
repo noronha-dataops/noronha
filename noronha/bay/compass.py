@@ -40,7 +40,6 @@ class Compass(Configured):
     def __init__(self):
         
         self.conf.get('')  # triggering conf load
-        # self.conf = Kaptan().import_config(self.conf)
 
 
 class DockerCompass(Compass):
