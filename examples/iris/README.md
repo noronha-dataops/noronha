@@ -2,7 +2,9 @@
 # Example: Iris
 
 This example demonstrates the end-to-end workflow of a Machine
-Learning project that works with tabular data. All steps required for running this example can be found in its [script](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/iris/script.sh).
+Learning project that works with tabular data.
+
+All steps required for running this example can be found in its [script](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/iris/script.sh).
 
 ## Dataset
 
@@ -36,7 +38,7 @@ This example may be reused as a template in other Machine Learning projects that
 ## Next steps
 
 For further commands and usage options, see the [CLI reference](https://noronha-dataops.readthedocs.io/en/latest/reference/cli.html).
-<br><br>
+
 For a better understanding of the relationships between entities (models, versions, trainings, etc...) see the [data model guide](https://noronha-dataops.readthedocs.io/en/latest/guide/data_model.html).
-<br><br>
+
 For running in a more robust configuration or setting up different framework behaviours, see the [configuration manual](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html). 
