@@ -156,19 +156,6 @@ def assert_extension(x, ext):
     return x
 
 
-def run_bash_cmd(cmd):
-    
-    if isinstance(cmd, str):
-        cmd = cmd.split(' ')
-    
-    out, err = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
-    
-    if err:
-        raise RuntimeError(assert_str(err).strip())
-    else:
-        return assert_str(out).strip()
-
-
 def am_i_on_board():
     
     return os.environ.get(EnvVar.ON_BOARD, False)

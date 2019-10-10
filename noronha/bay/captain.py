@@ -14,6 +14,7 @@ from docker.types import ServiceMode, TaskTemplate, ContainerSpec
 from kaptan import Kaptan
 from kubernetes.stream import stream
 import random_name
+from subprocess import Popen, PIPE
 from typing import Type, List
 
 from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo, HeavyCargo, SharedCargo
@@ -25,7 +26,7 @@ from noronha.common.conf import CaptainConf
 from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex
 from noronha.common.errors import ResolutionError, NhaDockerError
 from noronha.common.logging import LOG
-from noronha.common.utils import dict_to_kv_list, run_bash_cmd, StructCleaner
+from noronha.common.utils import dict_to_kv_list, assert_str, StructCleaner
 
 
 class Captain(ABC, Configured):
@@ -782,14 +783,20 @@ class KubeCaptain(Captain):
     
     def copy_to(self, src: str, dest: str, pod: Pod):
         
-        run_bash_cmd(
+        out, err = Popen(
             'kubectl cp --namespace={namespace} {src} {pod}:{dest}'.format(
                 src=src,
                 dest=dest,
                 pod=pod.name,
                 namespace=self.namespace
-            )
-        )
+            ).split(' '),
+            stdout=PIPE, stderr=PIPE
+        ).communicate()
+        
+        if err:
+            raise RuntimeError(assert_str(err).strip())
+        else:
+            return assert_str(out).strip()
     
     def _exec_in_pod(self, pod: Pod, cmd, stderr=True, stdin=False, stdout=True, tty=False):
         
