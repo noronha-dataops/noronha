@@ -12,13 +12,16 @@ const syntax_err = 'WRONG_SYNTAX'
 
 
 function routerError(service, err, res) {
+
+    var code = null
+    var message = null
     
     if (err.errno == 'ENOTFOUND') {
-        var code = 404;
-        var message = `No such service: ${service}`;
+        code = 404;
+        message = `No such service: ${service}`;
     } else if (err.errno == syntax_err) {
-        var code = 500;
-        var message = {'Expected': syntax};
+        code = 500;
+        message = {'Expected': syntax};
     } else {
         code = 501;
         message = err.message;
