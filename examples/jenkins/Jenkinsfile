@@ -1,0 +1,104 @@
+
+/**
+ * Runs an end-to-end test of a Clever deployment.
+ *
+ * @param project
+ * @param tag
+ * @param movers
+ * @param tasks
+ */
+
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'project', description: '')
+        string(name: 'tag', defaultValue: 'latest', description: '')
+        string(name: 'movers', description: '')
+        string(name: 'tasks', defaultValue: '1', description: '')
+    }
+
+    environment {
+        project = "${params.project}"
+        tag = "${params.tag}"
+        movers = "${params.movers}"
+        tasks = "${params.tasks}"
+    }
+
+    stages {
+        stage ('resolve_metadata') {
+            steps {
+                sh '''#!/bin/bash
+
+                    bvers=`nha bvers info --proj "${project}" --tag "${tag}"`
+                    echo ${bvers} | grep git_version
+
+                '''
+            }
+            post {
+                success {
+                    echo "${STAGE_NAME} success"
+                }
+            failure {
+                    echo "${STAGE_NAME} fails!"
+                }
+            }
+        }
+        stage ('checkout') {
+            steps {
+                cleanWs()
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/master"]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'jenkinsGIT',
+                        url: "https://gitlab.eva.bot/asseteva/clever-nha-continuous-test.git"
+                    ]]
+                ])
+            }
+            post {
+                success {
+                    echo "${STAGE_NAME} success"
+                }
+            failure {
+                    echo "${STAGE_NAME} fails!"
+                    // sendMSTeamsMessageFail "${STAGE_NAME} fail !"
+                }
+            }
+        }
+        stage ('test') {
+            steps {
+                sh '''#!/bin/bash
+
+                    echo "> testing deployment exposed by ingress: ${ingress}"
+                    chmod +x -R scripts
+
+                    if [ "${dataset}" == "0" ] ; then
+                        datasets=(`ls data`)
+                    else
+                        datasets=( "${dataset}" )
+                    fi
+
+                    for dataset in ${datasets[@]} ; do
+                        dataset=`echo "${dataset}" | sed 's/[^0-9]//g'`  # keeping only the digits
+                        echo ">> dataset: ${dataset}"
+
+                        ./scripts/test_clever.sh --data-dir ./data --data-num ${dataset} --ingress-ip ${ingress}
+                    done
+                '''
+            }
+            post {
+                success {
+                    echo "${STAGE_NAME} success"
+                }
+            failure {
+                    echo "${STAGE_NAME} fails!"
+                    // sendMSTeamsMessageFail "${STAGE_NAME} fail !"
+                }
+            }
+        }
+    }
+}

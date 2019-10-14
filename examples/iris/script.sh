@@ -33,7 +33,7 @@ docker images noronha/*botanics*
 nha -v bvers list
 
 # run a notebook for editing and testing your code at http://localhost:30088
-# nha -d note --edit
+# nha -d note --edit --dataset iris-clf:iris-data-v0
 
 # execute your first training # this is going to use the training notebook
 nha -s -d -p train new \

@@ -15,10 +15,12 @@ class ProjResolver(Relaxed):
     BY_CONF = 'resolve_by_conf'
     ALL = tuple([BY_NAME, BY_REPO, BY_CONF])  # BY_REMOTE is redundant with BY_REPO
     
-    @relax
     def resolve_by_name(self, name):
         
-        return Project.objects(name=name)[0]
+        if name:
+            return Project.find_one(name=name)
+        else:
+            return None
     
     @relax
     def resolve_by_repo(self, repo, only_remote=False):
