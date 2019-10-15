@@ -262,8 +262,7 @@ class SmartDoc(PrettyDoc):
     
     def clean(self):
         
-        if hasattr(self, 'modified'):
-            self.modified = datetime.now()
+        self.modified = datetime.now()
         
         if hasattr(self, 'name') and self.name is None:
             name = random_name.generate_name(separator='-')

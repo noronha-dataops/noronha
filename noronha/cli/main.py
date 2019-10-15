@@ -44,7 +44,6 @@ def nha(_, quiet, verbose, debug, pretty, skip):
     
     if pretty:
         LOG.pretty = True
-        # stackprinter.set_excepthook(style=LOG.conf.get('traceback_style'))
 
 
 @click.command()

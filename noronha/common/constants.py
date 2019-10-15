@@ -80,6 +80,7 @@ class DBConst(object):
     
     MAX_NAME_LEN = 30
     MAX_DESC_LEN = 300
+    MAX_REPO_LEN = 600
     MAX_EXPAND_DEPTH = 5
 
 
@@ -158,6 +159,7 @@ class Regex(object):
     DNS_SPECIAL = re.compile(r'[\-\.]')
     CMD_DELIMITER = re.compile(r'\s+&&\s+|;')
     YAML_BREAK = re.compile(r'\n[^- ]')
+    LINE_BREAK = r'[\r\n]+'
 
 
 class RepoConst(object):
@@ -308,6 +310,13 @@ class DockerConst(object):
     MULE_IMG = 'appropriate/curl:{}'.format(LATEST)
     STG_MOUNT = '/staging'
     
+    class BuildSource(object):
+        
+        LOCAL = 'local'
+        GIT = 'git'
+        PRE = 'pre-built'
+        ALL = [LOCAL, GIT, PRE]
+        
     class Managers(object):
         
         KUBE = 'kube'

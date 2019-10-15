@@ -3,13 +3,14 @@
 import sys
 from abc import ABC, abstractmethod
 from click import confirm
-from mongoengine import Document
 from pyvalid import accepts
 from pyvalid.validators import is_validator
 from typing import Type
 
 from noronha.common.constants import Flag
 from noronha.common.errors import NhaAPIError, MisusageError, NhaValidationError
+from noronha.db.main import SmartDoc
+from noronha.db.proj import Project
 
 
 def projected(func):
@@ -64,7 +65,7 @@ class Documented(object):
     so that any instance of this class will handle documents with that schema and colletion.
     """
     
-    doc: Type[Document] = None  # a class that extends Document
+    doc: Type[SmartDoc] = None  # any class that extends SmartDoc
 
 
 class Lazy(ABC):
@@ -114,7 +115,7 @@ class Interactive(object):
 
 class Projected(object):
     
-    proj: Document = None  # an actual Document instance (not a Document type as in Documented)
+    proj: Project = None  # an actual Document instance (not a Document type as in Documented)
     
     def __getattribute__(self, attr_name):
         
@@ -173,10 +174,12 @@ class Scoped(object):
         
         NONE = "{{Describe this scope}}"
         DEFAULT = NONE
+        ALL = [NONE]
     
     def __init__(self, scope: str = None):
         
         self.scope = scope or self.Scope.DEFAULT
+        assert self.scope in self.Scope.ALL
 
 
 def wrap_validation(arg_name, func):

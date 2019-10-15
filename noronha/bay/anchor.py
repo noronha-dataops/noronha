@@ -4,81 +4,69 @@ import git
 import os
 from abc import ABC
 
-from noronha.common.constants import RepoConst, DockerConst
+from noronha.common.constants import DockerConst
 from noronha.common.errors import ResolutionError
-
-
-class Protocol(object):
-    
-    def __init__(self, prefix):
-        
-        self.prefix = prefix
-    
-    def test(self, address):
-        
-        return address.startswith(self.prefix)
-    
-    def get_path(self, address):
-        
-        return address[len(self.prefix):]
+from noronha.db.proj import Project
 
 
 class Repository(ABC):
     
-    _protocol = None
-    remote = True
+    remote: bool = None
+    builds_from: str = None
     
-    @property
-    def git_hash(self):
+    def __init__(self, address: str):
         
-        return None
-    
-    @property
-    def protocol(self):
+        assert isinstance(address, str) and len(address) > 0,\
+            ResolutionError("Cannot instantiate {} from reference {}".format(self.__class__.__name__, address))
         
-        return self._protocol
-    
-    @protocol.setter
-    def protocol(self, protocol):
-        
-        assert isinstance(protocol, Protocol)
-        self._protocol = protocol
-    
-    def __init__(self, address):
-        
-        assert self.protocol.test(address),\
-            "Not a valid {}: {}".format(self.__class__.__name__, address)
         self.address = address
     
     @property
-    def path(self):
+    def tipe(self):
         
-        return self.protocol.get_path(self.address)
+        return self.__class__.__name__[:-len('Repository')]
     
     def __str__(self):
         
-        return self.address
+        return '{}:{}'.format(self.__class__.__name__, self.tipe)
+    
+    def __repr__(self):
+        
+        return self.__str__()
+    
+    @property
+    def git_version(self):
+        
+        raise NotImplementedError()
+    
+    @classmethod
+    def from_project(cls, proj: Project):
+        
+        raise NotImplementedError
 
 
 class LocalRepository(Repository):
     
-    _protocol = Protocol(prefix=RepoConst.ProtoPrefix.LOCAL)
     remote = False
+    builds_from = DockerConst.BuildSource.LOCAL
     
-    def __init__(self, address):
+    def __init__(self, address: str = None):
         
-        super().__init__(address)
-        path = self.protocol.get_path(address)
-        assert os.path.isdir(path)
-        self.address = self.protocol.prefix + os.path.abspath(path)
+        assert os.path.isdir(address)
+        super().__init__(os.path.abspath(address))
+    
+    @classmethod
+    def from_project(cls, proj: Project):
+        
+        return cls(proj.home_dir)
     
     @property
     def git_repo(self):
         
-        return git.Repo(self.path)
+        return git.Repo(self.address)
     
     @property
-    def git_hash(self):
+    def git_version(self):
         
         try:
             return str(self.git_repo.head.commit)
@@ -88,59 +76,49 @@ class LocalRepository(Repository):
 
 class GitRepository(Repository):
     
-    _protocol = Protocol(prefix=RepoConst.ProtoPrefix.GIT)
+    remote = True
+    builds_from = DockerConst.BuildSource.GIT
+    
+    @classmethod
+    def from_project(cls, proj: Project):
+        
+        return cls(proj.git_repo)
     
     @property
-    def git_hash(self):  # DISCLAIMER: always assumes the master branch is being used
+    def git_version(self):
         
-        cmd = 'git ls-remote --heads {}'.format(self.path).split(' ')
+        # TODO: handle possibility that current branch is not master
+        cmd = 'git ls-remote --heads {}'.format(self.address).split(' ')
         return git.Git(os.getcwd()).execute(cmd).split('\n')[0].split('\t')[0]
 
 
 class DockerRepository(Repository):
     
-    _protocol = Protocol(prefix=RepoConst.ProtoPrefix.DOCKER)
+    remote = True
+    builds_from = DockerConst.BuildSource.PRE
     
     @property
-    def full_repo_name(self):
+    def git_version(self):
         
-        return self.path.split(':')[0]  # <docker_user>/<registry_repository>
+        # TODO: create container and copy .git dir from cont:/app to a tmp Workpath, get git version
+        return None
+    
+    @classmethod
+    def from_project(cls, proj: Project):
+        
+        return cls(proj.docker_repo)
     
     @property
-    def tag(self):
+    def registry(self):
         
-        try:
-            return self.path.split(':')[1]
-        except IndexError:
-            return DockerConst.LATEST
-
-
-REPO_TYPES = tuple([LocalRepository, GitRepository, DockerRepository])
-
-
-def resolve_repo(address, repo_options=(), implicit_local=False, only_remote=False):
-    
-    repo_options = repo_options or REPO_TYPES
-    assert isinstance(repo_options, (list, tuple)),\
-        "Expected list or tuple of Repository types. Got: {}".format(repo_options)
-    
-    for repo_type in repo_options:
-        assert issubclass(repo_type, Repository)
+        parts = self.address.split('/')
         
-        try:
-            repo_obj = repo_type(address)
-            
-            if only_remote:
-                assert repo_obj.remote, ResolutionError("Expected a remote repository, not local")
-            
-            return repo_obj
-        except AssertionError:
-            continue
-    else:
-        if implicit_local and os.path.exists(address):
-            return LocalRepository(RepoConst.ProtoPrefix.LOCAL + os.path.abspath(address))
+        if len(parts) == 1:
+            return None
         else:
-            raise ResolutionError(
-                "Could not resolve repository type by address '{}'".format(address),
-                "Options tried: {}".format([op.__name__ for op in repo_options])
-            )
+            return '/'.join(parts[:-1])
+    
+    @property
+    def image(self):
+        
+        return self.address.split('/')[-1]

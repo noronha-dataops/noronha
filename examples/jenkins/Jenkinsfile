@@ -1,21 +1,23 @@
 
 /**
- * Runs an end-to-end test of a Clever deployment.
+ * Jenkins pipeline to create a Noronha deployment on demand.
  *
- * @param project
- * @param tag
- * @param movers
- * @param tasks
+ * @param git_credentials: Name of your Git credentials store in the Jenkins server.
+ * @param project:         Name of the project you want to create a deployment for.
+ * @param tag:             Docker tag of the build version (image) you want to deploy.
+ * @param movers:          Reference to the model version you want to deploy. Syntax: <model_name>:<version_name>.
+ * @param tasks:           Number of tasks (replicas) you want your deployment to run on.
  */
 
 pipeline {
     agent any
 
     parameters {
-        string(name: 'project', description: '')
-        string(name: 'tag', defaultValue: 'latest', description: '')
-        string(name: 'movers', description: '')
-        string(name: 'tasks', defaultValue: '1', description: '')
+        string(name: 'git_credentials', description: 'Name of your Git credentials store in the Jenkins server.')
+        string(name: 'project', description: 'Name of the project you want to create a deployment for.')
+        string(name: 'tag', defaultValue: 'latest', description: 'Docker tag of the build version (image) you want to deploy.')
+        string(name: 'movers', description: 'Reference to the model version you want to deploy. Syntax: <model_name>:<version_name>.')
+        string(name: 'tasks', defaultValue: '1', description: 'Number of tasks (replicas) you want your deployment to run on.')
     }
 
     environment {
@@ -26,38 +28,27 @@ pipeline {
     }
 
     stages {
-        stage ('resolve_metadata') {
-            steps {
-                sh '''#!/bin/bash
-
-                    bvers=`nha bvers info --proj "${project}" --tag "${tag}"`
-                    echo ${bvers} | grep git_version
-
-                '''
-            }
-            post {
-                success {
-                    echo "${STAGE_NAME} success"
-                }
-            failure {
-                    echo "${STAGE_NAME} fails!"
-                }
-            }
-        }
         stage ('checkout') {
             steps {
-                cleanWs()
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: "*/master"]],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [[
-                        credentialsId: 'jenkinsGIT',
-                        url: "https://gitlab.eva.bot/asseteva/clever-nha-continuous-test.git"
-                    ]]
-                ])
+                withCredentials([usernamePassword(
+                    credentialsId: '${params.git_credentials}',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PSWD'
+                )]) {
+                    sh '''#!/bin/bash
+
+                        proj=`nha proj info --name "${project}"`
+                        git_repo=`echo -e "${proj}" | grep repo | awk '{split($0,a,"//"); print a[2]}'`
+
+                        bvers=`nha bvers info --proj "${project}" --tag "${tag}"`
+                        git_version=`echo -e "${bvers}" | grep git | awk '{split($0,a," "); print a[2]}'
+
+                        sshpass -p "${GIT_PSWD}" git clone "https://${GIT_USER}@${git_repo}"
+                        cd `ls -d ./*/`  # change into project's directory
+
+                        git checkout ${git_version}
+                    '''
+                }
             }
             post {
                 success {
@@ -65,29 +56,17 @@ pipeline {
                 }
             failure {
                     echo "${STAGE_NAME} fails!"
-                    // sendMSTeamsMessageFail "${STAGE_NAME} fail !"
                 }
             }
         }
-        stage ('test') {
+        stage ('build') {
             steps {
                 sh '''#!/bin/bash
 
-                    echo "> testing deployment exposed by ingress: ${ingress}"
-                    chmod +x -R scripts
-
-                    if [ "${dataset}" == "0" ] ; then
-                        datasets=(`ls data`)
-                    else
-                        datasets=( "${dataset}" )
-                    fi
-
-                    for dataset in ${datasets[@]} ; do
-                        dataset=`echo "${dataset}" | sed 's/[^0-9]//g'`  # keeping only the digits
-                        echo ">> dataset: ${dataset}"
-
-                        ./scripts/test_clever.sh --data-dir ./data --data-num ${dataset} --ingress-ip ${ingress}
-                    done
+                    nha -d -p proj build \
+                        --proj "${proj}" \
+                        --tag "${tag}" \
+                        --from-here
                 '''
             }
             post {
@@ -96,7 +75,26 @@ pipeline {
                 }
             failure {
                     echo "${STAGE_NAME} fails!"
-                    // sendMSTeamsMessageFail "${STAGE_NAME} fail !"
+                }
+            }
+        }
+        stage ('deploy') {
+            steps {
+                sh '''#!/bin/bash
+
+                    nha -d -p depl new \
+                        --proj "${project}" \
+                        --tag "${tag}" \
+                        --n-tasks "${tasks}" \
+                        --movers "${movers}"
+                '''
+            }
+            post {
+                success {
+                    echo "${STAGE_NAME} success"
+                }
+            failure {
+                    echo "${STAGE_NAME} fails!"
                 }
             }
         }

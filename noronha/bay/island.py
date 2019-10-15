@@ -7,8 +7,8 @@ from noronha.bay.anchor import LocalRepository
 from noronha.bay.cargo import EmptyCargo
 from noronha.bay.compass import IslandCompass, MongoCompass, ArtifCompass, NexusCompass, RouterCompass
 from noronha.bay.expedition import LongExpedition
-from noronha.bay.shipyard import LocalBuilder
-from noronha.common.constants import DockerConst, FrameworkConst, Package, Perspective
+from noronha.bay.shipyard import LocalBuilder, ImageSpec
+from noronha.common.constants import DockerConst, Package, Perspective
 from noronha.common.errors import ResolutionError, MisusageError
 from noronha.common.logging import LOG
 
@@ -22,12 +22,12 @@ class Island(LongExpedition):
     def __init__(self, **kwargs):
         
         self.isle_compass = self.compass_cls(perspective=Perspective.OFF_BOARD)
-        self.repo = LocalRepository(address='local://' + self.source)
+        
         self.builder = LocalBuilder(
-            target_name=self.alias,
-            target_tag=FrameworkConst.FW_TAG,
-            section=DockerConst.Section.ISLE
+            repo=LocalRepository(address=self.source),
+            img_spec=ImageSpec.for_island(self.alias),
         )
+        
         super().__init__(
             img_spec=self.builder.img_spec,
             **kwargs
@@ -46,7 +46,7 @@ class Island(LongExpedition):
             )
         
         if not skip_build:
-            self.builder(self.repo)
+            self.builder.build()
         
         if not just_build:
             super().launch(tasks=tasks)

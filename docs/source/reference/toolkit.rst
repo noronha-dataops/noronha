@@ -17,3 +17,15 @@ Reference for functions inside the `shortcuts module <https://gitlab.eva.bot/ass
 .. autofunction:: noronha.tools.shortcuts.dataset_meta
 
 .. autofunction:: noronha.tools.shortcuts.movers_meta
+
+Publish
+=======
+# TODO
+
+Online
+======
+# TODO
+
+Logger
+======
+# TODO

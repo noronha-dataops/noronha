@@ -18,13 +18,14 @@ nha -s -v ds new \
 --path ./datasets/
 
 # create your project
-nha -v proj new \
+nha -s -v proj new \
 --name botanics \
 --desc "An experiment in the field of botanics" \
 --model iris-clf
 
 # build your project # now it's "dockerized" :)
-nha -d proj build
+nha -d proj build \
+--from-here
 
 # note that a docker image has been created for you
 docker images noronha/*botanics*

@@ -19,7 +19,9 @@ class EmbeddedProject(SmartDoc, EmbeddedDocument):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
-    repo = StringField()
+    home_dir = StringField(max_length=DBConst.MAX_REPO_LEN)
+    git_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
+    docker_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
 
 
 class Project(SmartDoc, Document):
@@ -29,5 +31,7 @@ class Project(SmartDoc, Document):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
-    repo = StringField(required=True)
+    home_dir = StringField(max_length=DBConst.MAX_REPO_LEN)
+    git_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
+    docker_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
     models = ListField(ReferenceField(Model, reverse_delete_rule=DENY))

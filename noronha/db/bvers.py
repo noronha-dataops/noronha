@@ -6,11 +6,14 @@ A build version is an entity that represents the event of building a Docker imag
 including all metadata related to that particular build.
 """
 
+from datetime import datetime
 from mongoengine import Document, EmbeddedDocument, CASCADE
 from mongoengine import signals
 from mongoengine.fields import StringField, DateTimeField, ReferenceField, EmbeddedDocumentField
 
-from noronha.common.constants import DBConst, OnBoard
+from noronha.bay.compass import DockerCompass
+from noronha.common.constants import DBConst, OnBoard, DockerConst
+from noronha.common.logging import LOG
 from noronha.db.main import SmartDoc
 from noronha.db.proj import Project, EmbeddedProject
 
@@ -39,14 +42,43 @@ class BuildVersion(_BuildVersion, Document):
     docker_id = StringField(required=True)
     git_version = StringField()
     built_at = DateTimeField(required=True)
+    built_from = StringField(required=True)
     
     @classmethod
-    def pre_delete(cls, sender, document, **kwargs):
-        
-        from noronha.bay.shipyard import DockerTagger  # lazy import
+    def pre_delete(cls, _, document, **__):
         
         document.clean()
-        DockerTagger(target_tag=document.tag, target_name=document.proj.name).untag()
+        
+        try:
+            DockerCompass().get_api().remove_image(
+                '{}-{}:{}'.format(
+                    DockerConst.Section.PROJ,
+                    document.proj.name,
+                    document.tag
+                )
+            )
+        except Exception as e:
+            LOG.error(e)
+            return False
+        else:
+            return True
+    
+    def save(self, built_now: bool = False, **kwargs):
+        
+        if built_now:
+            self.built_at = 'now'
+        
+        super().save(**kwargs)
+    
+    def clean(self):
+        
+        super().clean()
+        assert self.built_from in DockerConst.BuildSource.ALL
+        
+        if self.built_at == 'now':
+            now = datetime.now()
+            self.modified = now
+            self.built_at = now
 
 
 signals.pre_delete.connect(BuildVersion.pre_delete, sender=BuildVersion)

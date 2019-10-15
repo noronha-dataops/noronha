@@ -4,15 +4,12 @@
 
 import git
 import json
-import re
 from abc import ABC, abstractmethod
 
-from noronha.bay.anchor import Repository, DockerRepository, LocalRepository, GitRepository, resolve_repo
+from noronha.bay.anchor import Repository, DockerRepository, LocalRepository, GitRepository
 from noronha.bay.compass import DockerCompass
 from noronha.bay.utils import Workpath
-from noronha.common.annotations import Configured
-from noronha.common.conf import DockerConf
-from noronha.common.constants import DockerConst
+from noronha.common.constants import DockerConst, FrameworkConst, Regex
 from noronha.common.errors import NhaDockerError, ResolutionError
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_dict
@@ -22,32 +19,58 @@ from noronha.db.proj import Project
 
 class ImageSpec(object):
     
-    def __init__(self, section: str = DockerConst.Section.PROJ, name: str = None, tag: str = DockerConst.LATEST,
-                 third_party=False):
+    def __init__(self, registry: str = None, section: str = None, image: str = None, tag: str = None,
+                 pushable: bool = False):
         
-        self.compass = DockerCompass()
-        self.section = section
-        self.name = name
-        self.tag = tag
+        assert image is not None
+        self.registry = registry or ''
+        self.section = section or ''
+        self.image = image
+        self.tag = tag or DockerConst.LATEST
+        self.pushable = pushable
+    
+    @classmethod
+    def from_proj(cls, proj: Project, tag: str = DockerConst.LATEST):
         
-        if third_party:
-            self.section = ''
-            self.registry = ''
-            self.pushable = False
-        else:
-            configured_registry = self.compass.registry
-            
-            if configured_registry is None:
-                self.registry = DockerConst.LOCAL_REGISTRY
-                self.pushable = False
-            else:
-                self.registry = configured_registry
-                self.pushable = True
+        repo = DockerRepository(proj.docker_repo)
+        
+        return cls(
+            registry=repo.registry,
+            image=repo.image,
+            tag=tag,
+            pushable=False
+        )
+    
+    @classmethod
+    def from_bvers(cls, bvers: BuildVersion):
+        
+        configured_registry = DockerCompass().registry
+        
+        return cls(
+            registry=configured_registry,
+            section=DockerConst.Section.PROJ,
+            image=bvers.proj.name,
+            tag=bvers.tag,
+            pushable=True if configured_registry else False
+        )
+    
+    @classmethod
+    def for_island(cls, alias: str):
+        
+        configured_registry = DockerCompass().registry
+        
+        return cls(
+            registry=configured_registry,
+            section=DockerConst.Section.ISLE,
+            image=alias,
+            tag=FrameworkConst.FW_TAG,
+            pushable=True if configured_registry else False
+        )
     
     @property
     def name_with_prefix(self):
         
-        return '{}-{}'.format(self.section, self.name).lstrip('-')
+        return '{}-{}'.format(self.section, self.image).lstrip('-')
     
     @property
     def repo(self):
@@ -58,57 +81,36 @@ class ImageSpec(object):
     def target(self):
         
         return '{}:{}'.format(self.repo, self.tag)
-    
-    @classmethod
-    def from_bvers(cls, bvers: BuildVersion):
-        
-        return cls(section=DockerConst.Section.PROJ, name=bvers.proj.name, tag=bvers.tag)
-    
-    @classmethod
-    def from_repo(cls, proj: Project, tag=DockerConst.LATEST):
-        
-        repo = resolve_repo(proj.repo)
-        
-        assert isinstance(repo, DockerRepository), ResolutionError(
-            "Cannot find Docker image only by project and tag unless the project's repository is of type Docker")
-        
-        return cls(name=repo.path, tag=tag, third_party=True)
-    
-    @classmethod
-    def from_repo_or_bvers(cls, proj: Project, tag=DockerConst.LATEST, bvers: BuildVersion = None):
-        
-        if bvers is not None:
-            return cls.from_bvers(bvers)
-        else:
-            return cls.from_repo(proj, tag)
 
 
 class RepoHandler(ABC):
     
+    def __init__(self, repo: Repository, img_spec: ImageSpec):
+        
+        self.repo = repo
+        self.img_spec = img_spec
+    
     @abstractmethod
-    def __call__(self, src_repo: Repository):
+    def build(self, nocache: bool = False):
         
         raise NotImplementedError()
 
 
-class DockerTagger(Configured, RepoHandler):
+class DockerTagger(RepoHandler):
     
-    conf = DockerConf
-    
-    def __init__(self, target_name: str, section: str = DockerConst.Section.PROJ,
-                 target_tag: str = DockerConst.LATEST):
+    def __init__(self, repo: Repository, img_spec: ImageSpec):
         
-        self.compass = DockerCompass()
-        self.img_spec = ImageSpec(section=section, name=target_name, tag=target_tag)
-        self.docker = self.compass.get_api()
+        super().__init__(repo=repo, img_spec=img_spec)
+        self.repo: DockerRepository = self.repo  # enforcing repository subtype
+        self.docker = DockerCompass().get_api()
         self.image: dict = None
     
-    def __call__(self, source_repo: DockerRepository):
+    def build(self, _: bool = False):
         
-        LOG.info("Pulling source repository {} and tagging/pushing to target {}"
-                 .format(source_repo, self.img_spec.target))
-        self.docker.pull(source_repo.full_repo_name, tag=source_repo.tag)
-        self.image = self.docker.images('{}:{}'.format(source_repo.full_repo_name, source_repo.tag))[0]
+        source = '{}:{}'.format(self.repo.address, self.img_spec.tag)
+        LOG.info("Moving pre-built image from {} to {}".format(source, self.img_spec.target))
+        self.docker.pull(self.repo.address, tag=self.img_spec.tag)
+        self.image = self.docker.images(source)[0]
         self.tag_image()
         self.push_image()
         return self.image_id
@@ -120,14 +122,18 @@ class DockerTagger(Configured, RepoHandler):
     
     def tag_image(self):
         
-        self.docker.tag(image=self.image_id, repository=self.img_spec.repo, tag=self.img_spec.tag)
+        self.docker.tag(
+            image=self.image_id,
+            repository=self.img_spec.repo,
+            tag=self.img_spec.tag
+        )
     
     def push_image(self):
         
         if self.img_spec.pushable:
             LOG.info("Pushing {}".format(self.img_spec.target))
             log = self.docker.push(self.img_spec.repo, tag=self.img_spec.tag)
-            outcome = json.loads(re.compile(r'[\r\n]+').split(log.strip())[-1])
+            outcome = json.loads(Regex.LINE_BREAK.split(log.strip())[-1])
             
             if 'error' in outcome:
                 raise NhaDockerError(
@@ -135,33 +141,30 @@ class DockerTagger(Configured, RepoHandler):
                     .format(self.img_spec.target, outcome.get('errorDetail'))
                 )
         else:
-            LOG.warn("Remote Docker registry is not configured. Skipping image push")
-    
-    def untag(self):
-        
-        try:
-            self.docker.remove_image(self.img_spec.target)
-        except Exception as e:
-            LOG.error(e)
-            return False
-        else:
-            return True
+            LOG.warn("Docker registry is not configured. Skipping image push")
 
 
 class LocalBuilder(DockerTagger):
     
-    def __call__(self, source_repo: LocalRepository, nocache=False):
+    def build(self, nocache: bool = False):
         
         work_path = None
         
         try:
-            LOG.info("Building image {} from repository {}".format(self.img_spec.target, source_repo))
-            work_path = self.make_work_path(source_repo=source_repo)
-            logs = self.docker.build(path=work_path, tag=self.img_spec.target, nocache=nocache, rm=True)
+            LOG.info("Building {} from {}".format(self.img_spec.target, self.repo.address))
+            work_path = self.make_work_path()
+            
+            logs = self.docker.build(
+                path=work_path,
+                tag=self.img_spec.target,
+                nocache=nocache,
+                rm=True
+            )
+            
             self.print_logs(logs)
             self.image = self.docker.images(self.img_spec.target)[0]
         except Exception as e:
-            raise NhaDockerError("Building {} failed".format(source_repo)) from e
+            raise NhaDockerError("Building {} failed".format(self.repo)) from e
         else:
             self.tag_image()
             self.push_image()
@@ -170,9 +173,9 @@ class LocalBuilder(DockerTagger):
             if work_path is not None:
                 work_path.dispose()
     
-    def make_work_path(self, source_repo: LocalRepository) -> Workpath:
+    def make_work_path(self) -> Workpath:
         
-        return Workpath.get_fixed(path=source_repo.path)
+        return Workpath.get_fixed(path=self.repo.address)
     
     def print_logs(self, logs):
         
@@ -191,10 +194,10 @@ class LocalBuilder(DockerTagger):
 
 class GitBuilder(LocalBuilder):
     
-    def make_work_path(self, source_repo: GitRepository) -> Workpath:
+    def make_work_path(self) -> Workpath:
         
         work_path = Workpath.get_tmp()
-        git.Git(work_path).clone(source_repo.path)
+        git.Git(work_path).clone(self.repo.address)
         return work_path
 
 
@@ -207,7 +210,4 @@ def get_builder_class(source_repo: Repository):
             GitRepository.__name__: GitBuilder
         }.get(source_repo.__class__.__name__)
     except KeyError:
-        raise ResolutionError(
-            "No builder class found for repository '{}' of type '{}'"
-            .format(source_repo, source_repo.__class__.__name__)
-        )
+        raise ResolutionError("No builder class found for '{}'".format(source_repo))

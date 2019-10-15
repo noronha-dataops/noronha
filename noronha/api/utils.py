@@ -1,37 +1,77 @@
 # -*- coding: utf-8 -*-
 
-from noronha.bay.anchor import resolve_repo
+import os
+
+from noronha.bay.anchor import LocalRepository
 from noronha.bay.compass import ProjectCompass
-from noronha.common import Regex
 from noronha.common.annotations import Relaxed, relax, Validation, validation
+from noronha.common.constants import Regex
+from noronha.common.errors import ResolutionError
+from noronha.common.logging import LOG
 from noronha.db.proj import Project
 
 
 class ProjResolver(Relaxed):
     
     BY_NAME = 'resolve_by_name'
-    BY_REPO = 'resolve_by_repo'
-    BY_REMOTE = 'resolve_by_remote'
+    BY_CWD = 'resolve_by_cwd'
+    BY_HOME = 'resolve_by_home_dir'
+    BY_GIT = 'resolve_by_git_repo'
+    BY_DOCKER = 'resolve_by_docker_repo'
     BY_CONF = 'resolve_by_conf'
-    ALL = tuple([BY_NAME, BY_REPO, BY_CONF])  # BY_REMOTE is redundant with BY_REPO
+    ALL = tuple([BY_NAME, BY_CWD, BY_HOME, BY_GIT, BY_DOCKER, BY_CONF])
     
-    def resolve_by_name(self, name):
+    def __call__(self, ref_to_proj: str = None, resolvers: list = (), ignore: bool = False):
         
-        if name:
-            return Project.find_one(name=name)
+        proj = None
+        
+        for res in resolvers or self.ALL:
+            assert res in self.ALL
+            method = getattr(self, res)
+            proj = method(ref_to_proj)
+            
+            if proj is not None:
+                LOG.info("Working project is '{}'".format(self.proj.name))
+                LOG.debug("Project resolution method was '{}'".format(res))
+                break
         else:
+            message = """Could not determine working project from reference '{}'""".format(ref_to_proj)
+            details = """Resolvers used: {}""".format(resolvers)
+            
+            if ignore:
+                LOG.info(message)
+                LOG.debug(details)
+            else:
+                raise ResolutionError(message, details)
+        
+        return proj
+    
+    def resolve_by_name(self, ref_to_proj):
+        
+        if ref_to_proj is None:
             return None
+        else:
+            return Project.find_one(name=ref_to_proj)
     
     @relax
-    def resolve_by_repo(self, repo, only_remote=False):
+    def resolve_by_cwd(self, _):
         
-        repo = resolve_repo(repo, only_remote=only_remote, implicit_local=not only_remote)
-        return Project.objects(repo=str(repo))[0]
+        return Project.find_one(home_dir=os.getcwd())
     
     @relax
-    def resolve_by_remote(self, repo):
+    def resolve_by_home_dir(self, ref_to_proj):
         
-        return self.by_repo(repo, only_remote=True)
+        return Project.find_one(home_dir=LocalRepository(ref_to_proj).address)
+    
+    @relax
+    def resolve_by_git_repo(self, ref_to_proj):
+        
+        return Project.find_one(git_repo=ref_to_proj)
+    
+    @relax
+    def resolve_by_docker_repo(self, ref_to_proj):
+        
+        return Project.find_one(docker_repo=ref_to_proj)
     
     @relax
     def resolve_by_conf(self, _):

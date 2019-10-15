@@ -2,9 +2,8 @@
 
 from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import ShortExpedition
-from noronha.common import NoteConst
 from noronha.common.annotations import projected, validate
-from noronha.common.constants import DockerConst, OnBoard
+from noronha.common.constants import DockerConst, OnBoard, NoteConst
 from noronha.common.logging import LOG
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion

@@ -15,7 +15,7 @@ def proj():
 
 
 @click.command()
-@click.option('--proj', '--name', 'proj', help="Name of the project (default: current working project)")
+@click.option('--name', '-n', 'proj', help="Name of the project (default: current working project)")
 def info(**kwargs):
     
     """Information about a project"""
@@ -24,7 +24,7 @@ def info(**kwargs):
 
 
 @click.command()
-@click.option('--proj', '--name', 'proj', default=None, help="Name of the project (default: current working project)")
+@click.option('--name', '-n', 'proj', default=None, help="Name of the project (default: current working project)")
 def rm(**kwargs):
     
     """Remove a project and everything related to it"""
@@ -50,16 +50,24 @@ def _list(_filter, expand, **kwargs):
 @click.option('--name', '-n', required=True, help="Name of the project")
 @click.option('--desc', '-d', default='', help="Free text description")
 @click.option(
-    '--model', '-m', 'models', multiple=True,
-    help="Name of an existing model. May be specified more than once (further info: nha model --help)"
+    '--model', '-m', 'models', multiple=True, help=
+    """Name of an existing model. May be specified more than once """
+    """(further info: nha model --help)"""
 )
 @click.option(
-    '--repo', '-r', help=
-    """The project's repository. Syntaxes supported: \n"""
-    """local://<path>/<to>/<local>/<directory>\n"""
-    """git://<url>/<to>/<remote>/<git_repo>\n"""
-    """docker://<address>/<of>/<remote>/<docker_registry>\n"""
-    """(default: current working directory)"""
+    '--home-dir', help=
+    """Local directory where the project is hosted. """
+    """Example: /path/to/proj """
+)
+@click.option(
+    '--git-repo', help=
+    """The project's remote Git repository. """
+    """Example: http://<git_server>/<proj_repo>"""
+)
+@click.option(
+    '--docker-repo', help=
+    """The project's remote Docker repository. """
+    """<docker_registry>/<proj_image>"""
 )
 def new(**kwargs):
     
@@ -70,21 +78,28 @@ def new(**kwargs):
 
 @click.command()
 @click.option(
-    '--proj', '--name', 'proj',
+    '--name', '-n', 'proj',
     help="Name of the project you want to update (default: current working project)"
 )
-@click.option('--desc', '-d', help="Free text description")
 @click.option(
-    '--model', '-m', 'models', multiple=True,
-    help="Name of an existing model. May be specified more than once (further info: nha model --help)"
+    '--model', '-m', 'models', multiple=True, help=
+    """Name of an existing model. May be specified more than once """
+    """(further info: nha model --help)"""
 )
 @click.option(
-    '--repo', '-r', help=
-    """The project's repository. Syntaxes supported: \n"""
-    """local://<path>/<to>/<local>/<directory>\n"""
-    """git://<url>/<to>/<remote>/<git_repo>\n"""
-    """docker://<address>/<of>/<remote>/<docker_registry>\n"""
-    """(default: current working directory)"""
+    '--home-dir', help=
+    """Local directory where the project is hosted. """
+    """Example: /path/to/proj """
+)
+@click.option(
+    '--git-repo', help=
+    """The project's remote Git repository. """
+    """Example: http://<git_server>/<proj_repo>"""
+)
+@click.option(
+    '--docker-repo', help=
+    """The project's remote Docker repository. """
+    """<docker_registry>/<proj_image>"""
 )
 def update(**kwargs):
     

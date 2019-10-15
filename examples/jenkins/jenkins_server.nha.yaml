@@ -1,0 +1,26 @@
+---
+
+mongo:
+  native: false
+  database: <database_name_used_by_your_team>
+  host: <mongodb_server_ip_or_hostname>
+  port: <mongodb_server_port>
+  user: <mongodb_server_user>
+  pswd: <mongodb_server_pswd>
+
+file_manager:
+  native: false
+  type: <artif_or_nexus>
+  host: <file_manager_server_ip_or_hostname>
+  port: <file_manager_server_port>
+  user: <file_manager_server_user>
+  pswd: <file_manager_server_pswd>
+
+docker:
+  target_registry: <registry_accessed_by_your_k8s_cluster>
+
+container_manager:
+  type: kube
+  nfs:
+    server: <nfs_server_used_by_your_k8s_cluster>
+    path: <nfs_server_path_for_sharing_noronha_files>

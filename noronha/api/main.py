@@ -8,7 +8,6 @@ from noronha.api.utils import ProjResolver, DefaultValidation
 from noronha.db.main import SmartDoc
 from noronha.db.proj import Project
 from noronha.common.annotations import Documented, Interactive, Projected, Scoped, Validated, validate
-from noronha.common.errors import NhaAPIError
 from noronha.common.logging import LOG
 
 
@@ -18,16 +17,11 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     proj: Project = None
     valid = DefaultValidation
     
-    def __init__(self, proj: str = None, proj_resolvers: list = (), ignore: bool = False,
-                 scope: str = None, interactive: bool = False):
+    def __init__(self, proj: Project = None, scope: str = None, interactive: bool = False):
         
+        self.proj = proj
         Scoped.__init__(self, scope=scope)
         Interactive.__init__(self, interactive=interactive)
-        self.set_proj(
-            ref_to_proj=proj,
-            resolvers=proj_resolvers,
-            ignore=True if ignore else proj is None
-        )
     
     class Scope(object):
         
@@ -37,46 +31,20 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
         REST = "HTTP request to a REST API endpoint"
         CLI = "User input to command line interface"
         DEFAULT = PYTHON
+        ALL = [PYTHON, REST, CLI]
     
-    def set_proj(self, ref_to_proj, resolvers: list = (), ignore=False):
+    def set_proj(self, ref_to_proj: str = None):
         
-        if isinstance(ref_to_proj, Project):
-            self.proj = ref_to_proj
-            return self
-        
-        if resolvers is None:
-            LOG.info("Skipping project resolution")
-            return self
-        
-        resolver_obj = ProjResolver()
-        resolvers = resolvers or ProjResolver.ALL
-        
-        for resolver in resolvers:
-            self.proj = getattr(resolver_obj, resolver)(ref_to_proj)  # returns None if resolution goes wrong
-            
-            if self.proj is not None:
-                LOG.info("Working project is '{}'".format(self.proj.name))
-                LOG.debug("Project resolution method was '{}'".format(resolver))
-                break
-        else:
-            message = """Could not determine working project from reference '{}'""".format(ref_to_proj)
-            details = """Resolvers used: {}""".format(resolvers)
-            
-            if ignore:
-                LOG.info(message)
-                LOG.debug(details)
-            else:
-                raise NhaAPIError(message, details)
-        
+        self.proj = ProjResolver()(ref_to_proj)
         return self
     
     def info(self, **kwargs):
         
-        return self.doc().find_one(**kwargs).pretty()
+        return self.doc.find_one(**kwargs).pretty()
     
     def rm(self, **kwargs):
         
-        return self.doc().find_one(**kwargs).delete()
+        return self.doc.find_one(**kwargs).delete()
     
     def lyst(self, _filter: dict = None, **kwargs):
         

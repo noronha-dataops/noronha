@@ -58,15 +58,14 @@ DatasetAPI().new(
 ProjectAPI().new(
     name='botanics',
     desc='An experiment in the field of botanics',
-    models=['iris-clf'],
-    repo='.'
+    models=['iris-clf']
 )
 
 # instantiating project depending api's in current working directory
-proj_api = ProjectAPI(proj='.')
-bvers_api = BuildVersionAPI(proj='.')
-train_api = TrainingAPI(proj='.')
-depl_api = DeploymentAPI(proj='.')
+proj_api = ProjectAPI()
+bvers_api = BuildVersionAPI()
+train_api = TrainingAPI()
+depl_api = DeploymentAPI()
 
 # build your project # now it's "dockerized" :)
 proj_api.build()
