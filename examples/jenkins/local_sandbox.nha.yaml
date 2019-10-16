@@ -11,6 +11,7 @@ mongo:
 file_manager:
   native: false
   type: <artif_or_nexus>
+  repository: <name_of_existing_repository_used_by_your_team>
   host: <file_manager_server_ip_or_hostname>
   port: <file_manager_server_port>
   user: <file_manager_server_user>

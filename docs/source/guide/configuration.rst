@@ -27,7 +27,7 @@ The following properties are common for all :ref:`plugins <island-concepts>`.
 
 - **native:** (boolean) If true, this plugin runs inside a container manager by Noronha. Otherwise, this plugin runs in a dedicated server, managed by the user or a third-party. The later option is referred to as *foreign mode*, in opposition to the *native mode* (default: true).
 
-- **hostname:** This property is only used in *foreign mode*. It refers to the hostname or IP of the server in which Noronha is going to find the service (e.g.: MongoDB's hostname or IP, as it appears in its connection string).
+- **host:** This property is only used in *foreign mode*. It refers to the hostname or IP of the server in which Noronha is going to find the service (e.g.: MongoDB's hostname or IP, as it appears in its connection string).
 
 - **port:** In *foreign mode*, this refers to the port in which the plugin is exposed (e.g.: MongoDB's port, as it appears in its connection string). In *native mode*, this refers to the server port in which Noronha is going to expose the plugin. Note that if your container manager is Kubernetes only the ports between 30000 and 31000 are available.
 
@@ -122,7 +122,7 @@ The following parameters are only used if the chosen container manager is Kubern
 
 - **storage_class:** An existing storage class that Noronha will use to create persistent volume claims for storing its plugins' data (default: standard).
 
-- **nfs:** A mapping with the keys *path* and *server*. The key *server* should point to your NFS server's hostname, whereas *path* refers to an existing directory inside your NFS server. Noronha will create volumes under the specified directory for sharing files with its training, deployment and IDE containers.
+- **nfs:** A mapping with the keys *path* and *server*. The key *server* should point to your NFS server's hostname or IP, whereas *path* refers to an existing directory inside your NFS server. Noronha will create volumes under the specified directory for sharing files with its training, deployment and IDE containers.
 
 - **resource_profiles:** A mapping in which the keys are resource profile names and the values are resource specifications in `Kubernetes' syntax <https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container>`_. Example:
 

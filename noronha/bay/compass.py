@@ -274,7 +274,7 @@ class IslandCompass(ABC, Compass):
     
     ORIGINAL_PORT = None
     KEY_NATIVE = 'native'
-    KEY_HOST = 'hostname'
+    KEY_HOST = 'host'
     KEY_PORT = 'port'
     KEY_USER = 'user'
     KEY_PSWD = 'pswd'
