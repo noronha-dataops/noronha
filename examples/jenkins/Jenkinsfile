@@ -64,7 +64,7 @@ pipeline {
                 sh '''#!/bin/bash
 
                     nha -d -p proj build \
-                        --proj "${proj}" \
+                        --name "${project}" \
                         --tag "${tag}" \
                         --from-here
                 '''

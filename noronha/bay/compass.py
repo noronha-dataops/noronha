@@ -153,7 +153,7 @@ class KubeCompass(CaptainCompass):
     
     def get_namespace(self):
         
-        namespace = self.conf.get(self.KEY_NAMESPACE)
+        namespace = self.conf.get(self.KEY_NAMESPACE, self.DEFAULT_NAMESPACE)
         assert isinstance(namespace, str) and len(namespace) > 0,\
             ConfigurationError("Container manager 'kube' requires an existing namespace to be configured")
         return namespace

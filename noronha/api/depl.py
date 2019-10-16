@@ -46,7 +46,7 @@ class DeploymentAPI(NoronhaAPI):
         port=(int, None),
         params=(dict, None)
     )
-    def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = None, details: dict = None,
+    def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = 'predict', details: dict = None,
             params: dict = None, movers: list = None, port: int = None, _replace: bool = None, **kwargs):
         
         bv = BuildVersion.find_one_or_none(tag=tag, proj=self.proj)
