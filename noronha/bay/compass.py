@@ -47,7 +47,7 @@ class DockerCompass(Compass):
     conf = DockerConf
     
     KEY_DAEMON_ADDRESS = 'daemon_address'
-    KEY_TARGET_REGISTRY = 'registry'
+    KEY_TARGET_REGISTRY = 'target_registry'
     
     @property
     def daemon_address(self):
