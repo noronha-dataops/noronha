@@ -8,9 +8,7 @@ from pyvalid.validators import is_validator
 from typing import Type
 
 from noronha.common.constants import Flag
-from noronha.common.errors import NhaAPIError, MisusageError, NhaValidationError
-from noronha.db.main import SmartDoc
-from noronha.db.proj import Project
+from noronha.common.errors import MisusageError, NhaValidationError
 
 
 def projected(func):
@@ -57,17 +55,6 @@ class Configured(object):
     conf: dict = None
 
 
-class Documented(object):
-    
-    """A class that handles a certain type of MongoDB documents
-    
-    You may extend this class by overriding its doc property with a subclass of Document,
-    so that any instance of this class will handle documents with that schema and colletion.
-    """
-    
-    doc: Type[SmartDoc] = None  # any class that extends SmartDoc
-
-
 class Lazy(ABC):
     
     ready = False
@@ -111,21 +98,6 @@ class Interactive(object):
             sys.exit(1)
         else:
             return decision
-
-
-class Projected(object):
-    
-    proj: Project = None  # an actual Document instance (not a Document type as in Documented)
-    
-    def __getattribute__(self, attr_name):
-        
-        attr = super().__getattribute__(attr_name)
-        
-        if getattr(attr, Flag.PROJ, False) and self.proj is None:
-            raise NhaAPIError("Cannot use method '{}' of '{}' when no working project is set"
-                              .format(attr_name, self.__class__.__name__))
-        else:
-            return attr
 
 
 class Relaxed(object):

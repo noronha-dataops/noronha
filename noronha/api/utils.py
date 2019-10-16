@@ -13,12 +13,12 @@ from noronha.db.proj import Project
 
 class ProjResolver(Relaxed):
     
-    BY_NAME = 'resolve_by_name'
-    BY_CWD = 'resolve_by_cwd'
-    BY_HOME = 'resolve_by_home_dir'
-    BY_GIT = 'resolve_by_git_repo'
-    BY_DOCKER = 'resolve_by_docker_repo'
-    BY_CONF = 'resolve_by_conf'
+    BY_NAME = 'by_name'
+    BY_CWD = 'by_cwd'
+    BY_HOME = 'by_home_dir'
+    BY_GIT = 'by_git_repo'
+    BY_DOCKER = 'by_docker_repo'
+    BY_CONF = 'by_conf'
     ALL = tuple([BY_NAME, BY_CWD, BY_HOME, BY_GIT, BY_DOCKER, BY_CONF])
     
     def __call__(self, ref_to_proj: str = None, resolvers: list = (), ignore: bool = False):
@@ -27,11 +27,11 @@ class ProjResolver(Relaxed):
         
         for res in resolvers or self.ALL:
             assert res in self.ALL
-            method = getattr(self, res)
+            method = getattr(self, 'resolve_{}'.format(res))
             proj = method(ref_to_proj)
             
             if proj is not None:
-                LOG.info("Working project is '{}'".format(self.proj.name))
+                LOG.info("Working project is '{}'".format(proj.name))
                 LOG.debug("Project resolution method was '{}'".format(res))
                 break
         else:

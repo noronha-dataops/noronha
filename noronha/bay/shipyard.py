@@ -2,7 +2,6 @@
 
 """Module for handling Docker images"""
 
-import git
 import json
 from abc import ABC, abstractmethod
 
@@ -47,7 +46,7 @@ class ImageSpec(object):
         configured_registry = DockerCompass().registry
         
         return cls(
-            registry=configured_registry,
+            registry=configured_registry or DockerConst.LOCAL_REGISTRY,
             section=DockerConst.Section.PROJ,
             image=bvers.proj.name,
             tag=bvers.tag,
@@ -81,6 +80,16 @@ class ImageSpec(object):
     def target(self):
         
         return '{}:{}'.format(self.repo, self.tag)
+    
+    def untag(self):
+        
+        try:
+            DockerCompass().get_api().remove_image(self.target)
+        except Exception as e:
+            LOG.error(e)
+            return False
+        else:
+            return True
 
 
 class RepoHandler(ABC):
@@ -105,7 +114,7 @@ class DockerTagger(RepoHandler):
         self.docker = DockerCompass().get_api()
         self.image: dict = None
     
-    def build(self, _: bool = False):
+    def build(self, nocache: bool = False):
         
         source = '{}:{}'.format(self.repo.address, self.img_spec.tag)
         LOG.info("Moving pre-built image from {} to {}".format(source, self.img_spec.target))
@@ -141,7 +150,7 @@ class DockerTagger(RepoHandler):
                     .format(self.img_spec.target, outcome.get('errorDetail'))
                 )
         else:
-            LOG.warn("Docker registry is not configured. Skipping image push")
+            LOG.warn("Docker registry is not configured. Skipping image push.")
 
 
 class LocalBuilder(DockerTagger):
@@ -153,9 +162,10 @@ class LocalBuilder(DockerTagger):
         try:
             LOG.info("Building {} from {}".format(self.img_spec.target, self.repo.address))
             work_path = self.make_work_path()
+            build_path = self.deploy_source(work_path)
             
             logs = self.docker.build(
-                path=work_path,
+                path=build_path,
                 tag=self.img_spec.target,
                 nocache=nocache,
                 rm=True
@@ -164,7 +174,7 @@ class LocalBuilder(DockerTagger):
             self.print_logs(logs)
             self.image = self.docker.images(self.img_spec.target)[0]
         except Exception as e:
-            raise NhaDockerError("Building {} failed".format(self.repo)) from e
+            raise NhaDockerError("Failed to build from {}".format(self.repo)) from e
         else:
             self.tag_image()
             self.push_image()
@@ -172,6 +182,10 @@ class LocalBuilder(DockerTagger):
         finally:
             if work_path is not None:
                 work_path.dispose()
+    
+    def deploy_source(self, work_path: Workpath) -> str:
+        
+        return work_path
     
     def make_work_path(self) -> Workpath:
         
@@ -194,11 +208,19 @@ class LocalBuilder(DockerTagger):
 
 class GitBuilder(LocalBuilder):
     
+    def __init__(self, repo: Repository, img_spec: ImageSpec):
+        
+        super().__init__(repo=repo, img_spec=img_spec)
+        self.repo: GitRepository = self.repo  # enforcing repository subtype
+    
+    def deploy_source(self, work_path: Workpath) -> str:
+        
+        self.repo.clone(work_path)
+        return work_path.join(self.repo.name)
+    
     def make_work_path(self) -> Workpath:
         
-        work_path = Workpath.get_tmp()
-        git.Git(work_path).clone(self.repo.address)
-        return work_path
+        return Workpath.get_tmp()
 
 
 def get_builder_class(source_repo: Repository):

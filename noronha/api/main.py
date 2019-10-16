@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC
-from typing import Type
-from mongoengine import Document
 
 from noronha.api.utils import ProjResolver, DefaultValidation
-from noronha.db.main import SmartDoc
-from noronha.db.proj import Project
-from noronha.common.annotations import Documented, Interactive, Projected, Scoped, Validated, validate
+from noronha.db.main import Documented
+from noronha.db.proj import Project, Projected
+from noronha.common.annotations import Interactive, Scoped, Validated, validate
 from noronha.common.logging import LOG
 
 
 class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     
-    doc: (Type[SmartDoc], Type[Document]) = None
-    proj: Project = None
     valid = DefaultValidation
     
     def __init__(self, proj: Project = None, scope: str = None, interactive: bool = False):
@@ -33,9 +29,9 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
         DEFAULT = PYTHON
         ALL = [PYTHON, REST, CLI]
     
-    def set_proj(self, ref_to_proj: str = None):
+    def set_proj(self, ref_to_proj: str = None, proj_resolvers: list = ()):
         
-        self.proj = ProjResolver()(ref_to_proj)
+        self.proj = ProjResolver()(ref_to_proj, proj_resolvers)
         return self
     
     def info(self, **kwargs):

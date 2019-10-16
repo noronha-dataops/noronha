@@ -10,7 +10,9 @@ It can be built and/or tagged as a docker image, which is mapped to a build vers
 from mongoengine import Document, EmbeddedDocument, DENY
 from mongoengine.fields import StringField, ListField, ReferenceField
 
-from noronha.common.constants import DBConst, OnBoard
+from noronha.common.annotations import projected
+from noronha.common.constants import DBConst, OnBoard, Flag
+from noronha.common.errors import NhaAPIError
 from noronha.db.main import SmartDoc
 from noronha.db.model import Model
 
@@ -35,3 +37,26 @@ class Project(SmartDoc, Document):
     git_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
     docker_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
     models = ListField(ReferenceField(Model, reverse_delete_rule=DENY))
+
+
+class Projected(object):
+    
+    proj: Project = None
+    
+    def __getattribute__(self, attr_name):
+        
+        attr = super().__getattribute__(attr_name)
+        
+        if callable(attr) and getattr(attr, Flag.PROJ, False):
+            
+            @projected
+            def wrapper(*args, **kwargs):
+                assert self.proj is not None, NhaAPIError(
+                    "Cannot use method '{}' of '{}' when no working project is set"
+                    .format(attr_name, self.__class__.__name__)
+                )
+                return attr(*args, **kwargs)
+            
+            return wrapper
+        else:
+            return attr

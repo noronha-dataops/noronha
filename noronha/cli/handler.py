@@ -4,6 +4,7 @@ import sys
 from types import GeneratorType
 
 from noronha.api.main import NoronhaAPI
+from noronha.api.utils import ProjResolver
 from noronha.common.annotations import Interactive
 from noronha.common.constants import Flag
 from noronha.common.errors import PrettyError
@@ -28,7 +29,7 @@ class CommandHandler(Interactive):
             method_kwargs, ref_to_proj = cls.prepare_method_kwargs(method_kwargs)
             
             if requires_proj:
-                api.set_proj(ref_to_proj)
+                cls.set_proj(api, ref_to_proj)
             
             response = method(**method_kwargs)
             
@@ -45,6 +46,16 @@ class CommandHandler(Interactive):
                 raise error
             else:
                 sys.exit(code)
+    
+    @classmethod
+    def set_proj(cls, api: NoronhaAPI, ref_to_proj: str):
+        
+        if ref_to_proj is None:
+            resolvers = [ProjResolver.BY_CWD, ProjResolver.BY_CONF]
+        else:
+            resolvers = [ProjResolver.BY_NAME]
+        
+        api.set_proj(ref_to_proj, resolvers)
     
     @classmethod
     def init_api(cls, api_cls):

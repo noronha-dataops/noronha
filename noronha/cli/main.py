@@ -30,7 +30,7 @@ def nha(_, quiet, verbose, debug, pretty, skip):
     
     """Command line interface for Noronha DataOps framework"""
     
-    CMD.interactive = not skip
+    CMD.interactive_mode = not skip
     LOG.setup()
     
     if debug:
@@ -70,8 +70,7 @@ def get_me_started(**kwargs):
     """Initial framework configuration"""
     
     CMD.run(
-        IslandAPI, 'get_me_started', **kwargs,
-        _proj_resolvers=None  # force project resolution skip, since MongoDB may not be running yet
+        IslandAPI, 'get_me_started', **kwargs
     )
 
 

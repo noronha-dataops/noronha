@@ -52,8 +52,8 @@ class Expedition(ABC):
             
             if bvers is None:
                 LOG.info(
-                    "Build version {}:{} not found. Using project's Docker repository directly: {}"
-                    .format(proj, tag, proj.docker_repo)
+                    "Build version {}:{} not found. Using project's Docker repository directly: {}:{}"
+                    .format(proj.name, tag, proj.docker_repo, tag)
                 )
                 img_spec = ImageSpec.from_proj(proj, tag)
             else:

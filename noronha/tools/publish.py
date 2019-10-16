@@ -16,7 +16,7 @@ class Publisher(object):
         
         self.proj = Project.load()
         self.train = Training.load(ignore=True)
-        self.mv_api = ModelVersionAPI().set_proj(self.proj)
+        self.mv_api = ModelVersionAPI(self.proj)
     
     def _infer_parent_model(self, model_name: str = None):
         

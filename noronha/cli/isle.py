@@ -69,8 +69,7 @@ def setup(ctx, **kwargs):
     
     CMD.run(
         API, 'setup', **kwargs,
-        name=ctx.obj['ISLE_NAME'],
-        _proj_resolvers=None  # force project resolution skip, since MongoDB may not be running yet
+        name=ctx.obj['ISLE_NAME']
     )
 
 

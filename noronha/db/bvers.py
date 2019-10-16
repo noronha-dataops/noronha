@@ -47,21 +47,10 @@ class BuildVersion(_BuildVersion, Document):
     @classmethod
     def pre_delete(cls, _, document, **__):
         
-        document.clean()
+        from noronha.bay.shipyard import ImageSpec  # lazy import to avoid cyclic dependency
         
-        try:
-            DockerCompass().get_api().remove_image(
-                '{}-{}:{}'.format(
-                    DockerConst.Section.PROJ,
-                    document.proj.name,
-                    document.tag
-                )
-            )
-        except Exception as e:
-            LOG.error(e)
-            return False
-        else:
-            return True
+        ImageSpec.from_bvers(document).untag()
+        document.clean()
     
     def save(self, built_now: bool = False, **kwargs):
         

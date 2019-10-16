@@ -45,11 +45,11 @@ class ProjectAPI(NoronhaAPI):
         
         if home_dir is None:
             LOG.warn("No home directory was specified for the new project")
-            self._decide("Would you like to use the current working directory?", default=True)
-            home_dir = os.getcwd()
+            if self._decide("Would you like to use the current working directory?", default=True):
+                home_dir = os.getcwd()
         
         return super().new(
-            home_dir=LocalRepository(home_dir).address,
+            home_dir=None if home_dir is None else LocalRepository(home_dir).address,
             models=models,
             **kwargs
         )
@@ -101,5 +101,5 @@ class ProjectAPI(NoronhaAPI):
         
         bvers.docker_id = builder.build(nocache=nocache)
         bvers.git_version = repo.git_version
-        
         bvers.save(built_now=True)
+        return bvers

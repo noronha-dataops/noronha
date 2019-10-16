@@ -62,7 +62,7 @@ def _list(_filter, expand, **kwargs):
 @click.option(
     '--git-repo', help=
     """The project's remote Git repository. """
-    """Example: http://<git_server>/<proj_repo>"""
+    """Example: https://<git_server>/<proj_repo>"""
 )
 @click.option(
     '--docker-repo', help=
@@ -81,6 +81,7 @@ def new(**kwargs):
     '--name', '-n', 'proj',
     help="Name of the project you want to update (default: current working project)"
 )
+@click.option('--desc', '-d', default='', help="Free text description")
 @click.option(
     '--model', '-m', 'models', multiple=True, help=
     """Name of an existing model. May be specified more than once """
@@ -94,7 +95,7 @@ def new(**kwargs):
 @click.option(
     '--git-repo', help=
     """The project's remote Git repository. """
-    """Example: http://<git_server>/<proj_repo>"""
+    """Example: https://<git_server>/<proj_repo>"""
 )
 @click.option(
     '--docker-repo', help=
@@ -109,10 +110,28 @@ def update(**kwargs):
 
 
 @click.command()
-@click.option('--proj', help="Name of the project (default: current working project)")
+@click.option('--name', '-n', 'proj', help="Name of the project (default: current working project)")
 @click.option('--tag', '-t', default='latest', help="Docker tag for the image (default: latest)")
-@click.option('--no-cache', 'nocache', default=False, is_flag=True,
-              help="Flag: slower build, but useful when the cached layers contain outdated information")
+@click.option(
+    '--no-cache', 'nocache', default=False, is_flag=True, help=
+    "Flag: slower build, but useful when the cached layers contain outdated information"
+)
+@click.option(
+    '--from-here', default=False, is_flag=True, help=
+    "Flag: build from current working directory (default option)."
+)
+@click.option(
+    '--from-home', default=False, is_flag=True, help=
+    "Flag: build from project's home directory."
+)
+@click.option(
+    '--from-git', default=False, is_flag=True, help=
+    "Flag: build from project's Git repository (master branch)."
+)
+@click.option(
+    '--pre-built', default=False, is_flag=True, help=
+    "Flag: don't build, just pull and tag a pre-built image from project's Docker repository."
+)
 def build(**kwargs):
     
     """Encapsulates the project in a new Docker image"""

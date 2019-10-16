@@ -28,7 +28,7 @@ class Repository(ABC):
     
     def __str__(self):
         
-        return '{}:{}'.format(self.__class__.__name__, self.tipe)
+        return '{}:{}'.format(self.tipe, self.address)
     
     def __repr__(self):
         
@@ -90,6 +90,15 @@ class GitRepository(Repository):
         # TODO: handle possibility that current branch is not master
         cmd = 'git ls-remote --heads {}'.format(self.address).split(' ')
         return git.Git(os.getcwd()).execute(cmd).split('\n')[0].split('\t')[0]
+    
+    @property
+    def name(self):
+        
+        return self.address.split('/')[-1]
+    
+    def clone(self, path):
+        
+        git.Git(path).clone(self.address)
 
 
 class DockerRepository(Repository):

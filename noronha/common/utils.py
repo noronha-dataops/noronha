@@ -4,11 +4,9 @@ import json
 import os
 from collections import OrderedDict
 from datetime import datetime
-from subprocess import Popen, PIPE
 from typing import List
 
-from noronha.common import EnvVar
-from noronha.common.constants import Encoding, DateFmt, Regex
+from noronha.common.constants import Encoding, DateFmt, Regex, EnvVar
 
 
 class StructCleaner(object):

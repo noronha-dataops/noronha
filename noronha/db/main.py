@@ -7,7 +7,7 @@ import random_name
 import re
 from bson import ObjectId
 from datetime import datetime
-from mongoengine import EmbeddedDocument
+from mongoengine import EmbeddedDocument, Document
 from mongoengine.base import BaseList, BaseDocument
 from mongoengine.connection import connect
 from mongoengine.fields import StringField, ReferenceField, EmbeddedDocumentField, DateTimeField
@@ -286,3 +286,14 @@ class SmartDoc(PrettyDoc):
             ])
         else:
             return pk
+
+
+class Documented(object):
+    
+    """A class that handles a certain type of MongoDB documents
+    
+    You may extend this class by overriding its doc property with a subclass of Document,
+    so that any instance of this class will handle documents with that schema and colletion.
+    """
+    
+    doc: (Type[Document], Type[SmartDoc]) = None  # any class that extends SmartDoc and Document
