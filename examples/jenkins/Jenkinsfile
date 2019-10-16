@@ -1,21 +1,20 @@
-
 /**
  * Jenkins pipeline to create a Noronha deployment on demand.
  *
- * @param git_credentials: Name of your Git credentials store in the Jenkins server.
- * @param project:         Name of the project you want to create a deployment for.
- * @param tag:             Docker tag of the build version (image) you want to deploy.
- * @param movers:          Reference to the model version you want to deploy. Syntax: <model_name>:<version_name>.
- * @param tasks:           Number of tasks (replicas) you want your deployment to run on.
+ * @param project:   Name of the project you want to create a deployment for.
+ * @param tag:       Docker tag of the build version (image) you want to deploy.
+ * @param notebook:  Relative path inside project's repository to the prediction notebook.
+ * @param movers:    Reference to the model version you want to deploy. Syntax: <model_name>:<version_name>.
+ * @param tasks:     Number of tasks (replicas) you want your deployment to run on.
  */
 
 pipeline {
     agent any
 
     parameters {
-        string(name: 'git_credentials', description: 'Name of your Git credentials store in the Jenkins server.')
         string(name: 'project', description: 'Name of the project you want to create a deployment for.')
         string(name: 'tag', defaultValue: 'latest', description: 'Docker tag of the build version (image) you want to deploy.')
+        string(name: 'notebook', defaultValue: 'predict.ipynb', description: "Relative path inside project's repository to the prediction notebook.")
         string(name: 'movers', description: 'Reference to the model version you want to deploy. Syntax: <model_name>:<version_name>.')
         string(name: 'tasks', defaultValue: '1', description: 'Number of tasks (replicas) you want your deployment to run on.')
     }
@@ -23,6 +22,7 @@ pipeline {
     environment {
         project = "${params.project}"
         tag = "${params.tag}"
+        notebook = "${params.notebook}"
         movers = "${params.movers}"
         tasks = "${params.tasks}"
     }
@@ -30,25 +30,20 @@ pipeline {
     stages {
         stage ('checkout') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: '${params.git_credentials}',
-                    usernameVariable: 'GIT_USER',
-                    passwordVariable: 'GIT_PSWD'
-                )]) {
-                    sh '''#!/bin/bash
+                sh '''#!/bin/bash
+                    rm -rf *  # cleaning workspace
 
-                        proj=`nha proj info --name "${project}"`
-                        git_repo=`echo -e "${proj}" | grep repo | awk '{split($0,a,"//"); print a[2]}'`
+                    proj=`nha proj info --name "${project}"`
+                    git_repo=`echo -e "${proj}" | grep git_repo | awk '{split($0,a,"git_repo: "); print a[2]}'`
 
-                        bvers=`nha bvers info --proj "${project}" --tag "${tag}"`
-                        git_version=`echo -e "${bvers}" | grep git | awk '{split($0,a," "); print a[2]}'
+                    bvers=`nha bvers info --proj "${project}" --tag "${tag}"`
+                    git_version=`echo -e "${bvers}" | grep git | awk '{split($0,a," "); print a[2]}'`
 
-                        sshpass -p "${GIT_PSWD}" git clone "https://${GIT_USER}@${git_repo}"
-                        cd `ls -d ./*/`  # change into project's directory
+                    git clone "${git_repo}"
+                    cd `ls -d ./*/`  # change into project's directory
 
-                        git checkout ${git_version}
-                    '''
-                }
+                    git checkout "${git_version}"
+                '''
             }
             post {
                 success {
@@ -62,10 +57,11 @@ pipeline {
         stage ('build') {
             steps {
                 sh '''#!/bin/bash
+                    cd `ls -d ./*/`  # change into project's directory
 
                     nha -d -p proj build \
-                        --name "${project}" \
-                        --tag "${tag}" \
+                        --name '${project}' \
+                        --tag '${tag}' \
                         --from-here
                 '''
             }
@@ -83,10 +79,12 @@ pipeline {
                 sh '''#!/bin/bash
 
                     nha -d -p depl new \
-                        --proj "${project}" \
-                        --tag "${tag}" \
-                        --n-tasks "${tasks}" \
-                        --movers "${movers}"
+                        --name 'jenkins' \
+                        --proj '${project}' \
+                        --tag '${tag}' \
+                        --notebook '${notebook}' \
+                        --n-tasks '${tasks}' \
+                        --movers '${movers}'
                 '''
             }
             post {
