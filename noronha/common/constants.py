@@ -159,7 +159,7 @@ class Regex(object):
     DNS_SPECIAL = re.compile(r'[\-\.]')
     CMD_DELIMITER = re.compile(r'\s+&&\s+|;')
     YAML_BREAK = re.compile(r'\n[^- ]')
-    LINE_BREAK = r'[\r\n]+'
+    LINE_BREAK = re.compile(r'[\r\n]+')
 
 
 class RepoConst(object):

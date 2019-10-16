@@ -267,7 +267,7 @@ class SmartDoc(PrettyDoc):
         if hasattr(self, 'name') and self.name is None:
             name = random_name.generate_name(separator='-')
             setattr(self, 'name', name)
-            LOG.warn("'{}' is anonymous. Using random name: {}".format(self.__class__.__name__, name))
+            LOG.warn("{} is anonymous. Using random name: {}".format(self.__class__.__name__, name))
         
         for key, val in self._fields.items():
             if isinstance(val, ReferenceField):
