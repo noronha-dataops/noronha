@@ -21,6 +21,8 @@ nha -s -v ds new \
 nha -s -v proj new \
 --name botanics \
 --desc "An experiment in the field of botanics" \
+--git-repo 'https://my_git_server/botanics' \
+--home-dir '.' \
 --model iris-clf
 
 # build your project # now it's "dockerized" :)
