@@ -27,7 +27,6 @@ RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
  && rm -rf Miniconda3-latest-Linux-x86_64.sh \
  && ln -sf ${CONDA_HOME}/bin/conda /usr/bin/conda \
  && echo ". ${CONDA_HOME}/etc/profile.d/conda.sh" >> ~/.bashrc
-RUN ${CONDA_HOME}/bin/conda update -n base -c defaults conda
 
 # creating virtual environment
 RUN conda create -y --name ${CONDA_VENV} python=3.6.5
