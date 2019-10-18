@@ -71,6 +71,11 @@ class ConfigurationError(PrettyError):
     pass
 
 
+class AuthenticationError(PrettyError):
+    
+    pass
+
+
 class MisusageError(PrettyError):
     
     pass

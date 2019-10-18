@@ -16,8 +16,8 @@ def movers():
 
 
 @click.command()
-@click.option('--model', required=True, help="Name of the model to which this version belongs")
-@click.option('--name', help="Name of the version")
+@click.option('--model', '-m', required=True, help="Name of the model to which this version belongs")
+@click.option('--name', '-n', help="Name of the version")
 def info(**kwargs):
     
     """Information about a model version"""
@@ -26,8 +26,8 @@ def info(**kwargs):
 
 
 @click.command()
-@click.option('--model', required=True, help="Name of the model to which this version belongs")
-@click.option('--name', help="Name of the version")
+@click.option('--model', '-m', required=True, help="Name of the model to which this version belongs")
+@click.option('--name', '-n', help="Name of the version")
 def rm(**kwargs):
     
     """Remove a model version and all of its files"""

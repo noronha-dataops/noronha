@@ -14,3 +14,5 @@ jupyter
 papermill
 Flask
 pyOpenSSL
+keyring
+keyring_jeepney

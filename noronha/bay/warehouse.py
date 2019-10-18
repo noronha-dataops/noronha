@@ -245,10 +245,8 @@ class NexusWarehouse(Warehouse):
                 return False
             else:
                 raise NhaStorageError(message)
-        elif del_count == 1:
-            return True
         else:
-            raise NotImplementedError()
+            return True
     
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         

@@ -14,6 +14,7 @@ from noronha.cli.model import model
 from noronha.cli.movers import movers
 from noronha.cli.note import note
 from noronha.cli.proj import proj
+from noronha.cli.tchest import tchest
 from noronha.cli.train import train
 from noronha.common.constants import FrameworkConst
 from noronha.common.logging import LOG
@@ -83,6 +84,7 @@ commands = [
     note,
     movers,
     proj,
+    tchest,
     train,
     model,
     get_me_started,

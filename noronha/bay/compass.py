@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 from random import randrange
 
 from noronha.common.annotations import Configured
+from noronha.bay.tchest import TreasureChest
 from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective
 from noronha.common.conf import MongoConf, WarehouseConf, LoggerConf, ProjConf, DockerConf, RouterConf, CaptainConf
 from noronha.common.errors import ResolutionError, ConfigurationError
@@ -40,6 +41,45 @@ class Compass(Configured):
     def __init__(self):
         
         self.conf.get('')  # triggering conf load
+
+
+class TreasureCompass(Compass):
+    
+    KEY_CHEST = 'tchest'
+    
+    def __init__(self):
+        
+        super().__init__()
+        chest_name = self.conf.get(self.KEY_CHEST)
+        
+        if chest_name is None:
+            self.chest = None
+        else:
+            self.chest = TreasureChest(chest_name)
+    
+    @property
+    def user(self):
+        
+        if self.chest is None:
+            return None
+        else:
+            return self.chest.get_user()
+    
+    @property
+    def pswd(self):
+        
+        if self.chest is None:
+            return None
+        else:
+            return self.chest.get_pswd()
+    
+    @property
+    def token(self):
+        
+        if self.chest is None:
+            return None
+        else:
+            return self.chest.get_token()
 
 
 class DockerCompass(Compass):
@@ -267,7 +307,7 @@ class LoggerCompass(Compass):
         )
 
 
-class IslandCompass(ABC, Compass):
+class IslandCompass(ABC, TreasureCompass):
     
     alias = None
     conf = None
@@ -379,7 +419,7 @@ class IslandCompass(ABC, Compass):
         if self.native and self.DEFAULT_USER is not None:
             return self.DEFAULT_USER
         else:
-            return self.conf.get(self.KEY_USER)
+            return self.conf.get(self.KEY_USER) or super().user
     
     @property
     def pswd(self):
@@ -387,7 +427,7 @@ class IslandCompass(ABC, Compass):
         if self.native and self.DEFAULT_PSWD is not None:
             return self.DEFAULT_PSWD
         else:
-            return self.conf.get(self.KEY_PSWD)
+            return self.conf.get(self.KEY_PSWD) or super().pswd
     
     @property
     def max_mb(self):
