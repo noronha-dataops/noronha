@@ -17,7 +17,7 @@ from random import randrange
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective
-from noronha.common.conf import MongoConf, WarehouseConf, LoggerConf, ProjConf, DockerConf, RouterConf, CaptainConf
+from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError
 from noronha.common.utils import am_i_on_board, is_it_open_sea
 
@@ -310,7 +310,7 @@ class LoggerCompass(Compass):
 class IslandCompass(ABC, TreasureCompass):
     
     alias = None
-    conf = None
+    conf: LazyConf = None
     
     ORIGINAL_PORT = None
     KEY_NATIVE = 'native'
@@ -428,6 +428,14 @@ class IslandCompass(ABC, TreasureCompass):
             return self.DEFAULT_PSWD
         else:
             return self.conf.get(self.KEY_PSWD) or super().pswd
+    
+    def inject_credentials(self, conf: dict):
+        
+        subject = conf.get(self.conf.namespace, {})
+        subject.update(
+            user=self.user,
+            pswd=self.pswd
+        )
     
     @property
     def max_mb(self):

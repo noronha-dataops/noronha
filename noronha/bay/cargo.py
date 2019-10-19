@@ -10,6 +10,8 @@ from datetime import datetime
 from typing import List
 
 from noronha.bay.barrel import Barrel, DatasetBarrel, MoversBarrel
+from noronha.bay.compass import MongoCompass, WarehouseCompass, IslandCompass
+from noronha.bay.warehouse import get_warehouse
 from noronha.db.ds import Dataset
 from noronha.db.main import SmartDoc
 from noronha.db.movers import ModelVersion
@@ -194,12 +196,22 @@ class ConfCargo(Cargo):
     
     def __init__(self, alias: str, **kwargs):
         
+        conf = AllConf.dump()
+        
+        compass: List[IslandCompass] = [
+            MongoCompass(),
+            get_warehouse(section=None).compass  # warehouse compass (artif or nexus)
+        ]
+        
+        for comp in compass:
+            comp.inject_credentials(conf)
+        
         super().__init__(
             mode='ro',
             contents=[
                 LiteralContent(
                     file_name=Config.FILE,
-                    file_content=AllConf.dump()
+                    file_content=conf
                 )
             ],
             alias='conf-{}'.format(alias),
