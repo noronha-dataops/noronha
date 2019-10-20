@@ -3,7 +3,7 @@
 set -x
 
 # define a model
-nha -v model new \
+nha -v -p model new \
 --name iris-clf \
 --desc "Iris flower classifier" \
 --model-file '{"name": "clf.pkl", "required": true, "desc": "Classifier saved as pickle"}' \
@@ -11,14 +11,14 @@ nha -v model new \
 --data-file '{"name": "species.csv"}'
 
 # record a dataset
-nha -s -v ds new \
+nha -s -v -p ds new \
 --model iris-clf \
 --name iris-data-v0 \
 --details '{"extraction_date": "2019-04-01"}' \
 --path ./datasets/
 
 # create your project
-nha -s -v proj new \
+nha -s -v -p proj new \
 --name botanics \
 --desc "An experiment in the field of botanics" \
 --git-repo 'https://my_git_server/botanics' \
@@ -26,7 +26,7 @@ nha -s -v proj new \
 --model iris-clf
 
 # build your project # now it's "dockerized" :)
-nha -d proj build \
+nha -d -p proj build \
 --from-here
 
 # note that a docker image has been created for you

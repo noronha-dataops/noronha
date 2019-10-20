@@ -24,7 +24,7 @@ class ConfSource(object):
 
 class LazyConf(Lazy, dict):
     
-    _DICT_METHODS = tuple(['get', 'update', 'keys', 'values', 'items', 'copy',
+    _DICT_METHODS = tuple(['get', 'update', 'keys', 'values', 'items',
                           '__repr__', '__str__', '__getitem__', '__contains__', '__iter__'])
     
     _LAZY_PROPERTIES = _DICT_METHODS
@@ -44,6 +44,20 @@ class LazyConf(Lazy, dict):
     def as_dict(self):
         
         return dict(**self)
+    
+    def copy(self):
+        
+        copied = self.__class__(
+            namespace=self.namespace,
+            sources=self.sources
+        )
+        
+        copied.ready = self.ready
+        
+        if self.ready:
+            copied.update(self)
+        
+        return copied
     
     @ready
     def dump(self):
@@ -69,6 +83,8 @@ class LazyConf(Lazy, dict):
             child_conf.get(self.namespace, {}),
             allow_overwrite=True
         ))
+        
+        return self
 
 
 AllConf = LazyConf()

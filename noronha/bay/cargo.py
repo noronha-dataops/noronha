@@ -2,6 +2,7 @@
 
 """Module for handling Docker volumes"""
 
+import json
 import os
 import pathlib
 import random_name
@@ -10,7 +11,7 @@ from datetime import datetime
 from typing import List
 
 from noronha.bay.barrel import Barrel, DatasetBarrel, MoversBarrel
-from noronha.bay.compass import MongoCompass, WarehouseCompass, IslandCompass
+from noronha.bay.compass import MongoCompass, IslandCompass
 from noronha.bay.warehouse import get_warehouse
 from noronha.db.ds import Dataset
 from noronha.db.main import SmartDoc
@@ -196,7 +197,7 @@ class ConfCargo(Cargo):
     
     def __init__(self, alias: str, **kwargs):
         
-        conf = AllConf.dump()
+        conf = AllConf.load().copy()
         
         compass: List[IslandCompass] = [
             MongoCompass(),
@@ -211,7 +212,7 @@ class ConfCargo(Cargo):
             contents=[
                 LiteralContent(
                     file_name=Config.FILE,
-                    file_content=conf
+                    file_content=conf.dump()
                 )
             ],
             alias='conf-{}'.format(alias),
