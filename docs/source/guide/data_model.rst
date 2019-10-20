@@ -7,13 +7,17 @@ Noronha's Data Model
 
 This section describes how Noronha stores its metadata in MongoDB and how these metadata documents relate to each other. Reading and understanding this section is going to help you when creating and manipulating projects, models and other objects in Noronha.
 
-The following conventions are adopted here:
+The diagram bellow gives a hint on the document relationships described in detail here:
+
+.. image:: data_model.png
+
+This guide adopts the following conventions for representing document fields that link to other documents:
 
 - **Referenced document:** fields in **bold** are like pointers. Their content is always consistent with the original document they refer to. Fields like these are meant to answer questions like: which model is my project using? Which model files are expected?
 - *Embedded document:* fields in *italic* are like snapshots. Their content is a report of how the referred document was when the field was updated. Fields like these are meant to answer questions like: which version of my project's code was used in that training?
 
 Project
-===============
+=======
 Represents a project that is managed by the framework. Also referred to as *proj*.
 
 .. parsed-literal::
@@ -26,7 +30,7 @@ Represents a project that is managed by the framework. Also referred to as *proj
     }
 
 Build Version
-===============
+=============
 Represents the Docker image that was created when the project was built by Noronha. Also referred to as *bvers* or *bv* (not to mistake for *beavers* :D).
 
 .. parsed-literal::
@@ -40,7 +44,7 @@ Represents the Docker image that was created when the project was built by Noron
     }
 
 Model
-===============
+=====
 Represents a model that is managed by the framework.
 
 .. parsed-literal::
@@ -63,7 +67,7 @@ Represents a model that is managed by the framework.
 Note that this is **not** a model :ref:`version <model-version-doc>`, but a model *definition*: it's like a template that describes how a model is going to be persisted. Of course, when starting project we usually have no clue of how the model is going to be, but don't worry: all properties except the model's name can be edited later.
 
 Dataset
-===============
+=======
 Represents a dataset that is managed by the framework. Also referred to as *ds* (not a data scientist though :D).
 
 .. parsed-literal::
@@ -76,7 +80,7 @@ Represents a dataset that is managed by the framework. Also referred to as *ds* 
     }
 
 Training
-===============
+========
 Represents the execution of a training. Also referred to as *train* (not the one that runs on *rails* :D).
 
 .. parsed-literal::
@@ -101,7 +105,7 @@ Represents the execution of a training. Also referred to as *train* (not the one
 .. _model-version-doc:
 
 Model Version
-===============
+=============
 Represents a persistent model that was generated during a training. Also referred to as *movers* or *mv*.
 
 .. parsed-literal::
@@ -115,7 +119,7 @@ Represents a persistent model that was generated during a training. Also referre
     }
 
 Deployment
-===============
+==========
 Represents a group of one or more identical containers providing a prediction service. Also referred to as *depl*.
 
 .. parsed-literal::
@@ -128,4 +132,16 @@ Represents a group of one or more identical containers providing a prediction se
         notebook: relative path inside the project's repository to the prediction notebook that is executed
         details: dictionary with arbitrary details about the deployment
     }
-.. highlight:: default
+
+Treasure Chest
+==============
+Represents a paior of credentials recorded and stored securely in the framework. Also referred to as *tchest*.
+
+.. parsed-literal::
+
+    {
+        name: name-of-the-tchest  # only alphanumerical and dashes
+        owner: os-user-to-whom-it-belongs
+        desc: free text description
+        details: dictionary with arbitrary details about the tchest
+    }

@@ -29,7 +29,7 @@ Pre-requisites
 To use Noronha in its most basic configuration all you need is:
 
     - Any recent, stable Unix OS.
-    - `Docker v17+ <https://docs.docker.com/install/>`_ installed with `Swarm mode <https://docs.docker.com/engine/swarm/>`_ enabled.
+    - `Docker v17+ <https://docs.docker.com/install/>`_ with `Swarm mode <https://docs.docker.com/engine/swarm/>`_ enabled and `configured to be used without sudo <https://docs.docker.com/install/linux/linux-postinstall/>`_.
     - A `Conda v4.5+ <https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html>`_ environment with Python v3.5+.
     - `Git v2+ <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_.
 

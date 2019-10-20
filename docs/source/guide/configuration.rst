@@ -116,33 +116,28 @@ The following properties are found under the key *container_manager* and they re
 
 - **api_timeout:** The maximum time, in seconds, to wait before the container manager completes a requested action (default: 20 for Docker Swarm, 60 for Kubernetes).
 
-The following parameters are only used if the chosen container manager is Kubernetes:
-
-- **namespace:** An existing Kubernetes namespace in which Noronha will create its resources (default: default).
-
-- **storage_class:** An existing storage class that Noronha will use to create persistent volume claims for storing its plugins' data (default: standard).
-
-- **nfs:** A mapping with the keys *path* and *server*. The key *server* should point to your NFS server's hostname or IP, whereas *path* refers to an existing directory inside your NFS server. Noronha will create volumes under the specified directory for sharing files with its training, deployment and IDE containers.
-
-- **resource_profiles:** A mapping in which the keys are resource profile names and the values are resource specifications in `Kubernetes' syntax <https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container>`_. Example:
+- **resource_profiles:** A mapping in which the keys are resource profile names and the values are resource specifications. Example:
 
 .. parsed-literal::
 
     light_training:
       requests:
-        memory: 256Mi
-        cpu: 250m
+        memory: 256
+        cpu: 1
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 512
+        cpu: 2
 
     heavy_training:
       requests:
-        memory: 2Gi
+        memory: 2048
         cpu: 2
       limits:
-        memory: 4Gi
+        memory: 4096
         cpu: 4
+
+    # keeping compatibility with both Kubernetes and Docker Swarm,
+    # all *cpu* values are expressed in **vCores** and *memory* in **MB**.
 
 Such resource profile names may be specified when starting an IDE, training or deployment (note that when deploying with multiple replicas, the resources specification will be applied to each replica).
 
@@ -152,16 +147,24 @@ Another interesting strategy is to specify default resource profiles according t
 
     nha-ide:
       requests:
-        memory: 256Mi
-        cpu: 250m
+        memory: 256
+        cpu: 1
       limits:
-        memory: 512Mi
-        cpu: 500m
+        memory: 512
+        cpu: 2
 
     nha-train:
       requests:
-        memory: 2Gi
+        memory: 2048
         cpu: 2
       limits:
-        memory: 4Gi
+        memory: 4096
         cpu: 4
+
+The following parameters are only used if the chosen container manager is Kubernetes:
+
+- **namespace:** An existing Kubernetes namespace in which Noronha will create its resources (default: default).
+
+- **storage_class:** An existing storage class that Noronha will use to create persistent volume claims for storing its plugins' data (default: standard).
+
+- **nfs:** A mapping with the keys *path* and *server*. The key *server* should point to your NFS server's hostname or IP, whereas *path* refers to an existing directory inside your NFS server. Noronha will create volumes under the specified directory for sharing files with its training, deployment and IDE containers.
