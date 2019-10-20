@@ -1,13 +1,13 @@
-******************
+*************
 CLI Reference
-******************
+*************
 .. highlight:: none
 
 This section describes the usage of Noronha's command line interface.
 Each topic in this section refers to a different API subject such as projects, models and so on.
 
 General
-===============
+=======
 The entrypoint for Noronha's CLI is either the keyword *noronha*, for being explicit, or the alias *nha*,
 for shortness and cuteness. You can always check which commands are available with the *help* option::
 
@@ -39,7 +39,7 @@ Artifactory service for managing Noronha's files. This is useful if you are just
 experimenting with the framework and do not want to spend time customizing anything yet.
 
 Project
-===============
+=======
 Reference for commands under the subject *proj*.
 
 - **info:** information about a project
@@ -99,7 +99,7 @@ Reference for commands under the subject *proj*.
     --no-cache    Flag: slower build, but useful when the cached layers contain outdated information
 
 Build Version
-===============
+=============
 Reference for commands under the subject *bvers*.
 
 - **info:** information about a build version
@@ -125,7 +125,7 @@ Reference for commands under the subject *bvers*.
     --tag     The version's docker tag (default: latest)
 
 Model
-===============
+=====
 Reference for commands under the subject *model*.
 
 - **info:** information about a model
@@ -176,7 +176,7 @@ Reference for commands under the subject *model*.
     --no-ds-files       Flag: disable the tracking of dataset files
 
 Dataset
-===============
+=======
 Reference for commands under the subject *ds*.
 
 - **info:** information about a dataset
@@ -220,7 +220,7 @@ Reference for commands under the subject *ds*.
     -p, --path       Path to the directory that contains the dataset files (default: current working directory)
 
 Training
-===============
+========
 Reference for commands under the subject *train*.
 
 - **info:** information about a training execution
@@ -271,7 +271,7 @@ Reference for commands under the subject *train*.
                           This profile should be configured in your nha.yaml file
 
 Model Version
-===============
+=============
 Reference for commands under the subject *movers*.
 
 - **info:** information about a model version
@@ -325,7 +325,7 @@ Reference for commands under the subject *movers*.
     --proj           To be used along with 'train': name of the project to which this training belongs
 
 Deployment
-===============
+==========
 Reference for commands under the subject *depl*.
 
 - **info:** information about a deployment
@@ -434,3 +434,48 @@ The commands bellow are available for all :ref:`plugins <island-concepts>`, unle
 
     -s, --skip-build    Flag: assume that the required Docker image for setting up
                         this plugin already exists.
+
+.. _tchest-usage:
+
+Treasure Chest
+==============
+Reference for commands under the subject *tchest*, which are meant to manage :ref:`Treasure Chests <tchest-doc>`.
+
+- **info:** information about a Treasure Chest
+
+.. parsed-literal::
+
+    --name    Name of the Treasure Chest
+
+- **list:** list Treasure Chest records
+
+.. parsed-literal::
+
+    -f, --filter    Query in MongoDB's JSON syntax
+    -e, --expand    Flag: expand each record's fields
+
+- **rm:** remove a Treasure Chest
+
+.. parsed-literal::
+
+    -n, --name    Name of the Treasure Chest
+
+- **new:** record a new Treasure Chest in the database
+
+.. parsed-literal::
+
+    -n, --name      Name of the Treasure Chest
+    --desc          Free text description
+    --details       JSON with any details related to the Treasure Chest
+    -u, --user      Username to be recorded
+    -p, --pswd      Password to be recorded
+
+- **update:** update a Treasure Chest
+
+.. parsed-literal::
+
+    -n, --name      Name of the Treasure Chest you want to update
+    --desc          Free text description
+    --details       JSON with any details related to the Treasure Chest
+    -u, --user      Username to be recorded
+    -p, --pswd      Password to be recorded

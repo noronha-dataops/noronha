@@ -133,9 +133,11 @@ Represents a group of one or more identical containers providing a prediction se
         details: dictionary with arbitrary details about the deployment
     }
 
+.. _tchest-doc:
+
 Treasure Chest
 ==============
-Represents a paior of credentials recorded and stored securely in the framework. Also referred to as *tchest*.
+Represents a pair of credentials recorded and stored securely in the framework. Also referred to as *tchest*.
 
 .. parsed-literal::
 

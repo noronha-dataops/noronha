@@ -35,6 +35,8 @@ The following properties are common for all :ref:`plugins <island-concepts>`.
 
 - **pswd:** Password for authenticating in the plugin (*foreign mode* only).
 
+- **tchest:** Instead of specifying credentials explicitly, you may set this property with the name of a :ref:`Treasure Chest <tchest-usage>` that holds your pre-recorded credentials.
+
 - **disk_allocation_mb:** This property is only used in *native mode*. When Noronha creates a volume to store the plugin's data, it's going to ask the container manager for this amount of storage, in megabytes.
 
 The following topics describe the properties under each configuration subject (top keys in the YAML file).
