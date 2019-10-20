@@ -9,7 +9,6 @@ to decide how certain configuration parameters should be used (e.g.: Artifactory
 """
 
 import logging
-import os
 import socket
 from abc import ABC, abstractmethod
 from random import randrange
@@ -18,7 +17,7 @@ from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective
 from noronha.common.conf import *
-from noronha.common.errors import ResolutionError, ConfigurationError
+from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
 from noronha.common.utils import am_i_on_board, is_it_open_sea
 
 
@@ -116,6 +115,7 @@ class CaptainCompass(Compass):
     KEY_TYPE = 'type'
     KEY_NODES = 'nodes'
     KEY_API = 'api_key'
+    KEY_PROFILES = 'resource_profiles'
     KEY_TIMEOUT = 'api_timeout'
     DEFAULT_TIMEOUT = None
     
@@ -134,6 +134,28 @@ class CaptainCompass(Compass):
         else:
             return nodes[randrange(len(nodes))]
     
+    def get_resource_profile(self, ref_to_profile: str):
+        
+        prof = self.conf.get(self.KEY_PROFILES, {}).get(ref_to_profile)
+        keys = {'limits', 'requests'}
+        
+        if prof is None:
+            if ref_to_profile in DockerConst.Section.ALL:
+                return None
+            else:
+                raise ConfigurationError("Resource profile '{}' not found".format(ref_to_profile))
+        
+        assert isinstance(prof, dict) and set(prof) == keys,\
+            ConfigurationError("Resource profile must be a mapping with the keys {}".format(keys))
+        
+        for key in keys:
+            for res, unit in zip(['cpu', 'memory'], ['vCores', 'MB']):
+                num = prof.get(key, {}).get(res)
+                assert num is None or isinstance(num, int), NhaDockerError(
+                    "Resource {} '{}' must be an integer ({})".format(key.rstrip('s'), res, unit))
+        
+        return prof
+    
     @property
     def tipe(self):
         
@@ -141,11 +163,6 @@ class CaptainCompass(Compass):
     
     @abstractmethod
     def get_namespace(self):
-        
-        pass
-    
-    @abstractmethod
-    def get_resource_profile(self, section: str):
         
         pass
     
@@ -168,10 +185,6 @@ class SwarmCompass(CaptainCompass):
         
         raise NotImplementedError("Container manager 'swarm' does not apply namespace isolation")
     
-    def get_resource_profile(self, section: str):
-        
-        raise NotImplementedError("Container manager 'swarm' does not take resource profiles")
-    
     def get_nfs_server(self, section: str):
         
         raise NotImplementedError("Container manager 'swarm' does not take a NFS server")
@@ -185,7 +198,6 @@ class KubeCompass(CaptainCompass):
     
     KEY_NAMESPACE = 'namespace'
     KEY_STG_CLS = 'storage_class'
-    KEY_PROFILES = 'resource_profiles'
     KEY_NFS = 'nfs'
     DEFAULT_NAMESPACE = 'default'
     DEFAULT_STG_CLS = 'standard'
@@ -204,16 +216,6 @@ class KubeCompass(CaptainCompass):
         assert isinstance(stg_cls, str) and len(stg_cls) > 0,\
             ConfigurationError("Container manager 'kube' requires an existing storage class to be configured")
         return stg_cls
-    
-    def get_resource_profile(self, section: str):
-        
-        prof = self.conf.get(self.KEY_PROFILES, {}).get(section)
-        keys = {'limits', 'requests'}
-        
-        assert prof is None or (isinstance(prof, dict) and set(prof) == keys),\
-            ConfigurationError("Resource profile must be a mapping with the keys {}".format(keys))
-        
-        return prof
     
     def get_nfs_server(self, section: str):
         

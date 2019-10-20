@@ -4,7 +4,6 @@ import click
 import os
 
 from noronha.api.note import NotebookAPI as API
-from noronha.api.utils import ProjResolver
 from noronha.cli.handler import CMD
 from noronha.common.constants import OnBoard, NoteConst
 from noronha.common.utils import kv_list_to_dict
@@ -55,7 +54,6 @@ def note(env_vars: list, mounts: list, port: int, edit: bool = False, **kwargs):
     
     CMD.run(
         API, '__call__', **kwargs,
-        _proj_resolvers=[ProjResolver.BY_REPO],
         env_vars=kv_list_to_dict(env_vars),
         mounts=list(mounts) + edit_mount,
         port=int(port)

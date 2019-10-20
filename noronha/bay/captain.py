@@ -10,7 +10,7 @@ from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.pod import Pod
 from datetime import datetime
 from docker.errors import APIError as DockerAPIError
-from docker.types import ServiceMode, TaskTemplate, ContainerSpec
+from docker.types import ServiceMode, TaskTemplate, ContainerSpec, Resources
 from kaptan import Kaptan
 from kubernetes.stream import stream
 import random_name
@@ -34,7 +34,7 @@ class Captain(ABC, Configured):
     conf = CaptainConf
     compass_cls: Type[CaptainCompass] = None
     
-    def __init__(self, section: str, **kwargs):
+    def __init__(self, section: str, resource_profile: str = None):
         
         self.docker_compass = DockerCompass()
         self.captain_compass = self.compass_cls()
@@ -42,6 +42,7 @@ class Captain(ABC, Configured):
         self.interrupted = False
         self.timeout = self.captain_compass.api_timeout
         self.cleaner = StructCleaner()
+        self.resources = self.captain_compass.get_resource_profile(resource_profile or section)
     
     @abstractmethod
     def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
@@ -99,9 +100,12 @@ class SwarmCaptain(Captain):
     
     compass_cls = SwarmCompass
     
-    def __init__(self, section: str, **_):
+    _CPU_RATE = 10**9  # vCores to nanoCores
+    _MEM_RATE = 1024*1024  # MB to bytes
+    
+    def __init__(self, section: str, **kwargs):
         
-        super().__init__(section)
+        super().__init__(section, **kwargs)
         LOG.warn("Using Docker Swarm as container manager. This is not recommended for distributed environments")
         self.docker_api = self.docker_compass.get_api()
         self.docker_backend = DockerBackend(logging_level=logging.ERROR)
@@ -115,13 +119,14 @@ class SwarmCaptain(Captain):
         additional_opts = \
             self.conu_ports(ports) + \
             self.conu_env_vars(env_vars) + \
-            self.conu_name(name)
+            self.conu_name(name) + \
+            self.conu_resources()
         
-        kwargs = dict(
+        kwargs = self.cleaner(dict(
             command=cmd,
             volumes=self.conu_mounts(mounts) + self.conu_vols(cargos),
             additional_opts=additional_opts
-        )
+        ))
         
         if foreground:
             cont = image.run_via_binary_in_foreground(**kwargs)
@@ -144,6 +149,7 @@ class SwarmCaptain(Captain):
             mode=ServiceMode('replicated', replicas=tasks),
             task_template=TaskTemplate(
                 force_update=5,
+                resources=self.swarm_resources(),
                 container_spec=ContainerSpec(
                     command=cmd,
                     image=img.target,
@@ -414,18 +420,39 @@ class SwarmCaptain(Captain):
                 continue  # single port exposure is not necessary in swarm mode
         
         return port_specs
+    
+    def swarm_resources(self):
+        
+        if self.resources is None:
+            return None
+        else:
+            return Resources(
+                cpu_limit=self.resources['limits']['cpu'] * self._CPU_RATE,
+                mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
+                cpu_reservation=self.resources['requests']['cpu'] * self._CPU_RATE,
+                mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE
+            )
+    
+    def conu_resources(self):
+        
+        if self.resources is None:
+            return None
+        else:
+            return [
+                '--cpus', str(self.resources['limits']['cpu']),
+                '--memory-reservation', '{}m'.format(self.resources['requests']['memory'])
+            ]
 
 
 class KubeCaptain(Captain):
     
     compass_cls = KubeCompass
     
-    def __init__(self, section: str, resource_profile: str = None):
+    def __init__(self, section: str, **kwargs):
         
-        super().__init__(section)
+        super().__init__(section, **kwargs)
         self.namespace = self.captain_compass.get_namespace()
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR)
-        self.resources = {'resources': self.captain_compass.get_resource_profile(resource_profile or section)}
         self.nfs = self.captain_compass.get_nfs_server(section)
         self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.mule = None
@@ -442,13 +469,13 @@ class KubeCaptain(Captain):
             name=name,
             image=img.target,
             command=cmd,
-            **self.resources,
+            resources=self.resources,
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs
         )
         
-        template = dict(
+        template = self.cleaner(dict(
             apiVersion="v1",
             kind="Pod",
             metadata=dict(name=name, labels={'app': name}),
@@ -456,7 +483,7 @@ class KubeCaptain(Captain):
                 'containers': [container],
                 'volumes': vol_defs + mount_defs
             }
-        )
+        ))
         
         LOG.info("Creating Pod '{}'".format(name))
         LOG.debug(template)
@@ -482,13 +509,13 @@ class KubeCaptain(Captain):
             image=img.target,
             imagePullPolicy='Always',
             command=cmd,
-            **self.resources,
+            resources=self.resources,
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs
         )
         
-        template = dict(
+        template = self.cleaner(dict(
             apiVersion="apps/v1",
             kind="Deployment",
             metadata={'name': name},
@@ -506,7 +533,7 @@ class KubeCaptain(Captain):
                     }
                 )
             )
-        )
+        ))
         
         if self.find_depl(name) is None:
             LOG.info("Creating deployment '{}'".format(name))
@@ -901,6 +928,28 @@ class KubeCaptain(Captain):
             dict(name=k, value=v)
             for k, v in env_vars.items()
         ]
+    
+    def kube_resources(self):
+        
+        if self.resources is None:
+            return None
+        
+        resources = self.resources.copy()
+        
+        for key in ['requests', 'limits']:
+            resources[key]['memory'] = self.kube_memory(resources[key]['memory'])
+        
+        return resources
+    
+    def kube_memory(self, mem):
+        
+        if mem >= 1024:
+            mem = int(mem/1024)
+            unit = 'Gi'
+        else:
+            unit = 'Mi'
+        
+        return '{}{}'.format(mem, unit)
 
 
 def get_captain(section: str, **kwargs):
