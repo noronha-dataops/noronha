@@ -64,8 +64,8 @@ Those are the key features demonstrated in this example:
 
 ## Next steps
 
-To avoid keeping credentials explicitly in configuration files, see how to [create](https://noronha-dataops.readthedocs.io/en/latest/reference/cli.html#tchest-usage) Treasure Chests (credential stores) and [configure your Islands (plugins) to use them](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html#island-conventions).
+- To avoid keeping credentials explicitly in configuration files, see how to [create](https://noronha-dataops.readthedocs.io/en/latest/reference/cli.html#tchest-usage) Treasure Chests (credential stores) and [configure your Islands (plugins) to use them](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html#island-conventions).
 
-For more information about how to target a Kubernetes cluster with your Noronha commands, see the [container manager configuration manual](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html#container-manager).
+- For more information about how to target a Kubernetes cluster with your Noronha commands, see the [container manager configuration manual](https://noronha-dataops.readthedocs.io/en/latest/guide/configuration.html#container-manager).
 
-For a better understanding about how project's are linked to Git or private Docker registries, see the topic about [project repositores](https://noronha-dataops.readthedocs.io/en/latest/guide/concepts.html#project-repositories).
+- For a better understanding about how project's are linked to Git or private Docker registries, see the topic about [project repositores](https://noronha-dataops.readthedocs.io/en/latest/guide/concepts.html#project-repositories).
