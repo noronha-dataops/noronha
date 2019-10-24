@@ -20,7 +20,9 @@ Reference for functions inside the `shortcuts module <https://gitlab.eva.bot/ass
 
 Publish
 =======
-# TODO
+Reference for the model publisher, which can be found in the `publish module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/publish.py>`_.
+
+.. autoclass:: noronha.tools.publish.Publisher
 
 Online
 ======

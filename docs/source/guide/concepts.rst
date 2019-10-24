@@ -12,13 +12,16 @@ The image bellow summarizes the components that compose the framework:
 
 Project Repositories
 ====================
-Noronha supports three kinds of project repositories:
+When recording a project in Noronha, three kinds of repositories are supported.
+None of them are mandatory, but at least one is recommended.
 
-- **Local:** the project code resides in a local directory.
-- **Git:** the project code resides in a remote Git repository.
-- **Docker:** the project code resides in a Docker repository.
+- **Home:** Local directory where the project is hosted (recommended when working in a sandbox).
+- **Git:** The project's remote Git repository (recommended for production ready projects).
+- **Docker:** The project's remote Docker repository (recommended for mock-ups, prototyping and third party image testing).
 
-For the first two kinds (local, git) the framework assumes that your project contains a Dockerfile that uses noronha.everis.ai/noronha as its base image. Everytime you build your project with Noronha it's going create a Docker image for the project and record some metadata related to it.
+For the first two kinds (local, git) the framework assumes that your project's root contains a Dockerfile that uses `noronha.everis.ai/noronha:latest <https://hub.docker.com/r/noronha.everis.ai/noronha>`_ as its base image. Everytime you build your project with Noronha from one of these two repositories, it's going create a Docker image for the project and record some metadata related to it.
+
+As for the third kind of repository (Docker), the framework assumes your repository contains a pre-built image, managed by the user or a third-party. When building from this repository, Noronha is just going to pull and tag the image for usage in the project's tasks. Besides, if you try to run a project task with a Docker tag that hasn't been recorded by Noronha yet, its default behaviour is to try to find an image with that tag in the project's Docker repository.
 
 This is a common Dockerfile to be used with Noronha::
 

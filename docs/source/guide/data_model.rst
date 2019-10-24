@@ -25,8 +25,11 @@ Represents a project that is managed by the framework. Also referred to as *proj
     {
         name: name-of-the-project  # only alphanumerical and dashes
         desc: free text description
-        repo: address of the project's repository  # see :ref:`project repositories <project-repositories>`
-        **model:** model used by this project
+        **model:** list of models used by this project
+        home_dir: local directory where the project is hosted
+        git_repo: the project's remote Git repository
+        docker_repo: the project's remote Docker repository
+        # see :ref:`project repositories <project-repositories>`
     }
 
 Build Version

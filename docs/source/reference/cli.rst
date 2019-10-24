@@ -66,37 +66,42 @@ Reference for commands under the subject *proj*.
 
 .. parsed-literal::
 
-    -n, --name      Name of the project
-    -d, --desc      Free text description
-    -m, --model     Name of an existing model
-    -r, --repo      The project's :ref:`repository <project-repositories>`.
-                    Allowed syntaxes for specifying repositories:
-                    **local://**\ *local-directory*
-                    **git://**\ *http://git-server.com/user/repo*
-                    **docker://**\ *registry/user/repo*
-                    (default: local repository at current working directory)
+    -n, --name       Name of the project
+    -d, --desc       Free text description
+    -m, --model      Name of an existing model (further info: nha model --help)
+    --home-dir       Local directory where the project is hosted.
+                     Example: /path/to/proj
+    --git-repo       The project's remote Git repository.
+                     Example: https://<git_server>/<proj_repo>
+    --docker-repo    The project's remote Docker repository.
+                     Example: <docker_registry>/<proj_image>
 
 - **update:** update a projects in the database
 
 .. parsed-literal::
 
-    --proj, --name    Name of the project you want to update (default: current working project)
-    -d, --desc        Free text description
-    -m, --model       Name of an existing model (further info: nha model --help)
-    -r, --repo        The project's :ref:`repository <project-repositories>`.
-                      Allowed syntaxes for specifying repositories:
-                      **local://**\ *local-directory*
-                      **git://**\ *http://git-server.com/user/repo*
-                      **docker://**\ *registry/user/repo*
-                      (default: local repository at current working directory)
+    -n, --name       Name of the project you want to update (default: current working project)
+    -d, --desc       Free text description
+    -m, --model      Name of an existing model (further info: nha model --help)
+    --home-dir       Local directory where the project is hosted.
+                     Example: /path/to/proj
+    --git-repo       The project's remote Git repository.
+                     Example: https://<git_server>/<proj_repo>
+    --docker-repo    The project's remote Docker repository.
+                     Example: <docker_registry>/<proj_image>
 
 - **build:** encapsulate the project in a new Docker image
 
 .. parsed-literal::
 
-    --proj        Name of the project (default: current working project)
-    -t, --tag     Docker tag for the image (default: latest)
-    --no-cache    Flag: slower build, but useful when the cached layers contain outdated information
+    --proj         Name of the project (default: current working project)
+    -t, --tag      Docker tag for the image (default: latest)
+    --no-cache     Flag: slower build, but useful when the cached layers contain outdated information
+    --from-here    Flag: build from current working directory (default option)
+    --from-home    Flag: build from project's home directory
+    --from-git     Flag: build from project's Git repository (master branch)
+    --pre-built    Flag: don't build, just pull and tag a pre-built image from project's Docker repository
+
 
 Build Version
 =============

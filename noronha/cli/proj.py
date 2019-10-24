@@ -67,7 +67,7 @@ def _list(_filter, expand, **kwargs):
 @click.option(
     '--docker-repo', help=
     """The project's remote Docker repository. """
-    """<docker_registry>/<proj_image>"""
+    """Example: <docker_registry>/<proj_image>"""
 )
 def new(**kwargs):
     
@@ -100,7 +100,7 @@ def new(**kwargs):
 @click.option(
     '--docker-repo', help=
     """The project's remote Docker repository. """
-    """<docker_registry>/<proj_image>"""
+    """Example: <docker_registry>/<proj_image>"""
 )
 def update(**kwargs):
     
