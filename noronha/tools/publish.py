@@ -39,7 +39,7 @@ class Publisher(object):
            May be left out if only one pre-trained asset was included in the training container
            or if *uses_pretrained* wasn't set to True.
     
-    :returns: A ModelVersion instance.
+    :returns: A :ref:`ModelVersion <model-version-doc>` instance.
     
     :raise ResolutionError:
         - If the project uses zero or multiple models and none was specified as parent model.

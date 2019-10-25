@@ -26,7 +26,9 @@ Reference for the model publisher, which can be found in the `publish module <ht
 
 Online
 ======
-# TODO
+Reference for the online predictor, which can be found in the `online module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/online.py>`_.
+
+.. autoclass:: noronha.tools.online.OnlinePredict
 
 Logger
 ======

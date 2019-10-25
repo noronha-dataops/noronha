@@ -39,10 +39,39 @@ class HealthCheck(object):
 
 class OnlinePredict(object):
     
-    def __init__(self, predict_method, enrich=True):
+    """Utility for creating an endpoint from within a prediction notebook.
+    
+    When this class is instantiated from within a Jupyter notebook running inside
+    a container managed by Noronha, it autamatically loads the metadata related to
+    the project and the deployment that is running. Then, the predictor instance works as
+    a function for starting the endpoint and listening for prediction requests.
+    
+    # TODO: explain configuration loading and enrich
+    
+    :param predict_func: ???.
+    :param enrich: ???.
+    
+    :raise ???:
+    
+    :Example:
+    
+    .. parsed-literal::
+        model = pickle.load(open('clf.pkl', 'rb'))
+        
+        def func(x):
+            return model.predict(x)
+        
+        predict = OnlinePredict(
+            predict_method=func
+        )
+        
+        predict()
+    """
+    
+    def __init__(self, predict_func, enrich=True):
         
         self._service = Flask(__name__)
-        self._predict_method = predict_method
+        self._predict_func = predict_func
         self._health = HealthCheck()
         self._enrich = enrich
         self.movers = Deployment.load(ignore=True).movers
@@ -63,7 +92,7 @@ class OnlinePredict(object):
             data = request.get_data()
             charset = request.mimetype_params.get('charset') or OnlineConst.DEFAULT_CHARSET
             decoded_data = data.decode(charset, 'replace')
-            response['result'] = self._predict_method(decoded_data)
+            response['result'] = self._predict_func(decoded_data)
             response['metadata'] = self.response_metadata
             code = OnlineConst.ReturnCode.OK
         except Exception as e:
