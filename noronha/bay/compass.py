@@ -87,6 +87,7 @@ class DockerCompass(Compass):
     
     KEY_DAEMON_ADDRESS = 'daemon_address'
     KEY_TARGET_REGISTRY = 'target_registry'
+    KEY_REGISTRY_SECRET = 'registry_secret'
     
     @property
     def daemon_address(self):
@@ -107,6 +108,11 @@ class DockerCompass(Compass):
         
         import docker  # lazy import
         return docker.APIClient(self.daemon_address)
+    
+    @property
+    def secret(self):
+        
+        return self.conf.get(self.KEY_REGISTRY_SECRET)
 
 
 class CaptainCompass(Compass):

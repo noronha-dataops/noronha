@@ -436,7 +436,7 @@ class SwarmCaptain(Captain):
     def conu_resources(self):
         
         if self.resources is None:
-            return None
+            return []
         else:
             return [
                 '--cpus', str(self.resources['limits']['cpu']),
@@ -451,6 +451,7 @@ class KubeCaptain(Captain):
     def __init__(self, section: str, **kwargs):
         
         super().__init__(section, **kwargs)
+        self.secret = self.docker_compass.secret
         self.namespace = self.captain_compass.get_namespace()
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR)
         self.nfs = self.captain_compass.get_nfs_server(section)
@@ -481,7 +482,8 @@ class KubeCaptain(Captain):
             metadata=dict(name=name, labels={'app': name}),
             spec={
                 'containers': [container],
-                'volumes': vol_defs + mount_defs
+                'volumes': vol_defs + mount_defs,
+                'imagePullSecrets': [{'name': self.secret}]
             }
         ))
         
@@ -529,7 +531,8 @@ class KubeCaptain(Captain):
                     },
                     spec={
                         'containers': [container],
-                        'volumes': vol_defs + mount_defs
+                        'volumes': vol_defs + mount_defs,
+                        'imagePullSecrets': [{'name': self.secret}]
                     }
                 )
             )
