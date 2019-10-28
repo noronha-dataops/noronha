@@ -937,12 +937,15 @@ class KubeCaptain(Captain):
         if self.resources is None:
             return None
         
-        resources = self.resources.copy()
+        res = {}
         
         for key in ['requests', 'limits']:
-            resources[key]['memory'] = self.kube_memory(resources[key]['memory'])
+            res[key] = dict(
+                cpu=self.resources[key]['cpu'],
+                memory=self.kube_memory(self.resources[key]['memory'])
+            )
         
-        return resources
+        return res
     
     def kube_memory(self, mem):
         
