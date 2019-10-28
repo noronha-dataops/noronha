@@ -469,11 +469,12 @@ class KubeCaptain(Captain):
         container = dict(
             name=name,
             image=img.target,
+            imagePullPolicy='Always',
             command=cmd,
             resources=self.kube_resources(),
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
-            ports=port_refs
+            ports=port_refs,
         )
         
         template = self.cleaner(dict(
