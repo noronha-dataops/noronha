@@ -45,7 +45,7 @@ class ProjectAPI(NoronhaAPI):
         
         if home_dir is None:
             LOG.warn("No home directory was specified for the new project.")
-            if self._decide("Would you like to use the current working directory?", default=True):
+            if self._decide("Would you like to use the current working directory?", default=False):
                 home_dir = os.getcwd()
                 LOG.info("Using as home directory: {}".format(home_dir))
         

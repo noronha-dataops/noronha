@@ -470,7 +470,7 @@ class KubeCaptain(Captain):
             name=name,
             image=img.target,
             command=cmd,
-            resources=self.resources,
+            resources=self.kube_resources(),
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs
@@ -511,7 +511,7 @@ class KubeCaptain(Captain):
             image=img.target,
             imagePullPolicy='Always',
             command=cmd,
-            resources=self.resources,
+            resources=self.kube_resources(),
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs

@@ -110,6 +110,10 @@ The following properties are found under the key *docker* and they refer to how 
 
 - **target_registry:** Address of the Docker registry to which the images built by the framework will be uploaded (default is null, so images are kept locally).
 
+The following parameters are only used if the chosen container manager is Kubernetes:
+
+- **registry_secret:** Name of the Kubernetes secret that your cluster uses to access the registry configured in the previously. This property is recommended if your containers fail with the message *ImagePullBackOff*.
+
 Container Manager
 =================
 The following properties are found under the key *container_manager* and they refer to how Noronha uses the container manager.
