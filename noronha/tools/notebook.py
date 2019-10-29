@@ -11,7 +11,8 @@ from noronha.common.logging import LOG
 from noronha.db.proj import Project
 from noronha.db.depl import Deployment
 from noronha.db.train import Training
-from noronha.tools.main import NoronhaEngine, ProcMonitor
+from noronha.tools.main import NoronhaEngine
+from noronha.tools.utils import ProcMonitor
 from noronha.tools.shortcuts import get_purpose
 
 

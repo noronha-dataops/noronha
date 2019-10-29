@@ -11,7 +11,7 @@ from noronha.common.errors import NhaDataError, PrettyError
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_json, assert_str
 from noronha.db.depl import Deployment
-from noronha.tools.main import ProcMonitor
+from noronha.tools.utils import ProcMonitor
 
 
 class HealthCheck(object):
