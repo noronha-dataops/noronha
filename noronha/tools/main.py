@@ -6,6 +6,8 @@ from noronha.common.logging import LOG
 
 class NoronhaNBExecManager(NotebookExecutionManager):
     
+    LINE_WIDTH = 18
+    
     def __init__(self, progress_callback: callable = None, **kwargs):
         
         super().__init__(**kwargs)
@@ -34,7 +36,7 @@ class NoronhaNBExecManager(NotebookExecutionManager):
     def echo_outputs(self, cell):
         
         if hasattr(cell, 'outputs') and len(cell.outputs) > 0:
-            LOG.echo('-'*20)
+            LOG.echo('-'*self.LINE_WIDTH)
             LOG.echo(
                 '\n'.join([
                     node.dict().get('text', '')
@@ -42,7 +44,7 @@ class NoronhaNBExecManager(NotebookExecutionManager):
                 ])
             )
         
-        LOG.echo('-'*20)
+        LOG.echo('-'*self.LINE_WIDTH)
     
     def cell_start(self, cell, *args, **kwargs):
         
@@ -53,8 +55,7 @@ class NoronhaNBExecManager(NotebookExecutionManager):
     def cell_exception(self, cell, exception: Exception = None, *args, **kwargs):
         
         super().cell_exception(cell, exception=exception, *args, **kwargs)
-        self.echo_outputs(cell)
-        LOG.error(exception)
+        raise exception
     
     def cell_complete(self, cell, *args, **kwargs):
         

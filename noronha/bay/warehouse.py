@@ -10,9 +10,11 @@ Objects handled:
 
 import os
 from abc import ABC, abstractmethod
-from nexuscli import nexus_client
 from artifactory import ArtifactoryPath
+from nexuscli import nexus_client
 from typing import Type
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
 
 from noronha.bay.compass import WarehouseCompass, ArtifCompass, NexusCompass
 from noronha.bay.utils import Workpath
@@ -33,6 +35,10 @@ class Warehouse(ABC, Configured):
         self.section = section
         self.compass: (ArtifCompass, NexusCompass) = self.compass_cls()
         self.repo = self.compass.get_repo()
+        
+        if not self.compass.check_certificate:
+            disable_warnings(InsecureRequestWarning)
+        
         self.client = self.get_client()
         self.assert_repo_exists()
     

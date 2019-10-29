@@ -60,7 +60,7 @@ class NotebookRunner(ProcMonitor):
             LOG.debug(kwargs)
             self.set_state(Task.State.RUNNING)
             pm.execute_notebook(**kwargs)
-        except (PapermillExecutionError, KeyError, AttributeError) as e:
+        except Exception as e:
             LOG.error("Notebook execution failed:")
             LOG.error(e)
             self.set_state(Task.State.FAILED)
