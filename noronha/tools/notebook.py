@@ -6,56 +6,52 @@ from datetime import datetime
 from papermill.exceptions import PapermillExecutionError
 
 from noronha.bay.barrel import NotebookBarrel
-from noronha.common.constants import OnBoard, DateFmt, Task, Extension
+from noronha.common.constants import OnBoard, DateFmt, Task, Extension, DockerConst
 from noronha.common.logging import LOG
 from noronha.db.proj import Project
 from noronha.db.depl import Deployment
 from noronha.db.train import Training
-from noronha.tools.main import NoronhaEngine
+from noronha.tools.main import NoronhaEngine, ProcMonitor
+from noronha.tools.shortcuts import get_purpose
 
 
-class NotebookRunner(object):
+class NotebookRunner(ProcMonitor):
 
     def __init__(self, debug=False):
         
         self.debug = debug
         self.proj = Project.load()
-        self.train = Training.load(ignore=True)
-        self.depl = Deployment.load(ignore=True)
+        super().__init__(proc=self._find_proc())
         
         if self.debug:
             LOG.debug_mode = True
     
-    def set_progress(self, perc: float):
+    def _find_proc(self):
         
-        if self.train.name is not None:
-            self.train.reload()
-            
-            if perc > self.train.task.progress:
-                self.train.task.progress = perc
-                self.train.save()
+        return {
+            DockerConst.Section.IDE: None,
+            DockerConst.Section.TRAIN: Training.load(ignore=True),
+            DockerConst.Section.DEPL: Deployment.load(ignore=True)
+        }.get(get_purpose())
     
-    def set_state(self, state: str):
+    @property
+    def output_file_name(self):
         
-        if self.train.name is not None:
-            self.train.reload()
-            
-            if self.train.task.state not in Task.State.END_STATES:
-                self.train.task.state = state
-                self.train.save()
+        if self.proc is None:
+            return datetime.now().strftime(DateFmt.SYSTEM)
+        else:
+            return self.proc.name
     
     def __call__(self, note_path: str, params: dict):
 
-        if self.train.name is not None:
+        if self.proc is not None:
             NoronhaEngine.progress_callback = lambda x: self.set_progress(x)
-        
-        output_file_name = self.train.name or self.depl.name or datetime.now().strftime(DateFmt.SYSTEM)
         
         kwargs = dict(
             parameters=params,
             engine_name=NoronhaEngine.alias,
             input_path=os.path.join(OnBoard.APP_HOME, note_path),
-            output_path='.'.join([output_file_name, Extension.IPYNB])
+            output_path='.'.join([self.output_file_name, Extension.IPYNB])
         )
         
         try:

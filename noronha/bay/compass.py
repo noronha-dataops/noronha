@@ -88,6 +88,7 @@ class DockerCompass(Compass):
     KEY_DAEMON_ADDRESS = 'daemon_address'
     KEY_TARGET_REGISTRY = 'target_registry'
     KEY_REGISTRY_SECRET = 'registry_secret'
+    KEY_MOCK = 'mock_mode'
     
     @property
     def daemon_address(self):
@@ -113,6 +114,11 @@ class DockerCompass(Compass):
     def secret(self):
         
         return self.conf.get(self.KEY_REGISTRY_SECRET)
+    
+    @property
+    def mock(self):
+        
+        return self.conf.get(self.KEY_MOCK, False)
 
 
 class CaptainCompass(Compass):

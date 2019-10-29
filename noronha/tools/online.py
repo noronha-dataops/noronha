@@ -6,11 +6,12 @@ from datetime import datetime
 from flask import Flask, request
 from werkzeug.serving import run_simple
 
-from noronha.common.constants import DateFmt, OnlineConst
+from noronha.common.constants import DateFmt, OnlineConst, Task
 from noronha.common.errors import NhaDataError, PrettyError
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_json, assert_str
 from noronha.db.depl import Deployment
+from noronha.tools.main import ProcMonitor
 
 
 class HealthCheck(object):
@@ -37,7 +38,7 @@ class HealthCheck(object):
         self._status = status
 
 
-class OnlinePredict(object):
+class OnlinePredict(ProcMonitor):
     
     """Utility for creating an endpoint from within a prediction notebook.
     
@@ -74,7 +75,9 @@ class OnlinePredict(object):
         self._predict_func = predict_func
         self._health = HealthCheck()
         self._enrich = enrich
-        self.movers = Deployment.load(ignore=True).movers
+        self.depl = Deployment.load(ignore=True)
+        self.movers = self.depl.movers
+        super().__init__(proc=self.depl)
         
         @self._service.route('/predict', methods=['POST'])
         def predict():
@@ -137,9 +140,14 @@ class OnlinePredict(object):
         if not debug:
             warnings.filterwarnings('ignore')
         
-        run_simple(
-            hostname=OnlineConst.BINDING_HOST,
-            port=OnlineConst.PORT,
-            use_debugger=debug,
-            application=self._service
-        )
+        try:
+            self.set_state(Task.State.FINISHED)
+            run_simple(
+                hostname=OnlineConst.BINDING_HOST,
+                port=OnlineConst.PORT,
+                use_debugger=debug,
+                application=self._service
+            )
+        except (Exception, KeyboardInterrupt) as e:
+            self.set_state(Task.State.FAILED)
+            raise e

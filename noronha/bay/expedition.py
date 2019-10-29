@@ -26,8 +26,8 @@ class Expedition(ABC):
                  movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartDoc] = None,
                  **kwargs):
         
-        self.mock = False
         self.docker_compass = DockerCompass()
+        self.mock = self.docker_compass.mock
         self.captain: Captain = get_captain(section=self.section, **kwargs)
         self.launcher = self.captain.deploy if self.is_fleet else self.captain.run
         self.proj, self.bvers, self.img_spec = self._infer_img_spec(img_spec, proj, tag)

@@ -5,7 +5,7 @@ import json
 from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import LongExpedition
 from noronha.common.annotations import validate, projected
-from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst
+from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst, EnvVar
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
@@ -87,6 +87,12 @@ class DeploymentExp(LongExpedition):
             docs=[depl],
             **kwargs
         )
+    
+    def make_env_vars(self):
+        
+        return join_dicts(super().make_env_vars(), {
+            EnvVar.OPEN_SEA: 'Yes'
+        })
     
     def make_ports(self):
         

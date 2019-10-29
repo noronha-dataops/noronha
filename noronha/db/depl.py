@@ -7,7 +7,13 @@ from noronha.db.bvers import EmbeddedBuildVersion
 from noronha.db.main import SmartDoc
 from noronha.db.movers import EmbeddedModelVersion
 from noronha.db.proj import Project
+from noronha.db.utils import TaskDoc
 from noronha.common.constants import DBConst, OnBoard
+
+
+class DeplTask(TaskDoc):
+    
+    pass
 
 
 class Deployment(SmartDoc, Document):
@@ -20,4 +26,5 @@ class Deployment(SmartDoc, Document):
     movers = ListField(EmbeddedDocumentField(EmbeddedModelVersion, default=None))
     bvers = EmbeddedDocumentField(EmbeddedBuildVersion, default=None)
     notebook = StringField(required=True)
+    task = EmbeddedDocumentField(DeplTask, default=DeplTask())
     details = DictField(default={})
