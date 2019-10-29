@@ -78,10 +78,10 @@ class DBConst(object):
     
     """Constants related to the database"""
     
-    MAX_NAME_LEN = 30
-    MAX_DESC_LEN = 300
-    MAX_REPO_LEN = 600
-    MAX_EXPAND_DEPTH = 5
+    MAX_NAME_LEN = 32
+    MAX_DESC_LEN = 512
+    MAX_REPO_LEN = 512
+    MAX_EXPAND_DEPTH = 4
 
 
 class IslandConst(object):
@@ -99,8 +99,7 @@ class WarehouseConst(object):
     
     """Constants related to the file management system"""
     
-    MAX_FILE_NAME_LEN = 30
-    MAX_FILE_EXT_LEN = 10
+    MAX_FILE_NAME_LEN = 64
     MAX_FILE_SIZE_MB = 2048
     
     class Types(object):
