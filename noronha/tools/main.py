@@ -34,12 +34,12 @@ class NoronhaNBExecManager(NotebookExecutionManager):
         ).strip()
     
     def echo_outputs(self, cell):
-        
+        import json
         if hasattr(cell, 'outputs') and len(cell.outputs) > 0:
             LOG.echo('-'*self.LINE_WIDTH)
             LOG.echo(
-                '\n'.join([
-                    node.dict().get('text', '')
+                '\n'.join([  # TODO: remove this debug shortcut
+                    json.dumps(node.dict())  # .get('text', '')
                     for node in cell.outputs
                 ])
             )

@@ -277,7 +277,7 @@ class SmartDoc(PrettyDoc):
     
     def show(self):
         
-        pk = self.get_pk()
+        pk = self.get_pk(default='None')
         
         if issubclass(self.__class__, EmbeddedDocument):
             return ':'.join([
