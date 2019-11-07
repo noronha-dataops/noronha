@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Configuring Noronha &mdash; Noronha 1.3.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Reference" href="../reference/index.html" />
+    <link rel="prev" title="Noronha’s Data Model" href="data_model.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Noronha
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="concepts.html">Key Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_model.html">Noronha’s Data Model</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Configuring Noronha</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-files">Configuration Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conventions-for-islands">Conventions for Islands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#router">Router</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mongodb">MongoDB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#file-manager">File Manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#project">Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logger">Logger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#docker">Docker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#container-manager">Container Manager</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Noronha</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">User Guide</a> &raquo;</li>
+        
+      <li>Configuring Noronha</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/configuration.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="configuring-noronha">
+<span id="configuration-guide"></span><h1>Configuring Noronha<a class="headerlink" href="#configuring-noronha" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="configuration-files">
+<h2>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
+<p>Noronha’s default configuration file is packaged together with its Python libraries, under the <a class="reference external" href="https://gitlab.eva.bot/asseteva/noronha-dataops/tree/master/noronha/resources">resources directory</a>. It’s a YAML file in which the top keys organize properties according to the subjects they refer to.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>---
+project:
+  working_project: null
+
+logger:
+  level: INFO
+  pretty: false
+  join_root: true
+  max_bytes: 1048576  # 1mb
+  bkp_count: 1
+
+mongo:
+  native: true
+  port: 30017
+  database: nha_db
+  write_concern:
+    w: 1
+    j: true
+    wtimeout: 5
+
+router:
+  native: true
+  port: 30080
+
+file_manager:
+  native: true
+  port: 30023
+  type: artif
+
+docker:
+  daemon_address: unix:/var/run/docker.sock
+  target_registry: null
+
+container_manager:
+  type: swarm
+</pre></div>
+</div>
+<p>This configuration can be extended by placing a <em>nha.yaml</em> file with the desired keys in the current working directory or in the user’s home directory at <em>~/.nha/</em>. The file resolution is as follows:</p>
+<ul class="simple">
+<li><p><strong>./nha.yaml</strong>: if present, this file will be used to extend the default configuration. No other files will be looked for.</p></li>
+<li><p><strong>~/.nha/nha.yaml</strong>: if the previous alternative wasn’t available, this file will be used instead.</p></li>
+<li><p>If none of the alternatives above was available, only the default configuration is going to be used.</p></li>
+</ul>
+</div>
+<div class="section" id="conventions-for-islands">
+<span id="island-conventions"></span><h2>Conventions for Islands<a class="headerlink" href="#conventions-for-islands" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are common for all <a class="reference internal" href="concepts.html#island-concepts"><span class="std std-ref">plugins</span></a>.</p>
+<ul class="simple">
+<li><p><strong>native:</strong> (boolean) If true, this plugin runs inside a container manager by Noronha. Otherwise, this plugin runs in a dedicated server, managed by the user or a third-party. The later option is referred to as <em>foreign mode</em>, in opposition to the <em>native mode</em> (default: true).</p></li>
+<li><p><strong>host:</strong> This property is only used in <em>foreign mode</em>. It refers to the hostname or IP of the server in which Noronha is going to find the service (e.g.: MongoDB’s hostname or IP, as it appears in its connection string).</p></li>
+<li><p><strong>port:</strong> In <em>foreign mode</em>, this refers to the port in which the plugin is exposed (e.g.: MongoDB’s port, as it appears in its connection string). In <em>native mode</em>, this refers to the server port in which Noronha is going to expose the plugin. Note that if your container manager is Kubernetes only the ports between 30000 and 31000 are available.</p></li>
+<li><p><strong>user:</strong> Username for authenticating in the plugin (<em>foreign mode</em> only).</p></li>
+<li><p><strong>pswd:</strong> Password for authenticating in the plugin (<em>foreign mode</em> only).</p></li>
+<li><p><strong>tchest:</strong> Instead of specifying credentials explicitly, you may set this property with the name of a <a class="reference internal" href="../reference/cli.html#tchest-usage"><span class="std std-ref">Treasure Chest</span></a> that holds your pre-recorded credentials.</p></li>
+<li><p><strong>disk_allocation_mb:</strong> This property is only used in <em>native mode</em>. When Noronha creates a volume to store the plugin’s data, it’s going to ask the container manager for this amount of storage, in megabytes.</p></li>
+</ul>
+<p>The following topics describe the properties under each configuration subject (top keys in the YAML file).</p>
+</div>
+<div class="section" id="router">
+<h2>Router<a class="headerlink" href="#router" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>router</em> and they refer to how Noronha uses its model router.</p>
+<ul class="simple">
+<li><p><strong>port:</strong> As explained in the <a class="reference internal" href="#island-conventions"><span class="std std-ref">island conventions</span></a> (default: 30080).</p></li>
+</ul>
+</div>
+<div class="section" id="mongodb">
+<h2>MongoDB<a class="headerlink" href="#mongodb" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>mongo</em> and they refer to how Noronha uses its database.</p>
+<ul class="simple">
+<li><p><strong>port:</strong> As explained in the <a class="reference internal" href="#island-conventions"><span class="std std-ref">island conventions</span></a> (default: 30017).</p></li>
+<li><p><strong>database:</strong> Name of the database that Noronha is going to access in MongoDB. Created in runtime if not existing (default: nha_db).</p></li>
+<li><p><strong>write_concern:</strong> Dictionary with the concern options that Noronha should use when writing to the database, as in <a class="reference external" href="https://docs.mongodb.com/manual/reference/write-concern/">MongoDB’s manual</a>. The following example represents the default values for this property:</p></li>
+</ul>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>write_concern:
+  w: 1
+  j: true
+  wtimeout: 5
+</pre></div>
+</div>
+</div>
+<div class="section" id="file-manager">
+<h2>File Manager<a class="headerlink" href="#file-manager" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>file_manager</em> and they refer to how Noronha uses its file manager.</p>
+<ul class="simple">
+<li><p><strong>port:</strong> As explained in the <a class="reference internal" href="#island-conventions"><span class="std std-ref">island conventions</span></a> (default: 30023).</p></li>
+<li><p><strong>use_ssl:</strong> (boolean) Set to true if your file manager server uses https (<em>foreign mode</em> only) (default: false).</p></li>
+<li><p><strong>check_certificate:</strong> (boolean) When using SSL encryption, you may set this to false in order to skip the verification of your server’s certificate, although this is not recommended (<em>foreign mode</em> only) (default: true).</p></li>
+<li><p><strong>type:</strong> Reference to the file manager that Noronha should use (either <em>artif</em>, for Artifactory, or <em>nexus</em>, for Nexus) (default: artif).</p></li>
+<li><p><strong>repository:</strong> Name of an existing repository that Noronha should use to store its model files, datasets and output notebooks. For Artifactory, the default is <em>example-repo-local</em>. For Nexus there is no default value, since the first repository needs to be created manually through the plugin’s user interface.</p></li>
+</ul>
+</div>
+<div class="section" id="project">
+<h2>Project<a class="headerlink" href="#project" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>project</em> and they refer to how Noronha handle’s your project.</p>
+<ul class="simple">
+<li><p><strong>working_project:</strong> this tells the framework which project you are working on right now. This is important because many features such as training or deploying models can only be performed inside the scope of a project. However, before looking into this property the framework checks two other alternatives: was a project name provided as argument to the function? Is the current working directory a local repository for a project?</p></li>
+</ul>
+</div>
+<div class="section" id="logger">
+<h2>Logger<a class="headerlink" href="#logger" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>logger</em> and they refer to how Noronha logs messages.</p>
+<ul class="simple">
+<li><p><strong>level:</strong> Log verbosity level, as in Python’s logging (one of: ERROR, WARN, INFO, DEBUG) (default: INFO).</p></li>
+<li><p><strong>pretty:</strong> (boolean) If true, all dictionaries and exception objects are pretty-printed (default: false).</p></li>
+<li><p><strong>directory:</strong> Path to the directory where log files hould be kept (default: ~/.nha/logs/)</p></li>
+<li><p><strong>file_name:</strong> Log file name (default: noronha.log)</p></li>
+<li><p><strong>max_bytes:</strong> Max log file size, in bytes (default: 1mb).</p></li>
+<li><p><strong>bkp_count:</strong> Number of log file backups to be kept (default: 1).</p></li>
+<li><p><strong>join_root:</strong> (boolean) If true, log messages by other frameworks such as Flask and Conu are also dumped to Noronha’s log file.</p></li>
+</ul>
+</div>
+<div class="section" id="docker">
+<h2>Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>docker</em> and they refer to how Noronha uses the Docker engine.</p>
+<ul class="simple">
+<li><p><strong>daemon_address:</strong> Path or address to Docker daemon’s socket (default: unix:/var/run/docker.sock).</p></li>
+<li><p><strong>target_registry:</strong> Address of the Docker registry to which the images built by the framework will be uploaded (default is null, so images are kept locally).</p></li>
+</ul>
+<p>The following parameters are only used if the chosen container manager is Kubernetes:</p>
+<ul class="simple">
+<li><p><strong>registry_secret:</strong> Name of the Kubernetes secret that your cluster uses to access the registry configured in the previously. This property is recommended if your containers fail with the message <em>ImagePullBackOff</em>.</p></li>
+</ul>
+</div>
+<div class="section" id="container-manager">
+<h2>Container Manager<a class="headerlink" href="#container-manager" title="Permalink to this headline">¶</a></h2>
+<p>The following properties are found under the key <em>container_manager</em> and they refer to how Noronha uses the container manager.</p>
+<ul class="simple">
+<li><p><strong>type:</strong> Reference to the container manager that Noronha should use as its backend (either <em>swarm</em>, for Docker Swarm, or <em>kube</em>, for Kubernetes) (default: swarm).</p></li>
+<li><p><strong>api_timeout:</strong> The maximum time, in seconds, to wait before the container manager completes a requested action (default: 20 for Docker Swarm, 60 for Kubernetes).</p></li>
+<li><p><strong>resource_profiles:</strong> A mapping in which the keys are resource profile names and the values are resource specifications. Example:</p></li>
+</ul>
+<pre class="literal-block">light_training:
+  requests:
+    memory: 256
+    cpu: 1
+  limits:
+    memory: 512
+    cpu: 2
+
+heavy_training:
+  requests:
+    memory: 2048
+    cpu: 2
+  limits:
+    memory: 4096
+    cpu: 4
+
+# keeping compatibility with both Kubernetes and Docker Swarm,
+# all <em>cpu</em> values are expressed in <strong>vCores</strong> and <em>memory</em> in <strong>MB</strong>.</pre>
+<p>Such resource profile names may be specified when starting an IDE, training or deployment (note that when deploying with multiple replicas, the resources specification will be applied to each replica).</p>
+<p>Another interesting strategy is to specify default resource profiles according to the <em>work section</em>. The available work sections are <em>nha-ide</em>, <em>nha-train</em> and <em>nha-depl</em>. Those refer to the default resource specifications applied when using the IDE, training or running a deploy, respectively. Example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>nha-ide:
+  requests:
+    memory: 256
+    cpu: 1
+  limits:
+    memory: 512
+    cpu: 2
+
+nha-train:
+  requests:
+    memory: 2048
+    cpu: 2
+  limits:
+    memory: 4096
+    cpu: 4
+</pre></div>
+</div>
+<p>The following parameters are only used if the chosen container manager is Kubernetes:</p>
+<ul class="simple">
+<li><p><strong>namespace:</strong> An existing Kubernetes namespace in which Noronha will create its resources (default: default).</p></li>
+<li><p><strong>storage_class:</strong> An existing storage class that Noronha will use to create persistent volume claims for storing its plugins’ data (default: standard).</p></li>
+<li><p><strong>nfs:</strong> A mapping with the keys <em>path</em> and <em>server</em>. The key <em>server</em> should point to your NFS server’s hostname or IP, whereas <em>path</em> refers to an existing directory inside your NFS server. Noronha will create volumes under the specified directory for sharing files with its training, deployment and IDE containers.</p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../reference/index.html" class="btn btn-neutral float-right" title="Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="data_model.html" class="btn btn-neutral float-left" title="Noronha’s Data Model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, everis
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
