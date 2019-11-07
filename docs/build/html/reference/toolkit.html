@@ -308,6 +308,64 @@ or the given reference matched zero ore multiple model versions.</p>
 <div class="section" id="publish">
 <h2>Publish<a class="headerlink" href="#publish" title="Permalink to this headline">¶</a></h2>
 <p>Reference for the model publisher, which can be found in the <a class="reference external" href="https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/publish.py">publish module</a>.</p>
+<dl class="class">
+<dt id="noronha.tools.publish.Publisher">
+<em class="property">class </em><code class="sig-prename descclassname">noronha.tools.publish.</code><code class="sig-name descname">Publisher</code><a class="reference internal" href="../_modules/noronha/tools/publish.html#Publisher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#noronha.tools.publish.Publisher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility for publishing model versions from within a training notebook.</p>
+<p>When this class is instantiated from within a Jupyter notebook running inside
+a container managed by Noronha, it autamatically loads the metadata related to
+the project and the training execution. Then, the publisher instance works as
+a function for publishing a model version.</p>
+<p>In most situations, the function’s behaviour is to infer everything necessary for
+publishing the version (e.g.: which is the parent model, which dataset was used,
+which pre-trained model was used, etc).</p>
+<p>For explicity, the following parameters may be specified:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src_path</strong> – Path to directory inside the container’s temporary file system in which the model files reside.
+May also be a path to a file, if the model’s persistence requires only one file.</p></li>
+<li><p><strong>details</strong> – Dictionary with any details about the model version (may be nested).</p></li>
+<li><p><strong>version_name</strong> – Name of the published version (defaults to a funny random name).</p></li>
+<li><p><strong>model_name</strong> – Name of the parent model. May be left out if the project uses only one model.</p></li>
+<li><p><strong>uses_dataset</strong> – Set to False to prevent the model version from linking to a dataset (default: True).</p></li>
+<li><p><strong>dataset_name</strong> – Name of a dataset to be linked to the model version.
+May be left out if only one dataset was included in the training container
+or if <em>uses_dataset</em> was set to False.</p></li>
+<li><p><strong>uses_pretrained</strong> – Set to True in order to link the model version to a pre-trained asset.</p></li>
+<li><p><strong>pretrained_with</strong> – Reference to the pre-trained model asset to be linked (syntax: &lt;model_name&gt;:&lt;version_name&gt;).
+May be left out if only one pre-trained asset was included in the training container
+or if <em>uses_pretrained</em> wasn’t set to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <a class="reference internal" href="../guide/data_model.html#model-version-doc"><span class="std std-ref">ModelVersion</span></a> instance.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ResolutionError</strong> – <ul class="simple">
+<li><p>If the project uses zero or multiple models and none was specified as parent model.</p></li>
+<li><p>If the specified parent model or pre-trained model is not present, or the given reference matched zero or multiple models.</p></li>
+<li><p>If the specified dataset is not present, or the given reference matched zero ore multiple datasets.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">publisher</span> <span class="o">=</span> <span class="n">Publisher</span><span class="p">()</span>
+
+<span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">my_classifier</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/tmp/clf.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">))</span>
+
+<span class="n">publisher</span><span class="p">(</span>
+    <span class="n">details</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;metrics&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;accuracy&#39;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span> <span class="s1">&#39;loss&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span>
+        <span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;n_folds&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>  <span class="c1"># will look for model files in /tmp and associate the model version to a dataset, if available</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </div>
 <div class="section" id="online">
 <h2>Online<a class="headerlink" href="#online" title="Permalink to this headline">¶</a></h2>
