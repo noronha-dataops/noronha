@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from noronha.api.ds import DatasetAPI
 from noronha.api.main import NoronhaAPI
+from noronha.api.movers import ModelVersionAPI
 from noronha.common.annotations import validate
 from noronha.common.logging import LOG
 from noronha.db.model import Model
@@ -17,8 +19,17 @@ class ModelAPI(NoronhaAPI):
     
     def rm(self, name):
         
-        # TODO: find and remove model versions and datasets. Use respective API's for that purpose
-        return super().rm(name=name)
+        LOG.warn("All datasets and model versions for the model '{}' will be deleted".format(name))
+        self._decide("Would you like to proceed?", interrupt=True, default=False)
+        report = {'Removed Datasets': [], 'Removed ModelVersions': []}
+        
+        for key, api in zip(report.keys(), [DatasetAPI(), ModelVersionAPI()]):
+            for obj in api.lyst(model=name):
+                api.rm(model=name, name=obj.name)
+                report[key].append(obj.name)
+        
+        super().rm(name=name)
+        return report
     
     def lyst(self, _filter: dict = None, **kwargs):
         
