@@ -110,7 +110,8 @@ out = check_output([
 ]).decode('UTF-8')
 
 # validation
-assert json.loads(out)['result'] == 'setosa'
+assert json.loads(out)['result'] == 'setosa',\
+    ValueError("Unexpected request response: {}".format(out))
 
 # resizing to 2 tasks
 depl_api.new(
