@@ -47,12 +47,8 @@ class OnlinePredict(ProcMonitor):
     the project and the deployment that is running. Then, the predictor instance works as
     a function for starting the endpoint and listening for prediction requests.
     
-    # TODO: explain configuration loading and enrich
-    
-    :param predict_func: ???.
-    :param enrich: ???.
-    
-    :raise ???:
+    :param predict_func: Any function that receives request's body (str), applies the predictive model and returns the prediction's result.
+    :param enrich: If True, instead of returning the raw response of the prediction function the endpoint is going to return a JSON object with the prediction result and other metatada such as the prediction's datetime and the model versions used in this deployment.
     
     :Example:
     

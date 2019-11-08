@@ -378,19 +378,15 @@ or if <em>uses_pretrained</em> wasn’t set to True.</p></li>
 a container managed by Noronha, it autamatically loads the metadata related to
 the project and the deployment that is running. Then, the predictor instance works as
 a function for starting the endpoint and listening for prediction requests.</p>
-<p># TODO: explain configuration loading and enrich</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>predict_func</strong> – ???.</p></li>
-<li><p><strong>enrich</strong> – ???.</p></li>
+<li><p><strong>predict_func</strong> – Any function that receives request’s body (str), applies the predictive model and returns the prediction’s result.</p></li>
+<li><p><strong>enrich</strong> – If True, instead of returning the raw response of the prediction function the endpoint is going to return a JSON object with the prediction result and other metatada such as the prediction’s datetime and the model versions used in this deployment.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>???</strong> – </p>
-</dd>
-<dt class="field-odd">Example</dt>
-<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p></p></dd>
 </dl>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;clf.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span>
 

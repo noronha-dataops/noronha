@@ -196,12 +196,8 @@
 <span class="sd">    the project and the deployment that is running. Then, the predictor instance works as</span>
 <span class="sd">    a function for starting the endpoint and listening for prediction requests.</span>
 <span class="sd">    </span>
-<span class="sd">    # TODO: explain configuration loading and enrich</span>
-<span class="sd">    </span>
-<span class="sd">    :param predict_func: ???.</span>
-<span class="sd">    :param enrich: ???.</span>
-<span class="sd">    </span>
-<span class="sd">    :raise ???:</span>
+<span class="sd">    :param predict_func: Any function that receives request&#39;s body (str), applies the predictive model and returns the prediction&#39;s result.</span>
+<span class="sd">    :param enrich: If True, instead of returning the raw response of the prediction function the endpoint is going to return a JSON object with the prediction result and other metatada such as the prediction&#39;s datetime and the model versions used in this deployment.</span>
 <span class="sd">    </span>
 <span class="sd">    :Example:</span>
 <span class="sd">    </span>

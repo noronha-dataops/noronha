@@ -3,7 +3,12 @@
 This framework hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture, thus helping you benefit from DataOps practices without having to change much of your usual work behavior.
 
 ### 1) Prerequisites
-To use Noronha in its most basic configuration all you need to have is [Docker v17+](https://docs.docker.com/install/) with [Swarm mode](https://docs.docker.com/engine/swarm/) enabled and a [Conda v4.5+](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html) environment for installing it.
+To use Noronha in its most basic configuration all you need is:
+
+- Any recent, stable Unix OS.
+- [Docker v17+](<https://docs.docker.com/install/>) with [Swarm mode](https://docs.docker.com/engine/swarm/) enabled and [configured to be used without sudo](https://docs.docker.com/install/linux/linux-postinstall/).
+- A [Conda v4.5+](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html) environment with Python v3.5+.
+- [Git v2+](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 ### 2) Basic installation
 <pre>

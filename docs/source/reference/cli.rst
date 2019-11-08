@@ -90,6 +90,8 @@ Reference for commands under the subject *proj*.
     --docker-repo    The project's remote Docker repository.
                      Example: <docker_registry>/<proj_image>
 
+.. _build-command:
+
 - **build:** encapsulate the project in a new Docker image
 
 .. parsed-literal::

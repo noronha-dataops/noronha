@@ -43,7 +43,8 @@ Represents the Docker image that was created when the project was built by Noron
         **proj**: the project which was built
         docker_id: the Docker hash associated to the image that was created
         git_version: the Git hash associated to the last commit before the project was built
-        built_at: when it was built
+        built_at: date and time when it was built
+        built_from: either 'local', 'git' or 'pre-built' (determined by the :ref:`build command <build-command>`)
     }
 
 Model
