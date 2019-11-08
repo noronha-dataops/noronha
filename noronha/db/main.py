@@ -262,7 +262,9 @@ class SmartDoc(PrettyDoc):
     
     def clean(self):
         
-        self.modified = datetime.now()
+        if not isinstance(self, EmbeddedDocument):
+            print('setting {} modified to {}'.format(self.__class__.__name__, 'now'))
+            self.modified = datetime.now()
         
         if hasattr(self, 'name') and self.name is None:
             name = random_name.generate_name(separator='-')

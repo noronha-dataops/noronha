@@ -311,7 +311,9 @@ class SwarmCaptain(Captain):
     def load_vol(self, cargo: Cargo, mule_alias: str = None):
         
         work_path, mule, error = None, None, None
-        self.assert_vol(cargo)
+        
+        if not isinstance(cargo, MappedCargo):
+            self.assert_vol(cargo)
         
         if isinstance(cargo, EmptyCargo) or len(cargo.contents) == 0:
             LOG.debug("Skipping load of volume '{}'".format(cargo.name))
@@ -744,6 +746,8 @@ class KubeCaptain(Captain):
         if isinstance(cargo, EmptyCargo):
             self.assert_vol(cargo)
             return
+        elif isinstance(cargo, MappedCargo):
+            return
         
         work_path, error = None, None
         vol_path = os.path.join(DockerConst.STG_MOUNT, cargo.name)
@@ -845,7 +849,8 @@ class KubeCaptain(Captain):
         cargo = MappedCargo(
             name=mule_name,
             mount_to=DockerConst.STG_MOUNT,
-            src=self.nfs['path']
+            src=self.nfs['path'],
+            nfs=True
         )
         
         return self.kube_vols([cargo])
@@ -877,8 +882,10 @@ class KubeCaptain(Captain):
             
             if isinstance(cargo, EmptyCargo):
                 kwargs = dict(persistentVolumeClaim={'claimName': cargo.name})
+            elif isinstance(cargo, MappedCargo) and not cargo.nfs:
+                kwargs = dict(hostPath={'path': cargo.src, 'type': cargo.tipe})
             else:
-                if isinstance(cargo, MappedCargo):
+                if isinstance(cargo, MappedCargo) and cargo.nfs:  # mule mount to nfs root
                     nfs_path = cargo.src
                 else:
                     nfs_path = os.path.join(self.nfs['path'], name)

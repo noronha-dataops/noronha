@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from noronha.bay.captain import get_captain, Captain
-from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo
+from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo, TimezoneCargo
 from noronha.bay.compass import DockerCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.common.constants import DockerConst, EnvVar
@@ -96,6 +96,7 @@ class Expedition(ABC):
         
         return [
             LogsCargo(**kwargs),
+            TimezoneCargo(**kwargs),
             SharedCargo(
                 **kwargs,
                 cargos=[conf_cargo, meta_cargo] + ds_cargos + mv_cargos

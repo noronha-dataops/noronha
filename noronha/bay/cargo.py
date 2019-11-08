@@ -135,34 +135,33 @@ class EmptyCargo(Cargo):
 
 class MappedCargo(Cargo):
     
-    def __init__(self, src: str, **kwargs):
+    def __init__(self, src: str, mode: str = 'rw', nfs: bool = False, tipe: str = 'Directory', **kwargs):
         
         self.src = src
+        self.nfs = nfs
+        self.tipe = tipe
         super().__init__(
-            mode='rw',
+            mode=mode,
             contents=[],
             **kwargs
         )
-
-
-class TimezoneCargo(Cargo):
     
-    # TODO: this class will not be used for now because mounting a volume directly to /etc is forbidden
-    #  an implementation of docker secrets should do the job instead, by allowing to inject a file without
-    #  replacing a whole directory. The secrets handling module could be called 'bottle'
+    @property
+    def mount(self):
+        
+        return '{}:{}:{}'.format(self.src, self.mount_to, self.mode)
+
+
+class TimezoneCargo(MappedCargo):
     
     def __init__(self, alias: str, **kwargs):
         
         super().__init__(
-            mode='ro',
-            contents=[
-                BinaryContent(
-                    file_name=Paths.TZ_FILE_NAME,
-                    file_content=open(Paths.TZ_FILE_PATH, 'rb').read()
-                )
-            ],
+            src=Paths.TZ_FILE_PATH,
             alias='tz-{}'.format(alias),
-            mount_to=Paths.ETC,
+            mount_to=Paths.TZ_FILE_PATH,
+            mode='ro',
+            tipe='File',
             **kwargs
         )
 
