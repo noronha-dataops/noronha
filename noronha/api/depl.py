@@ -29,6 +29,7 @@ class DeploymentAPI(NoronhaAPI):
         depl = self.doc().find_one(name=name, proj=self.proj.name)
         DeploymentExp(depl).revert()
         depl.delete()
+        return super().rm(target=depl)
     
     def lyst(self, _filter: dict = None, **kwargs):
         

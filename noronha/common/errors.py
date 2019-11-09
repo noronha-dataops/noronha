@@ -89,3 +89,13 @@ class NhaStorageError(PrettyError):
 class NhaConsistencyError(PrettyError):
     
     pass
+
+
+class PatientError(Exception):
+    
+    def __init__(self, wait_callback, original_exception):
+        
+        assert callable(wait_callback)
+        assert isinstance(original_exception, Exception)
+        self.wait_callback = wait_callback
+        self.original_exception = original_exception

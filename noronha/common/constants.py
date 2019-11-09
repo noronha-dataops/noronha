@@ -72,6 +72,7 @@ class Flag(object):
     PROJ = 'this_method_assumes_that_a_working_project_is_set'
     VALIDATION = 'this_method_is_an_argument_validation'
     READY = 'the_lazy_class_must_be_ready_before_using_this_method'
+    PATIENT = 'this_method_retries_until_timeout_is_exceeded'
 
 
 class DBConst(object):

@@ -21,15 +21,15 @@ from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo, HeavyCargo, Shared
 from noronha.bay.compass import DockerCompass, CaptainCompass, SwarmCompass, KubeCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
-from noronha.common.annotations import Configured
+from noronha.common.annotations import Configured, Patient, patient
 from noronha.common.conf import CaptainConf
 from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex
-from noronha.common.errors import ResolutionError, NhaDockerError
+from noronha.common.errors import ResolutionError, NhaDockerError, PatientError
 from noronha.common.logging import LOG
 from noronha.common.utils import dict_to_kv_list, assert_str, StructCleaner
 
 
-class Captain(ABC, Configured):
+class Captain(ABC, Configured, Patient):
     
     conf = CaptainConf
     compass_cls: Type[CaptainCompass] = None
@@ -40,9 +40,9 @@ class Captain(ABC, Configured):
         self.captain_compass = self.compass_cls()
         self.section = section
         self.interrupted = False
-        self.timeout = self.captain_compass.api_timeout
         self.cleaner = StructCleaner()
         self.resources = self.captain_compass.get_resource_profile(resource_profile or section)
+        Patient.__init__(self, timeout=self.captain_compass.api_timeout)
     
     @abstractmethod
     def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
@@ -182,21 +182,22 @@ class SwarmCaptain(Captain):
         
         return self.rm_depl(name)
     
-    def rm_vol(self, cargo: Cargo, ignore=False, retry=True):
+    @patient
+    def rm_vol(self, cargo: Cargo, ignore=False):
+        
+        if isinstance(cargo, MappedCargo):
+            return False
         
         try:
             self.docker_api.remove_volume(name=cargo.name, force=True)
             return True
         except DockerAPIError as e:
-            if retry:
-                LOG.info("Waiting {} seconds before removing volume '{}'".format(self.timeout, cargo.name))
-                time.sleep(self.timeout)
-                return self.rm_vol(cargo, retry=False)
-            elif ignore:
+            if ignore:
                 LOG.error(e)
                 return False
             else:
-                raise e
+                msg = "Waiting up to {} seconds for removal of volume {}".format(self.timeout, cargo.name)
+                raise PatientError(wait_callback=lambda: LOG.info(msg), original_exception=e)
     
     def rm_cont(self, x: DockerContainer):
         
@@ -316,10 +317,10 @@ class SwarmCaptain(Captain):
             self.assert_vol(cargo)
         
         if isinstance(cargo, EmptyCargo) or len(cargo.contents) == 0:
-            LOG.debug("Skipping load of volume '{}'".format(cargo.name))
             return False
         
         try:
+            LOG.debug("Loading volume '{}'".format(cargo.name))
             mule = self.get_mule(cargo, mule_alias)
             self.clear_mule(mule)
             work_path = Workpath.get_tmp()
@@ -567,7 +568,9 @@ class KubeCaptain(Captain):
     
     def rm_vol(self, cargo: Cargo, ignore=False):
         
-        if isinstance(cargo, EmptyCargo):  # PVC
+        if isinstance(cargo, MappedCargo):
+            return False
+        elif isinstance(cargo, EmptyCargo):  # PVC
             self.k8s_backend.core_api.delete_namespaced_persistent_volume_claim(cargo.name, self.namespace)
             return True
         
@@ -754,6 +757,7 @@ class KubeCaptain(Captain):
         
         try:
             self.prepare_mule(mule_alias)
+            LOG.debug("Loading volume '{}'".format(cargo.name))
             self.clear_mule(self.mule, vol_path)
             work_path = Workpath.get_tmp()
             

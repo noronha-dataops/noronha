@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import time
 from abc import ABC, abstractmethod
 from click import confirm
 from pyvalid import accepts
@@ -8,7 +9,7 @@ from pyvalid.validators import is_validator
 from typing import Type
 
 from noronha.common.constants import Flag
-from noronha.common.errors import MisusageError, NhaValidationError
+from noronha.common.errors import MisusageError, NhaValidationError, PatientError
 
 
 def projected(func):
@@ -20,6 +21,12 @@ def projected(func):
 def relax(func):
     
     setattr(func, Flag.RELAXED, True)
+    return func
+
+
+def patient(func):
+    
+    setattr(func, Flag.PATIENT, True)
     return func
 
 
@@ -104,7 +111,7 @@ class Relaxed(object):
     
     relaxed_mode: bool = True
     
-    def relaxed_wrapper(self, func):
+    def _relax_wrapper(self, func):
         
         def wrapper(*args, **kwargs):
             try:
@@ -119,7 +126,41 @@ class Relaxed(object):
         attr = super().__getattribute__(attr_name)
         
         if getattr(attr, Flag.RELAXED, False) and self.relaxed_mode:
-            return self.relaxed_wrapper(attr)
+            return self._relax_wrapper(attr)
+        else:
+            return attr
+
+
+class Patient(object):
+    
+    def __init__(self, timeout: int):
+        
+        self.timeout = timeout
+    
+    def _patience_wrapper(self, func):
+        
+        def wrapper(*args, **kwargs):
+            for attempt in range(self.timeout + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt < self.timeout:
+                        if attempt == 1 and isinstance(e, PatientError):
+                            e.wait_callback()
+                        time.sleep(1)
+                    else:
+                        if isinstance(e, PatientError):
+                            e = e.original_exception
+                        raise e
+        
+        return wrapper
+    
+    def __getattribute__(self, attr_name):
+        
+        attr = super().__getattribute__(attr_name)
+        
+        if getattr(attr, Flag.PATIENT, False):
+            return self._patience_wrapper(attr)
         else:
             return attr
 

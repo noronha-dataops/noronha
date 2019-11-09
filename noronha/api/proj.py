@@ -28,7 +28,7 @@ class ProjectAPI(NoronhaAPI):
     @projected
     def rm(self):
         
-        return super().rm(name=self.proj.name)
+        return super().rm(target=self.proj)
     
     @validate(name=valid.dns_safe)
     def new(self, repo=None, models: list = None, home_dir: str = None, **kwargs):
