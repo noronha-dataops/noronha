@@ -40,7 +40,12 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     
     def rm(self, **kwargs):
         
-        return self.doc.find_one(**kwargs).delete()
+        target = self.doc.find_one(**kwargs)
+        target.delete()
+        return {
+            'Removed {}'.format(self.doc.__name__):
+            target.show()
+        }
     
     def lyst(self, _filter: dict = None, **kwargs):
         
@@ -65,4 +70,6 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     @validate(filter_kwargs=dict, update_kwargs=dict)
     def update(self, filter_kwargs, update_kwargs):
         
-        return self.doc().find_one(**filter_kwargs).update(**update_kwargs)
+        target = self.doc.find_one(**filter_kwargs)
+        target.update(**update_kwargs)
+        return target.reload()

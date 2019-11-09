@@ -8,7 +8,7 @@ import re
 from bson import ObjectId
 from datetime import datetime
 from mongoengine import EmbeddedDocument, Document
-from mongoengine.base import BaseList, BaseDocument
+from mongoengine.base import BaseList, BaseDict, BaseDocument
 from mongoengine.connection import connect
 from mongoengine.fields import StringField, ReferenceField, EmbeddedDocumentField, DateTimeField
 from pymongo.write_concern import WriteConcern
@@ -63,6 +63,8 @@ class PrettyDoc(BaseDocument):
                 return val
         elif isinstance(val, BaseList):
             return [self._expand_value(v, depth - 1, pretty) for v in val]
+        elif isinstance(val, BaseDict):
+            return dict([(k, self._expand_value(v, depth - 1, pretty)) for k, v in val.items()])
         elif isinstance(val, datetime):
             return val.strftime(DateFmt.READABLE)
         elif isinstance(val, ObjectId):

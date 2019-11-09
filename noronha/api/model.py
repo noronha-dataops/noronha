@@ -28,7 +28,7 @@ class ModelAPI(NoronhaAPI):
                 api.rm(model=name, name=obj.name)
                 report[key].append(obj.name)
         
-        super().rm(name=name)
+        report.update(super().rm(name=name))
         return report
     
     def lyst(self, _filter: dict = None, **kwargs):

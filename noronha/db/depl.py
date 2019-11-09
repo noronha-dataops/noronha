@@ -26,5 +26,15 @@ class Deployment(SmartDoc, Document):
     movers = ListField(EmbeddedDocumentField(EmbeddedModelVersion, default=None))
     bvers = EmbeddedDocumentField(EmbeddedBuildVersion, default=None)
     notebook = StringField(required=True)
-    task = EmbeddedDocumentField(DeplTask, default=DeplTask())
+    tasks = DictField(EmbeddedDocumentField(DeplTask, default=DeplTask()), default={})
     details = DictField(default={})
+    
+    def put_task(self, task_id, catch_existing=False):
+        
+        if catch_existing and task_id in self.tasks:
+            return self.tasks.get(task_id)
+        
+        task = DeplTask()
+        self.tasks[task_id] = task
+        self.save()
+        return task

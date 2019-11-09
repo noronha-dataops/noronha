@@ -11,7 +11,7 @@ from noronha.common.errors import NhaDataError, PrettyError
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_json, assert_str
 from noronha.db.depl import Deployment
-from noronha.tools.utils import ProcMonitor
+from noronha.tools.utils import load_proc_monitor
 
 
 class HealthCheck(object):
@@ -38,7 +38,7 @@ class HealthCheck(object):
         self._status = status
 
 
-class OnlinePredict(ProcMonitor):
+class OnlinePredict(object):
     
     """Utility for creating an endpoint from within a prediction notebook.
     
@@ -71,9 +71,8 @@ class OnlinePredict(ProcMonitor):
         self._predict_func = predict_func
         self._health = HealthCheck()
         self._enrich = enrich
-        self.depl = Deployment.load(ignore=True)
-        self.movers = self.depl.movers
-        super().__init__(proc=self.depl)
+        self.movers = Deployment.load(ignore=True).movers
+        self.proc_mon = load_proc_monitor(catch_task=True)
         
         @self._service.route('/predict', methods=['POST'])
         def predict():
@@ -137,7 +136,7 @@ class OnlinePredict(ProcMonitor):
             warnings.filterwarnings('ignore')
         
         try:
-            self.set_state(Task.State.FINISHED)
+            self.proc_mon.set_state(Task.State.FINISHED)
             run_simple(
                 hostname=OnlineConst.BINDING_HOST,
                 port=OnlineConst.PORT,
@@ -145,5 +144,5 @@ class OnlinePredict(ProcMonitor):
                 application=self._service
             )
         except (Exception, KeyboardInterrupt) as e:
-            self.set_state(Task.State.FAILED)
+            self.proc_mon.set_state(Task.State.FAILED)
             raise e

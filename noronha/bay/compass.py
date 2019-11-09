@@ -108,7 +108,17 @@ class DockerCompass(Compass):
     def get_api(self):
         
         import docker  # lazy import
-        return docker.APIClient(self.daemon_address)
+        api = docker.APIClient(self.daemon_address)
+        
+        try:  # dry run
+            api.ping()
+        except Exception as e:
+            raise NhaDockerError(
+                """Unable to connect to Docker daemon. """
+                """Assert that the daemon is running and that your user has the required permissions."""
+            ) from e
+        
+        return api
     
     @property
     def secret(self):
