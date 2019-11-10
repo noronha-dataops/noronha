@@ -3,7 +3,7 @@
 from abc import ABC
 
 from noronha.api.utils import ProjResolver, DefaultValidation
-from noronha.db.main import Documented, SmartDoc
+from noronha.db.main import Documented, SmartBaseDoc
 from noronha.db.proj import Project, Projected
 from noronha.common.annotations import Interactive, Scoped, Validated, validate
 from noronha.common.logging import LOG
@@ -42,7 +42,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
         
         if 'target' in kwargs:
             target = kwargs.pop('target')
-            assert isinstance(target, SmartDoc)
+            assert isinstance(target, SmartBaseDoc)
         else:
             target = self.doc.find_one(**kwargs)
         

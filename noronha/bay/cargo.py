@@ -14,7 +14,7 @@ from noronha.bay.barrel import Barrel, DatasetBarrel, MoversBarrel
 from noronha.bay.compass import MongoCompass, IslandCompass
 from noronha.bay.warehouse import get_warehouse
 from noronha.db.ds import Dataset
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartBaseDoc
 from noronha.db.movers import ModelVersion
 from noronha.common.conf import AllConf
 from noronha.common.constants import DateFmt, OnBoard, Paths, Config, DockerConst
@@ -222,7 +222,7 @@ class ConfCargo(Cargo):
 
 class MetaCargo(Cargo):
     
-    def __init__(self, docs: List[SmartDoc], alias: str = None, **kwargs):
+    def __init__(self, docs: List[SmartBaseDoc], alias: str = None, **kwargs):
         
         alias = alias or '-'.join([d.get_pk(delimiter='-') for d in docs])
         super().__init__(

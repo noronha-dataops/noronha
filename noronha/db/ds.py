@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from mongoengine import Document, EmbeddedDocument, CASCADE
+from mongoengine import CASCADE
 from mongoengine.fields import *
 
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.model import Model, EmbeddedModel
 from noronha.common.constants import DBConst, OnBoard
 
 
-class _Dataset(SmartDoc):
+class ProtoDataset(object):
     
     _PK_FIELDS = ['model.name', 'name']
 
 
-class EmbeddedDataset(_Dataset, EmbeddedDocument):
+class EmbeddedDataset(SmartEmbeddedDoc, ProtoDataset):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
@@ -22,7 +22,7 @@ class EmbeddedDataset(_Dataset, EmbeddedDocument):
     details = DictField(default={})
 
 
-class Dataset(_Dataset, Document):
+class Dataset(SmartDoc, ProtoDataset):
     
     _FILE_NAME = OnBoard.Meta.DS
     _EMBEDDED_SCHEMA = EmbeddedDataset

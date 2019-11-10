@@ -10,6 +10,7 @@ from datetime import datetime
 from mongoengine import EmbeddedDocument, Document
 from mongoengine.base import BaseList, BaseDict, BaseDocument
 from mongoengine.connection import connect
+from mongoengine.errors import OperationError
 from mongoengine.fields import StringField, ReferenceField, EmbeddedDocumentField, DateTimeField
 from pymongo.write_concern import WriteConcern
 from string import Template as StringTemplate
@@ -87,7 +88,7 @@ class PrettyDoc(BaseDocument):
         return pretty
 
 
-class SmartDoc(PrettyDoc):
+class SmartBaseDoc(PrettyDoc):
     
     _PK_FIELDS = ['name']  # override with a list of fields for building a composite primary key
     _FILE_NAME = None  # override with a string
@@ -134,55 +135,9 @@ class SmartDoc(PrettyDoc):
         else:
             raise DBError("{} document has no primary key definition".format(cls.__class__.__name__))
     
-    @classmethod
-    def find(cls, _strict=False, **kwargs):
-        
-        objs = cls.objects(**kwargs)
-        
-        if _strict and len(objs) == 0:
-            raise DBError.NotFound("No {}s found with query {}".format(cls.__name__, kwargs))
-        else:
-            return objs
-    
-    @classmethod
-    def find_one(cls, **kwargs):
-        
-        objs = cls.find(_strict=True, **kwargs)
-        
-        if len(objs) > 1:
-            raise DBError.MultipleFound("Multiple {}s found with query {}".format(cls.__name__, kwargs))
-        else:
-            return objs[0]
-    
-    @classmethod
-    def find_one_or_none(cls, **kwargs):
-        
-        objs = cls.find(_strict=False, **kwargs)
-        
-        if len(objs) > 1:
-            raise DBError.MultipleFound("Multiple {}s found with query {}".format(cls.__name__, kwargs))
-        elif len(objs) == 1:
-            return objs[0]
-        else:
-            return None
-    
-    @classmethod
-    def find_by_pk(cls, pk: str):
-        
-        pk_parts = pk.split(':')
-        pk_fields = [f.split('.', 1)[0] for f in cls.get_pk_fields()]
-        
-        if len(pk_parts) != len(pk_fields):
-            raise DBError(
-                "invalid primary key for a {}: {}. Expected format is {}"
-                .format(cls.__class__.__name__, pk, ':'.join(pk_fields))
-            )
-        
-        return cls.find_one(**dict(zip(pk_fields, pk_parts)))
-    
     def to_embedded(self):
         
-        schema: Type[SmartDoc] = self._EMBEDDED_SCHEMA
+        schema: Type[SmartBaseDoc] = self._EMBEDDED_SCHEMA
         
         if schema is None:
             raise NotImplementedError(
@@ -291,6 +246,74 @@ class SmartDoc(PrettyDoc):
             return pk
 
 
+class SmartDoc(SmartBaseDoc, Document):
+    
+    @classmethod
+    def find(cls, _strict=False, **kwargs):
+        
+        objs = cls.objects(**kwargs)
+        
+        if _strict and len(objs) == 0:
+            raise DBError.NotFound("No {}s found with query {}".format(cls.__name__, kwargs))
+        else:
+            return objs
+    
+    @classmethod
+    def find_one(cls, **kwargs):
+        
+        objs = cls.find(_strict=True, **kwargs)
+        
+        if len(objs) > 1:
+            raise DBError.MultipleFound("Multiple {}s found with query {}".format(cls.__name__, kwargs))
+        else:
+            return objs[0]
+    
+    @classmethod
+    def find_one_or_none(cls, **kwargs):
+        
+        objs = cls.find(_strict=False, **kwargs)
+        
+        if len(objs) > 1:
+            raise DBError.MultipleFound("Multiple {}s found with query {}".format(cls.__name__, kwargs))
+        elif len(objs) == 1:
+            return objs[0]
+        else:
+            return None
+    
+    @classmethod
+    def find_by_pk(cls, pk: str):
+        
+        pk_parts = pk.split(':')
+        pk_fields = [f.split('.', 1)[0] for f in cls.get_pk_fields()]
+        
+        if len(pk_parts) != len(pk_fields):
+            raise DBError(
+                "invalid primary key for a {}: {}. Expected format is {}"
+                .format(cls.__class__.__name__, pk, ':'.join(pk_fields))
+            )
+        
+        return cls.find_one(**dict(zip(pk_fields, pk_parts)))
+    
+    def delete(self, *args, **kwargs):
+        
+        try:
+            super().delete(*args, **kwargs)
+        except OperationError as e:
+            msg = e.args[0]
+            
+            if 'refers to it' in msg:
+                ref = msg.split('(')[1].split('.')[0]
+                raise DBError(
+                    "Cannot delete {} '{}' because at least one {} document refers to it"
+                    .format(self.__class__.__name__, self.show(), ref)
+                )
+
+
+class SmartEmbeddedDoc(SmartBaseDoc, EmbeddedDocument):
+    
+    pass
+
+
 class Documented(object):
     
     """A class that handles a certain type of MongoDB documents
@@ -299,4 +322,4 @@ class Documented(object):
     so that any instance of this class will handle documents with that schema and colletion.
     """
     
-    doc: (Type[Document], Type[SmartDoc]) = None  # any class that extends SmartDoc and Document
+    doc: (Type[SmartDoc]) = None  # any class that extends SmartDoc

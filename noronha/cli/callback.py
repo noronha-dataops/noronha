@@ -3,7 +3,7 @@
 from typing import List
 
 from noronha.common.logging import LOG
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartBaseDoc
 
 
 class ListingCallback(object):
@@ -13,7 +13,7 @@ class ListingCallback(object):
         self.obj_title = obj_title
         self.expand = expand
     
-    def __call__(self, objs: List[SmartDoc]):
+    def __call__(self, objs: List[SmartBaseDoc]):
         
         if len(objs) == 0:
             LOG.echo("No {}(s) found".format(self.obj_title))

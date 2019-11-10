@@ -4,7 +4,7 @@ from mongoengine import Document, EmbeddedDocument, CASCADE
 from mongoengine.fields import *
 
 from noronha.db.bvers import EmbeddedBuildVersion
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartBaseDoc
 from noronha.db.proj import Project, EmbeddedProject
 from noronha.db.utils import TaskDoc
 from noronha.common.constants import DBConst, OnBoard
@@ -15,7 +15,7 @@ class TrainTask(TaskDoc):
     pass
 
 
-class _Training(SmartDoc):
+class _Training(SmartBaseDoc):
     
     _PK_FIELDS = ['proj.name', 'name']
 

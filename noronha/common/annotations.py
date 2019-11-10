@@ -102,6 +102,7 @@ class Interactive(object):
             decision = default
         
         if interrupt and decision is False:
+            print("Aborting...")
             sys.exit(1)
         else:
             return decision

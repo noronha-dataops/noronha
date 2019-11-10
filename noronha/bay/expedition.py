@@ -13,7 +13,7 @@ from noronha.common.utils import join_dicts
 from noronha.db.proj import Project
 from noronha.db.bvers import BuildVersion
 from noronha.db.ds import Dataset
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartBaseDoc
 from noronha.db.movers import ModelVersion
 
 
@@ -23,7 +23,7 @@ class Expedition(ABC):
     is_fleet = False
     
     def __init__(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST,
-                 movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartDoc] = None,
+                 movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartBaseDoc] = None,
                  **kwargs):
         
         self.docker_compass = DockerCompass()

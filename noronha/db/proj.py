@@ -7,17 +7,17 @@ It may include one or more models and a repository to store its code.
 It can be built and/or tagged as a docker image, which is mapped to a build version.
 """
 
-from mongoengine import Document, EmbeddedDocument, DENY
+from mongoengine import DENY
 from mongoengine.fields import StringField, ListField, ReferenceField
 
 from noronha.common.annotations import projected
 from noronha.common.constants import DBConst, OnBoard, Flag
 from noronha.common.errors import NhaAPIError
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.model import Model
 
 
-class EmbeddedProject(SmartDoc, EmbeddedDocument):
+class EmbeddedProject(SmartEmbeddedDoc):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
@@ -26,7 +26,7 @@ class EmbeddedProject(SmartDoc, EmbeddedDocument):
     docker_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
 
 
-class Project(SmartDoc, Document):
+class Project(SmartDoc):
     
     _FILE_NAME = OnBoard.Meta.PROJ
     _EMBEDDED_SCHEMA = EmbeddedProject

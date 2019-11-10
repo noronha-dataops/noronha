@@ -4,7 +4,7 @@ from mongoengine import Document, CASCADE
 from mongoengine.fields import *
 
 from noronha.db.bvers import EmbeddedBuildVersion
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartBaseDoc
 from noronha.db.movers import EmbeddedModelVersion
 from noronha.db.proj import Project
 from noronha.db.utils import TaskDoc
@@ -16,7 +16,7 @@ class DeplTask(TaskDoc):
     pass
 
 
-class Deployment(SmartDoc, Document):
+class Deployment(SmartBaseDoc, Document):
     
     _PK_FIELDS = ['proj.name', 'name']
     _FILE_NAME = OnBoard.Meta.DEPL

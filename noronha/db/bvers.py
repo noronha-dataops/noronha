@@ -7,23 +7,21 @@ including all metadata related to that particular build.
 """
 
 from datetime import datetime
-from mongoengine import Document, EmbeddedDocument, CASCADE
+from mongoengine import CASCADE
 from mongoengine import signals
 from mongoengine.fields import StringField, DateTimeField, ReferenceField, EmbeddedDocumentField
 
-from noronha.bay.compass import DockerCompass
 from noronha.common.constants import DBConst, OnBoard, DockerConst
-from noronha.common.logging import LOG
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.proj import Project, EmbeddedProject
 
 
-class _BuildVersion(SmartDoc):
+class ProtoBuildVersion(object):
     
     _PK_FIELDS = ['proj.name', 'tag']
 
 
-class EmbeddedBuildVersion(_BuildVersion, EmbeddedDocument):
+class EmbeddedBuildVersion(SmartEmbeddedDoc, ProtoBuildVersion):
     
     tag = StringField(max_length=DBConst.MAX_NAME_LEN)
     proj = EmbeddedDocumentField(EmbeddedProject, default=None)
@@ -32,7 +30,7 @@ class EmbeddedBuildVersion(_BuildVersion, EmbeddedDocument):
     built_at = DateTimeField()
 
 
-class BuildVersion(_BuildVersion, Document):
+class BuildVersion(SmartDoc, ProtoBuildVersion):
     
     _FILE_NAME = OnBoard.Meta.BVERS
     _EMBEDDED_SCHEMA = EmbeddedBuildVersion

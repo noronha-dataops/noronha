@@ -20,7 +20,7 @@ class ModelAPI(NoronhaAPI):
     def rm(self, name):
         
         LOG.warn("All datasets and model versions for the model '{}' will be deleted".format(name))
-        self._decide("Would you like to proceed?", interrupt=True, default=False)
+        self._decide("Would you like to proceed?", interrupt=True, default=True)
         report = {'Removed Datasets': [], 'Removed ModelVersions': []}
         
         for key, api in zip(report.keys(), [DatasetAPI(), ModelVersionAPI()]):

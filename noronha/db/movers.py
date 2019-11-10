@@ -2,23 +2,23 @@
 
 """Documents related to MoVers (short for Model Versions)"""
 
-from mongoengine import Document, EmbeddedDocument, CASCADE
+from mongoengine import CASCADE
 from mongoengine.fields import StringField, DictField, ReferenceField, EmbeddedDocumentField, BooleanField
 
 from noronha.common.constants import DBConst, OnBoard
-from noronha.db.main import SmartDoc
+from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.ds import EmbeddedDataset
 from noronha.db.model import Model, EmbeddedModel
 from noronha.db.train import EmbeddedTraining
 
 
-class _ModelVersion(SmartDoc):
+class ProtoModelVersion(object):
     
     _PK_FIELDS = ['model.name', 'name']
     _FILE_NAME = OnBoard.Meta.MV
 
 
-class EmbeddedModelVersion(_ModelVersion, EmbeddedDocument):
+class EmbeddedModelVersion(SmartEmbeddedDoc, ProtoModelVersion):
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
@@ -29,7 +29,7 @@ class EmbeddedModelVersion(_ModelVersion, EmbeddedDocument):
     pretrained = StringField(default=None)
 
 
-class ModelVersion(_ModelVersion, Document):
+class ModelVersion(SmartDoc, ProtoModelVersion):
     
     _EMBEDDED_SCHEMA = EmbeddedModelVersion
     
