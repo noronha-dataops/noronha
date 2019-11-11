@@ -32,8 +32,8 @@ class EmbeddedBuildVersion(SmartEmbeddedDoc, ProtoBuildVersion):
 
 class BuildVersion(SmartDoc, ProtoBuildVersion):
     
-    _FILE_NAME = OnBoard.Meta.BVERS
-    _EMBEDDED_SCHEMA = EmbeddedBuildVersion
+    FILE_NAME = OnBoard.Meta.BVERS
+    EMBEDDED_SCHEMA = EmbeddedBuildVersion
     
     tag = StringField(max_length=DBConst.MAX_NAME_LEN)
     proj = ReferenceField(Project, required=True, reverse_delete_rule=CASCADE)

@@ -89,6 +89,13 @@ class DeploymentExp(LongExpedition):
             **kwargs
         )
     
+    @property
+    def additional_launch_kwargs(self):
+        
+        return dict(
+            healthcheck=True
+        )
+    
     def make_env_vars(self):
         
         return join_dicts(super().make_env_vars(), {

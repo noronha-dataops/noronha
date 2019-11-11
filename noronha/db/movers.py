@@ -14,11 +14,14 @@ from noronha.db.train import EmbeddedTraining
 
 class ProtoModelVersion(object):
     
-    _PK_FIELDS = ['model.name', 'name']
-    _FILE_NAME = OnBoard.Meta.MV
+    PK_FIELDS = ['model.name', 'name']
+    FILE_NAME = OnBoard.Meta.MV
 
 
-class EmbeddedModelVersion(SmartEmbeddedDoc, ProtoModelVersion):
+class EmbeddedModelVersion(SmartEmbeddedDoc):
+    
+    PK_FIELDS = ProtoModelVersion.PK_FIELDS
+    FILE_NAME = ProtoModelVersion.FILE_NAME
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
@@ -31,7 +34,9 @@ class EmbeddedModelVersion(SmartEmbeddedDoc, ProtoModelVersion):
 
 class ModelVersion(SmartDoc, ProtoModelVersion):
     
-    _EMBEDDED_SCHEMA = EmbeddedModelVersion
+    PK_FIELDS = ProtoModelVersion.PK_FIELDS
+    FILE_NAME = ProtoModelVersion.FILE_NAME
+    EMBEDDED_SCHEMA = EmbeddedModelVersion
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     model = ReferenceField(Model, required=True, reverse_delete_rule=CASCADE)

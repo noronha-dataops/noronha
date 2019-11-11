@@ -10,10 +10,12 @@ from noronha.common.constants import DBConst, OnBoard
 
 class ProtoDataset(object):
     
-    _PK_FIELDS = ['model.name', 'name']
+    PK_FIELDS = ['model.name', 'name']
 
 
-class EmbeddedDataset(SmartEmbeddedDoc, ProtoDataset):
+class EmbeddedDataset(SmartEmbeddedDoc):
+    
+    PK_FIELDS = ProtoDataset.PK_FIELDS
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
@@ -24,8 +26,9 @@ class EmbeddedDataset(SmartEmbeddedDoc, ProtoDataset):
 
 class Dataset(SmartDoc, ProtoDataset):
     
-    _FILE_NAME = OnBoard.Meta.DS
-    _EMBEDDED_SCHEMA = EmbeddedDataset
+    PK_FIELDS = ProtoDataset.PK_FIELDS
+    FILE_NAME = OnBoard.Meta.DS
+    EMBEDDED_SCHEMA = EmbeddedDataset
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     model = ReferenceField(Model, required=True, reverse_delete_rule=CASCADE)

@@ -52,7 +52,7 @@ class Captain(ABC, Configured, Patient):
     
     @abstractmethod
     def deploy(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
-               tasks: int = 1):
+               tasks: int = 1, healthcheck=False):
         
         pass
     
@@ -136,7 +136,8 @@ class SwarmCaptain(Captain):
         
         return cont
     
-    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1):
+    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1,
+               healthcheck=False):
         
         [self.load_vol(v, name) for v in cargos]
         self.assert_network()

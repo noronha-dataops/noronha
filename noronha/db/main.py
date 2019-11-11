@@ -90,9 +90,9 @@ class PrettyDoc(BaseDocument):
 
 class SmartBaseDoc(PrettyDoc):
     
-    _PK_FIELDS = ['name']  # override with a list of fields for building a composite primary key
-    _FILE_NAME = None  # override with a string
-    _EMBEDDED_SCHEMA = None  # override with a class that extends EmbeddedDocument
+    PK_FIELDS = ['name']  # override with a list of fields for building a composite primary key
+    FILE_NAME = None  # override with a string
+    EMBEDDED_SCHEMA = None  # override with a class that extends EmbeddedDocument
     
     _id = StringField(primary_key=True)
     modified = DateTimeField()
@@ -124,8 +124,8 @@ class SmartBaseDoc(PrettyDoc):
     @classmethod
     def get_pk_fields(cls):
         
-        if hasattr(cls, '_PK_FIELDS'):
-            pk_fields = cls._PK_FIELDS
+        if hasattr(cls, 'PK_FIELDS'):
+            pk_fields = cls.PK_FIELDS
             assert isinstance(pk_fields, list) and len(pk_fields) > 0
             return pk_fields
         
@@ -137,7 +137,7 @@ class SmartBaseDoc(PrettyDoc):
     
     def to_embedded(self):
         
-        schema: Type[SmartBaseDoc] = self._EMBEDDED_SCHEMA
+        schema: Type[SmartBaseDoc] = self.EMBEDDED_SCHEMA
         
         if schema is None:
             raise NotImplementedError(
@@ -180,7 +180,7 @@ class SmartBaseDoc(PrettyDoc):
     
     def get_file_name(self):
         
-        tmpl = StringTemplate(self._FILE_NAME)
+        tmpl = StringTemplate(self.FILE_NAME)
         return tmpl.safe_substitute(name=self.get_dir_name())
     
     def get_file_name_regex(self):
@@ -189,7 +189,7 @@ class SmartBaseDoc(PrettyDoc):
     
     def to_file_tuple(self) -> (str, str):
         
-        if self._FILE_NAME is None:
+        if self.FILE_NAME is None:
             raise NotImplementedError(
                 """Document of type {} cannot be converted to a file tuple (file_name, file_content) """
                 """because a file_name hasn't been defined for its type""".format(self.__class__.__name__)
@@ -202,13 +202,13 @@ class SmartBaseDoc(PrettyDoc):
         
         if os.path.isfile(src_path):
             return cls.from_json(open(src_path).read())
-        elif cls._FILE_NAME is None:
+        elif cls.FILE_NAME is None:
             raise NotImplementedError(
                 """Document of type {} cannot be loaded from a file tuple """
                 """because a _FILE_NAME hasn't been defined for its type""".format(cls.__class__.__name__)
             )
         else:
-            src_file = os.path.join(src_path, cls._FILE_NAME)  # will not work if file name requires pk substitution
+            src_file = os.path.join(src_path, cls.FILE_NAME)  # will not work if file name requires pk substitution
             
             if os.path.isfile(src_file):
                 return cls.from_json(open(src_file).read())
@@ -288,8 +288,8 @@ class SmartDoc(SmartBaseDoc, Document):
         
         if len(pk_parts) != len(pk_fields):
             raise DBError(
-                "invalid primary key for a {}: {}. Expected format is {}"
-                .format(cls.__class__.__name__, pk, ':'.join(pk_fields))
+                "invalid primary key for a {}: {}. Expected format is '{}'"
+                .format(cls.__name__, pk, ':'.join(pk_fields))
             )
         
         return cls.find_one(**dict(zip(pk_fields, pk_parts)))

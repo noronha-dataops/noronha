@@ -18,8 +18,8 @@ class DeplTask(TaskDoc):
 
 class Deployment(SmartBaseDoc, Document):
     
-    _PK_FIELDS = ['proj.name', 'name']
-    _FILE_NAME = OnBoard.Meta.DEPL
+    PK_FIELDS = ['proj.name', 'name']
+    FILE_NAME = OnBoard.Meta.DEPL
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     proj = ReferenceField(Project, required=True, reverse_delete_rule=CASCADE)

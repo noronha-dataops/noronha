@@ -27,7 +27,7 @@ class EmbeddedModel(SmartEmbeddedDoc):
 
 class Model(SmartDoc):
     
-    _EMBEDDED_SCHEMA = EmbeddedModel
+    EMBEDDED_SCHEMA = EmbeddedModel
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN)

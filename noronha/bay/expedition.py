@@ -45,6 +45,11 @@ class Expedition(ABC):
         
         self.cargos = self.make_vols()
     
+    @property
+    def additional_launch_kwargs(self):
+        
+        return {}
+    
     def _infer_img_spec(self, img_spec: ImageSpec = None, proj: Project = None, tag: str = DockerConst.LATEST):
         
         if img_spec is None:
@@ -73,6 +78,7 @@ class Expedition(ABC):
             cargos=self.cargos,
             ports=(ports or []) + self.make_ports(),
             cmd=DockerConst.HANG_CMD if self.mock else self.make_cmd(),
+            **self.additional_launch_kwargs,
             **kwargs
         )
         

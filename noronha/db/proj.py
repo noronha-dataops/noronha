@@ -28,8 +28,8 @@ class EmbeddedProject(SmartEmbeddedDoc):
 
 class Project(SmartDoc):
     
-    _FILE_NAME = OnBoard.Meta.PROJ
-    _EMBEDDED_SCHEMA = EmbeddedProject
+    FILE_NAME = OnBoard.Meta.PROJ
+    EMBEDDED_SCHEMA = EmbeddedProject
     
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     desc = StringField(max_length=DBConst.MAX_DESC_LEN, default='')
