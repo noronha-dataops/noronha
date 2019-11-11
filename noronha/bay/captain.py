@@ -10,7 +10,7 @@ from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.pod import Pod
 from datetime import datetime
 from docker.errors import APIError as DockerAPIError
-from docker.types import ServiceMode, TaskTemplate, ContainerSpec, Resources
+from docker.types import ServiceMode, TaskTemplate, ContainerSpec, Resources, Healthcheck
 from kaptan import Kaptan
 from kubernetes.stream import stream
 import random_name
@@ -41,6 +41,7 @@ class Captain(ABC, Configured, Patient):
         self.section = section
         self.interrupted = False
         self.cleaner = StructCleaner()
+        self.healthcheck = self.captain_compass.healthcheck
         self.resources = self.captain_compass.get_resource_profile(resource_profile or section)
         Patient.__init__(self, timeout=self.captain_compass.api_timeout)
     
@@ -102,6 +103,7 @@ class SwarmCaptain(Captain):
     
     _CPU_RATE = 10**9  # vCores to nanoCores
     _MEM_RATE = 1024*1024  # MB to bytes
+    _SEC_RATE = 10**9  # seconds to nanoseconds
     
     def __init__(self, section: str, **kwargs):
         
@@ -136,6 +138,19 @@ class SwarmCaptain(Captain):
         
         return cont
     
+    def swarm_healthcheck(self, healthcheck=False):
+        
+        if healthcheck:
+            return Healthcheck(
+                test=["CMD", "curl", "-f", "http://localhost:8080/health"],
+                interval=self.healthcheck['interval']*self._SEC_RATE,
+                timeout=self.healthcheck['timeout']*self._SEC_RATE,
+                retries=self.healthcheck['retries']*self._SEC_RATE,
+                start_period=self.healthcheck['start_period']*self._SEC_RATE
+            )
+        else:
+            return None
+    
     def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1,
                healthcheck=False):
         
@@ -155,7 +170,8 @@ class SwarmCaptain(Captain):
                     command=cmd,
                     image=img.target,
                     env=env_vars,
-                    mounts=mounts + [v.mount for v in cargos]
+                    mounts=mounts + [v.mount for v in cargos],
+                    healthcheck=self.swarm_healthcheck(healthcheck)
                 )
             )
         ))
@@ -458,7 +474,7 @@ class KubeCaptain(Captain):
         self.secret = self.docker_compass.secret
         self.namespace = self.captain_compass.get_namespace()
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR)
-        self.nfs = self.captain_compass.get_nfs_server(section)
+        self.nfs = self.captain_compass.get_nfs_server()
         self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.mule = None
     
@@ -504,7 +520,21 @@ class KubeCaptain(Captain):
         
         return pod
     
-    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1):
+    def kube_healthcheck(self, healthcheck=False):
+        
+        if healthcheck:
+            return dict(
+                exec=dict(command=["curl", "-f", "http://localhost:8080/health"]),
+                periodSeconds=self.healthcheck['interval']*self._SEC_RATE,
+                timeoutSeconds=self.healthcheck['timeout']*self._SEC_RATE,
+                failureThreshold=self.healthcheck['retries']*self._SEC_RATE,
+                initialDelaySeconds=self.healthcheck['start_period']
+            )
+        else:
+            return None
+    
+    def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1,
+               healthcheck=False):
         
         [self.load_vol(v, name) for v in cargos]
         vol_refs, vol_defs = self.kube_vols(cargos)
@@ -519,7 +549,8 @@ class KubeCaptain(Captain):
             resources=self.kube_resources(),
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
-            ports=port_refs
+            ports=port_refs,
+            livenessProbe=self.healthcheck(healthcheck)
         )
         
         template = self.cleaner(dict(

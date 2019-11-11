@@ -81,7 +81,7 @@ def dict_to_kv_list(x: (dict, OrderedDict)):
     ]
 
 
-def join_dicts(parent_dyct, child_dyct, allow_overwrite=False):
+def join_dicts(parent_dyct, child_dyct, allow_overwrite=False, allow_new_keys=True):
     
     if not child_dyct:
         return parent_dyct
@@ -91,6 +91,8 @@ def join_dicts(parent_dyct, child_dyct, allow_overwrite=False):
     for k, v in child_dyct.items():
         if k in dyct and not allow_overwrite:
             raise KeyError("Duplicated dict key: {}".format(k))
+        elif k not in dyct and not allow_new_keys:
+            raise KeyError("Unexpected dict key: {}".format(k))
         else:
             dyct[k] = v
     

@@ -139,7 +139,20 @@ class CaptainCompass(Compass):
     KEY_API = 'api_key'
     KEY_PROFILES = 'resource_profiles'
     KEY_TIMEOUT = 'api_timeout'
+    KEY_HEALTH = 'healthcheck'
     DEFAULT_TIMEOUT = None
+    DEFAULT_HEALTHCHECK = {
+        'start_period': 10,
+        'interval': 10,
+        'timeout': 3,
+        'retries': 3
+    }
+    
+    @property
+    def healthcheck(self):
+        
+        hc = self.conf.get(self.KEY_HEALTH, {})
+        return join_dicts(self.DEFAULT_HEALTHCHECK, hc, allow_new_keys=False)
     
     @property
     def api_timeout(self):
@@ -189,7 +202,7 @@ class CaptainCompass(Compass):
         pass
     
     @abstractmethod
-    def get_nfs_server(self, section: str):
+    def get_nfs_server(self):
         
         pass
     
@@ -207,7 +220,7 @@ class SwarmCompass(CaptainCompass):
         
         raise NotImplementedError("Container manager 'swarm' does not apply namespace isolation")
     
-    def get_nfs_server(self, section: str):
+    def get_nfs_server(self):
         
         raise NotImplementedError("Container manager 'swarm' does not take a NFS server")
     
@@ -239,19 +252,9 @@ class KubeCompass(CaptainCompass):
             ConfigurationError("Container manager 'kube' requires an existing storage class to be configured")
         return stg_cls
     
-    def get_nfs_server(self, section: str):
+    def get_nfs_server(self):
         
         nfs = self.conf.get(self.KEY_NFS, {})
-        
-        if sorted(list(nfs.keys())) == ['path', 'server']:
-            pass  # a nfs server is defined for all sections
-        elif section in nfs:
-            nfs = nfs.get(section)  # a nfs server is defined for this specific section
-        else:
-            raise ConfigurationError(
-                "Could not determine NFS server for section '{}' from reference: {}"
-                .format(section, nfs)
-            )
         
         assert isinstance(nfs, dict) and sorted(list(nfs.keys())) == ['path', 'server'],\
             ConfigurationError("NFS server must be a mapping in the form {'server': 127.0.0.1, 'path': /shared/path}")
