@@ -993,9 +993,9 @@ class KubeCaptain(Captain):
         if allow_probe and self.healthcheck['enabled']:
             return dict(
                 exec=dict(command=["curl", "-f", "http://localhost:8080/health"]),
-                periodSeconds=self.healthcheck['interval']*self._SEC_RATE,
-                timeoutSeconds=self.healthcheck['timeout']*self._SEC_RATE,
-                failureThreshold=self.healthcheck['retries']*self._SEC_RATE,
+                periodSeconds=self.healthcheck['interval'],
+                timeoutSeconds=self.healthcheck['timeout'],
+                failureThreshold=self.healthcheck['retries'],
                 initialDelaySeconds=self.healthcheck['start_period']
             )
         else:
