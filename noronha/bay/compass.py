@@ -142,6 +142,7 @@ class CaptainCompass(Compass):
     KEY_HEALTH = 'healthcheck'
     DEFAULT_TIMEOUT = None
     DEFAULT_HEALTHCHECK = {
+        'enabled': True,
         'start_period': 10,
         'interval': 10,
         'timeout': 3,

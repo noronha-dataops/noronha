@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from mongoengine import Document, CASCADE
+from mongoengine import CASCADE
 from mongoengine.fields import *
 
 from noronha.db.bvers import EmbeddedBuildVersion
-from noronha.db.main import SmartBaseDoc
+from noronha.db.main import SmartDoc
 from noronha.db.movers import EmbeddedModelVersion
 from noronha.db.proj import Project
 from noronha.db.utils import TaskDoc
@@ -16,7 +16,7 @@ class DeplTask(TaskDoc):
     pass
 
 
-class Deployment(SmartBaseDoc, Document):
+class Deployment(SmartDoc):
     
     PK_FIELDS = ['proj.name', 'name']
     FILE_NAME = OnBoard.Meta.DEPL

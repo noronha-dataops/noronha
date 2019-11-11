@@ -18,10 +18,12 @@ from noronha.db.proj import Project, EmbeddedProject
 
 class ProtoBuildVersion(object):
     
-    _PK_FIELDS = ['proj.name', 'tag']
+    PK_FIELDS = ['proj.name', 'tag']
 
 
-class EmbeddedBuildVersion(SmartEmbeddedDoc, ProtoBuildVersion):
+class EmbeddedBuildVersion(SmartEmbeddedDoc):
+    
+    PK_FIELDS = ProtoBuildVersion.PK_FIELDS
     
     tag = StringField(max_length=DBConst.MAX_NAME_LEN)
     proj = EmbeddedDocumentField(EmbeddedProject, default=None)
@@ -30,8 +32,9 @@ class EmbeddedBuildVersion(SmartEmbeddedDoc, ProtoBuildVersion):
     built_at = DateTimeField()
 
 
-class BuildVersion(SmartDoc, ProtoBuildVersion):
+class BuildVersion(SmartDoc):
     
+    PK_FIELDS = ProtoBuildVersion.PK_FIELDS
     FILE_NAME = OnBoard.Meta.BVERS
     EMBEDDED_SCHEMA = EmbeddedBuildVersion
     

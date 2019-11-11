@@ -53,7 +53,7 @@ class Captain(ABC, Configured, Patient):
     
     @abstractmethod
     def deploy(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
-               tasks: int = 1, healthcheck=False):
+               tasks: int = 1, allow_probe=False):
         
         pass
     
@@ -138,21 +138,8 @@ class SwarmCaptain(Captain):
         
         return cont
     
-    def swarm_healthcheck(self, healthcheck=False):
-        
-        if healthcheck:
-            return Healthcheck(
-                test=["CMD", "curl", "-f", "http://localhost:8080/health"],
-                interval=self.healthcheck['interval']*self._SEC_RATE,
-                timeout=self.healthcheck['timeout']*self._SEC_RATE,
-                retries=self.healthcheck['retries']*self._SEC_RATE,
-                start_period=self.healthcheck['start_period']*self._SEC_RATE
-            )
-        else:
-            return None
-    
     def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1,
-               healthcheck=False):
+               allow_probe=False):
         
         [self.load_vol(v, name) for v in cargos]
         self.assert_network()
@@ -171,7 +158,7 @@ class SwarmCaptain(Captain):
                     image=img.target,
                     env=env_vars,
                     mounts=mounts + [v.mount for v in cargos],
-                    healthcheck=self.swarm_healthcheck(healthcheck)
+                    healthcheck=self.swarm_healthcheck(allow_probe)
                 )
             )
         ))
@@ -462,6 +449,19 @@ class SwarmCaptain(Captain):
                 '--cpus', str(self.resources['limits']['cpu']),
                 '--memory-reservation', '{}m'.format(self.resources['requests']['memory'])
             ]
+    
+    def swarm_healthcheck(self, allow_probe=False):
+        
+        if allow_probe and self.healthcheck['enabled']:
+            return Healthcheck(
+                test=["CMD", "curl", "-f", "http://localhost:8080/health"],
+                interval=self.healthcheck['interval']*self._SEC_RATE,
+                timeout=self.healthcheck['timeout']*self._SEC_RATE,
+                retries=self.healthcheck['retries'],
+                start_period=self.healthcheck['start_period']*self._SEC_RATE
+            )
+        else:
+            return None
 
 
 class KubeCaptain(Captain):
@@ -520,21 +520,8 @@ class KubeCaptain(Captain):
         
         return pod
     
-    def kube_healthcheck(self, healthcheck=False):
-        
-        if healthcheck:
-            return dict(
-                exec=dict(command=["curl", "-f", "http://localhost:8080/health"]),
-                periodSeconds=self.healthcheck['interval']*self._SEC_RATE,
-                timeoutSeconds=self.healthcheck['timeout']*self._SEC_RATE,
-                failureThreshold=self.healthcheck['retries']*self._SEC_RATE,
-                initialDelaySeconds=self.healthcheck['start_period']
-            )
-        else:
-            return None
-    
     def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1,
-               healthcheck=False):
+               allow_probe=False):
         
         [self.load_vol(v, name) for v in cargos]
         vol_refs, vol_defs = self.kube_vols(cargos)
@@ -550,7 +537,7 @@ class KubeCaptain(Captain):
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs,
-            livenessProbe=self.healthcheck(healthcheck)
+            livenessProbe=self.healthcheck(allow_probe)
         )
         
         template = self.cleaner(dict(
@@ -1000,6 +987,19 @@ class KubeCaptain(Captain):
             unit = 'Mi'
         
         return '{}{}'.format(mem, unit)
+    
+    def kube_healthcheck(self, allow_probe=False):
+        
+        if allow_probe and self.healthcheck['enabled']:
+            return dict(
+                exec=dict(command=["curl", "-f", "http://localhost:8080/health"]),
+                periodSeconds=self.healthcheck['interval']*self._SEC_RATE,
+                timeoutSeconds=self.healthcheck['timeout']*self._SEC_RATE,
+                failureThreshold=self.healthcheck['retries']*self._SEC_RATE,
+                initialDelaySeconds=self.healthcheck['start_period']
+            )
+        else:
+            return None
 
 
 def get_captain(section: str, **kwargs):

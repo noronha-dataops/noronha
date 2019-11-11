@@ -86,6 +86,9 @@ def join_dicts(parent_dyct, child_dyct, allow_overwrite=False, allow_new_keys=Tr
     if not child_dyct:
         return parent_dyct
     
+    if not allow_new_keys:
+        allow_overwrite = True
+    
     dyct = parent_dyct.copy()
     
     for k, v in child_dyct.items():

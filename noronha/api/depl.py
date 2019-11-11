@@ -26,7 +26,7 @@ class DeploymentAPI(NoronhaAPI):
     @projected
     def rm(self, name):
         
-        depl = self.doc().find_one(name=name, proj=self.proj.name)
+        depl = self.doc.find_one(name=name, proj=self.proj.name)
         DeploymentExp(depl).revert()
         depl.delete()
         return super().rm(target=depl)
@@ -93,7 +93,7 @@ class DeploymentExp(LongExpedition):
     def additional_launch_kwargs(self):
         
         return dict(
-            healthcheck=True
+            allow_probe=True
         )
     
     def make_env_vars(self):

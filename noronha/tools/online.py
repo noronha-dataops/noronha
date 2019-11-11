@@ -23,7 +23,7 @@ class HealthCheck(object):
     
     def __init__(self):
         
-        self._status = False
+        self._status = True
     
     @property
     def status(self):
@@ -129,7 +129,6 @@ class OnlinePredict(object):
     
     def __call__(self):
         
-        self._health = True
         debug = LOG.debug_mode
         
         if not debug:
