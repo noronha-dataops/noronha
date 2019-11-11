@@ -537,7 +537,7 @@ class KubeCaptain(Captain):
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs,
-            livenessProbe=self.healthcheck(allow_probe)
+            livenessProbe=self.kube_healthcheck(allow_probe)
         )
         
         template = self.cleaner(dict(
