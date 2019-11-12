@@ -5,7 +5,7 @@ import json
 from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import LongExpedition
 from noronha.common.annotations import validate, projected
-from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst, EnvVar
+from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst, EnvVar, Task
 from noronha.common.logging import LOG
 from noronha.common.utils import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
@@ -21,7 +21,11 @@ class DeploymentAPI(NoronhaAPI):
     @projected
     def info(self, name):
         
-        return super().info(name=name, proj=self.proj.name)
+        target: Deployment = self.doc.find_one(name=name, proj=self.proj.name)
+        pretty = super().info(target=target)
+        avail_tasks = list(filter(lambda task: task.state == Task.State.FINISHED, target.tasks.values()))
+        pretty['availability'] = '{}%'.format(int(100*len(avail_tasks)/target.replicas))
+        return pretty
     
     @projected
     def rm(self, name):
@@ -59,6 +63,7 @@ class DeploymentAPI(NoronhaAPI):
             bvers=None if bv is None else bv.to_embedded(),
             notebook=assert_extension(notebook, Extension.IPYNB),
             details=join_dicts(details or {}, dict(params=params or {}), allow_overwrite=False),
+            replicas=kwargs.get('tasks'),
             _duplicate_filter=dict(name=name, proj=self.proj)
         )
         

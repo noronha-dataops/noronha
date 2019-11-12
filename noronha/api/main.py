@@ -3,7 +3,7 @@
 from abc import ABC
 
 from noronha.api.utils import ProjResolver, DefaultValidation
-from noronha.db.main import Documented, SmartBaseDoc
+from noronha.db.main import Documented, SmartDoc
 from noronha.db.proj import Project, Projected
 from noronha.common.annotations import Interactive, Scoped, Validated, validate
 from noronha.common.logging import LOG
@@ -34,18 +34,23 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
         self.proj = ProjResolver()(ref_to_proj, proj_resolvers)
         return self
     
-    def info(self, **kwargs):
-        
-        return self.doc.find_one(**kwargs).pretty()
-    
-    def rm(self, **kwargs):
+    def _find_target(self, **kwargs):
         
         if 'target' in kwargs:
             target = kwargs.pop('target')
-            assert isinstance(target, SmartBaseDoc)
         else:
             target = self.doc.find_one(**kwargs)
         
+        assert isinstance(target, SmartDoc)
+        return target
+    
+    def info(self, **kwargs):
+        
+        return self._find_target(**kwargs).pretty()
+    
+    def rm(self, **kwargs):
+        
+        target = self._find_target(**kwargs)
         target.delete()
         return {
             'Removed {}'.format(self.doc.__name__):

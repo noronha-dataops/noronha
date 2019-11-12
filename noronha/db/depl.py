@@ -28,6 +28,7 @@ class Deployment(SmartDoc):
     notebook = StringField(required=True)
     tasks = DictField(EmbeddedDocumentField(DeplTask, default=DeplTask()), default={})
     details = DictField(default={})
+    replicas = IntField(default=1)
     
     def put_task(self, task_id, catch_existing=False):
         
