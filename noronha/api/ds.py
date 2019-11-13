@@ -67,9 +67,10 @@ class DatasetAPI(NoronhaAPI):
             return None
     
     @validate(name=valid.dns_safe_or_none, files=(dict, None), details=(dict, None))
-    def new(self, name: str = None, model: str = None, path: str = None, files: dict = None, **kwargs):
+    def new(self, name: str = None, model: str = None, path: str = None, files: dict = None, skip_upload=False,
+            **kwargs):
         
-        model = Model().find_one(name=model)
+        model = Model.find_one(name=model)
         barrel = None
         ds = super().new(
             name=name,
@@ -79,7 +80,8 @@ class DatasetAPI(NoronhaAPI):
         )
         
         try:
-            barrel = self._store(ds, path, files)
+            if not skip_upload:
+                barrel = self._store(ds, path, files)
         except Exception as e:
             LOG.error(e)
             LOG.warn("Reverting creation of dataset '{}'".format(ds.name))

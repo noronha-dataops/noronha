@@ -8,7 +8,7 @@ from noronha.db.main import SmartDoc
 from noronha.db.movers import EmbeddedModelVersion
 from noronha.db.proj import Project
 from noronha.db.utils import TaskDoc
-from noronha.common.constants import DBConst, OnBoard
+from noronha.common.constants import DBConst, OnBoard, Task
 
 
 class DeplTask(TaskDoc):
@@ -39,3 +39,19 @@ class Deployment(SmartDoc):
         self.tasks[task_id] = task
         self.save()
         return task
+    
+    @property
+    def availability(self):
+        
+        avail_tasks = list(filter(
+            lambda task: task.state == Task.State.FINISHED,
+            self.tasks.values())
+        )
+        
+        return '{}%'.format(int(100*len(avail_tasks)/self.replicas))
+    
+    def pretty(self):
+        
+        dyct = super().pretty()
+        dyct['availability'] = self.availability
+        return dyct

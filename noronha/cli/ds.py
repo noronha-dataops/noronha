@@ -65,6 +65,7 @@ def _list(_filter, expand, **kwargs):
     '--compress', '-c', 'compressed', default=False, is_flag=True,
     help="Flag: compress all dataset files to a single tar.gz archive"
 )
+@click.option('--skip-upload', default=False, is_flag=True, help="Flag: don't upload any files, just record metadata")
 def new(details, path=None, **kwargs):
     
     """Add a new dataset"""

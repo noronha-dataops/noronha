@@ -298,7 +298,7 @@ class MoversCargo(HeavyCargo):
     
     def __init__(self, mv: ModelVersion, section: str, pretrained=False, local=False):
         
-        pretrained = pretrained or (mv.pretrained is True)
+        pretrained = pretrained or (mv.use_as_pretrained is True)
         subdir = mv.get_dir_name()
         
         dyr = {

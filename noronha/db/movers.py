@@ -23,6 +23,11 @@ class EmbeddedModelVersion(SmartEmbeddedDoc):
     PK_FIELDS = ProtoModelVersion.PK_FIELDS
     FILE_NAME = ProtoModelVersion.FILE_NAME
     
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        self.use_as_pretrained = False
+    
     name = StringField(max_length=DBConst.MAX_NAME_LEN)
     model = EmbeddedDocumentField(EmbeddedModel, default=None)
     train = EmbeddedDocumentField(EmbeddedTraining, default=None)
@@ -32,11 +37,16 @@ class EmbeddedModelVersion(SmartEmbeddedDoc):
     pretrained = StringField(default=None)
 
 
-class ModelVersion(SmartDoc, ProtoModelVersion):
+class ModelVersion(SmartDoc):
     
     PK_FIELDS = ProtoModelVersion.PK_FIELDS
     FILE_NAME = ProtoModelVersion.FILE_NAME
     EMBEDDED_SCHEMA = EmbeddedModelVersion
+    
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        self.use_as_pretrained = False
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     model = ReferenceField(Model, required=True, reverse_delete_rule=CASCADE)
@@ -62,6 +72,7 @@ class ModelVersion(SmartDoc, ProtoModelVersion):
     def to_embedded(self):
         
         emb: EmbeddedModelVersion = super().to_embedded()
+        emb.use_as_pretrained = self.use_as_pretrained
         
         if isinstance(self.pretrained, EmbeddedModelVersion):
             emb.pretrained = self.pretrained.show()

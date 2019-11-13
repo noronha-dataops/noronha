@@ -21,11 +21,7 @@ class DeploymentAPI(NoronhaAPI):
     @projected
     def info(self, name):
         
-        target: Deployment = self.doc.find_one(name=name, proj=self.proj.name)
-        pretty = super().info(target=target)
-        avail_tasks = list(filter(lambda task: task.state == Task.State.FINISHED, target.tasks.values()))
-        pretty['availability'] = '{}%'.format(int(100*len(avail_tasks)/target.replicas))
-        return pretty
+        return super().info(name=name, proj=self.proj.name)
     
     @projected
     def rm(self, name):

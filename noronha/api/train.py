@@ -60,7 +60,7 @@ class TrainingAPI(NoronhaAPI):
                 name = all_names.pop()
         
         for mv in movers:
-            mv.pretrained = True
+            mv.use_as_pretrained = True
             LOG.info("Pre-trained model '{}' will be available in this training".format(mv.show()))
         
         train: Training = super().new(

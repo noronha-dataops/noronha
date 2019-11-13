@@ -38,6 +38,21 @@ class PrettyDoc(BaseDocument):
     _fields_ordered = []
     meta = DOC_META
     
+    def get(self, key: str, _obj=None, default=None):
+        
+        _obj = _obj or self
+        keys = (key or '').split('.', 1)
+        
+        if hasattr(_obj, keys[0]):
+            val = getattr(_obj, keys[0])
+        else:
+            return default
+        
+        if len(keys) == 1:
+            return val
+        else:
+            return self.get(keys[1], val, default)
+    
     def as_dict(self, depth=0, pretty=False):
         
         assert depth <= DBConst.MAX_EXPAND_DEPTH
@@ -98,21 +113,6 @@ class SmartBaseDoc(PrettyDoc):
     modified = DateTimeField()
     
     _fields = {}
-    
-    def get(self, key: str, _obj=None, default=None):
-        
-        _obj = _obj or self
-        keys = (key or '').split('.', 1)
-        
-        if hasattr(_obj, keys[0]):
-            val = getattr(_obj, keys[0])
-        else:
-            return default
-        
-        if len(keys) == 1:
-            return val
-        else:
-            return self.get(keys[1], val, default)
     
     def get_pk(self, delimiter: str = ':', default: str = ''):
         

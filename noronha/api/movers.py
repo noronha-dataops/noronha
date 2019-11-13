@@ -69,7 +69,7 @@ class ModelVersionAPI(NoronhaAPI):
     
     @validate(name=valid.dns_safe_or_none, details=(dict, None))
     def new(self, name: str = None, model: str = None, train: str = None, ds: str = None, path: str = None,
-            pretrained: str = None, **kwargs):
+            pretrained: str = None, skip_upload=False, **kwargs):
         
         if path is None:
             raise NhaAPIError("Cannot publish model version if path to model files is not provided")
@@ -99,7 +99,8 @@ class ModelVersionAPI(NoronhaAPI):
         barrel = None
         
         try:
-            barrel = self._store(mv, path)
+            if not skip_upload:
+                barrel = self._store(mv, path)
         except Exception as e:
             LOG.error(e)
             LOG.warn("Reverting creation of model version '{}'".format(mv.name))
