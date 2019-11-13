@@ -50,7 +50,9 @@ class Logger(Configured, Lazy):
     
     def setup(self):
         
-        # TODO: it seems that when join_root is used messages are written twice to the file
+        if self._logger is not None:
+            return self
+        
         compass = LoggerCompass()
         pathlib.Path(compass.log_file_dir).mkdir(parents=True, exist_ok=True)
         handler = RotatingFileHandler(**compass.file_handler_kwargs)
@@ -63,6 +65,8 @@ class Logger(Configured, Lazy):
         
         if self.conf.get('join_root'):
             logging.getLogger('root').addHandler(handler)
+        
+        return self
     
     @property
     def debug_mode(self):
