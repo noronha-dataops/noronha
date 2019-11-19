@@ -26,15 +26,11 @@ class NotebookRunner(object):
     @property
     def output_file_name(self):
         
-        if self.proc_mon is None:
-            return datetime.now().strftime(DateFmt.SYSTEM)
-        else:
-            return self.proc_mon.proc.name
+        return self.proc_mon.proc_name
     
     def __call__(self, note_path: str, params: dict):
         
-        if self.proc_mon is not None:
-            NoronhaEngine.progress_callback = lambda x: self.proc_mon.set_progress(x)
+        NoronhaEngine.progress_callback = lambda x: self.proc_mon.set_progress(x)
         
         kwargs = dict(
             parameters=params,

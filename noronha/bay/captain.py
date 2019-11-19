@@ -776,7 +776,7 @@ class KubeCaptain(Captain):
         
         try:
             self.prepare_mule(mule_alias)
-            LOG.debug("Loading volume '{}'".format(cargo.name))
+            LOG.debug("Creating volume '{}'".format(cargo.name))
             self.clear_mule(self.mule, vol_path)
             work_path = Workpath.get_tmp()
             

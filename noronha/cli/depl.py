@@ -16,7 +16,7 @@ def depl():
 
 
 @click.command()
-@click.option('--name', help="Name of the deployment")
+@click.option('--name', '-n', help="Name of the deployment")
 @click.option(
     '--proj',
     help="Name of the project responsible for this deployment (default: current working project)"

@@ -114,7 +114,7 @@ def update(details, path, **kwargs):
     
     CMD.run(
         API, 'update', **kwargs,
-        path=path or os.getcwd(),
+        path=path,
         details=assert_dict(details, allow_none=True)
     )
 

@@ -135,7 +135,9 @@ class OnlinePredict(object):
             warnings.filterwarnings('ignore')
         
         try:
-            self.proc_mon.set_state(Task.State.FINISHED)
+            if self.proc_mon is not None:
+                self.proc_mon.set_state(Task.State.FINISHED)
+            
             run_simple(
                 hostname=OnlineConst.BINDING_HOST,
                 port=OnlineConst.PORT,
