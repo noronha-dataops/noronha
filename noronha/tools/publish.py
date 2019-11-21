@@ -126,7 +126,7 @@ class Publisher(object):
         
         if get_purpose() == DockerConst.Section.IDE:
             LOG.info("For testing purposes, model files will be moved to the deployed model path")
-            MetaCargo(docs=[mv]).deploy()
+            MetaCargo(docs=[mv], section=DockerConst.Section.IDE).deploy()
             MoversCargo(mv, local=True, section=DockerConst.Section.IDE).move(src_path)
         
         return mv

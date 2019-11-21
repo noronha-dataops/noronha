@@ -92,13 +92,13 @@ def new(details, path=None, **kwargs):
     '--compress', '-c', 'compressed', default=False, is_flag=True,
     help="Flag: compress all dataset files to a single tar.gz archive"
 )
-def update(details, path, **kwargs):
+def update(details, path=None, **kwargs):
     
     """Update a dataset's details or files"""
     
     CMD.run(
         API, 'update', **kwargs,
-        path=path or os.getcwd(),
+        path=path,
         details=assert_dict(details, allow_none=True)
     )
 

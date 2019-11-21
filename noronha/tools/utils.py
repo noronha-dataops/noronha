@@ -96,4 +96,4 @@ def load_proc_monitor(**kwargs):
             DockerConst.Section.DEPL: (Deployment.load(ignore=True), MultiProcMonitor)
         }.get(get_purpose())
         
-        return proc_mon_cls(proc, **kwargs)
+        return proc_mon_cls(proc=proc, **kwargs)

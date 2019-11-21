@@ -108,7 +108,7 @@ def new(details, path=None, **kwargs):
     '--compress', '-c', 'compressed', default=False, is_flag=True,
     help="Flag: compress all model files to a single tar.gz archive"
 )
-def update(details, path, **kwargs):
+def update(details, path=None, **kwargs):
     
     """Update a model version's details or files"""
     

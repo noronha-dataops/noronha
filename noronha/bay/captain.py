@@ -24,7 +24,7 @@ from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured, Patient, patient
 from noronha.common.conf import CaptainConf
 from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex
-from noronha.common.errors import ResolutionError, NhaDockerError, PatientError
+from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
 from noronha.common.logging import LOG
 from noronha.common.utils import dict_to_kv_list, assert_str, StructCleaner
 
@@ -477,6 +477,7 @@ class KubeCaptain(Captain):
         self.nfs = self.captain_compass.get_nfs_server()
         self.stg_cls = self.captain_compass.get_stg_cls(section)
         self.mule = None
+        self.assert_namespace()
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
@@ -606,34 +607,43 @@ class KubeCaptain(Captain):
             return True
         except Exception as e:
             if ignore:
-                LOG.error(e)
+                LOG.debug(repr(e))
                 return False
             else:
                 raise e
     
-    def rm_pod(self, name: str):
+    def rm_pod(self, name: str, ignore=True):
         
         try:
             self.k8s_backend.core_api.delete_namespaced_pod(
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
-            LOG.warn(e)
+            if ignore:
+                LOG.debug(repr(e))
+            else:
+                raise e
     
-    def rm_depl(self, name: str):
+    def rm_depl(self, name: str, ignore=True):
         
         try:
             self.k8s_backend.apps_api.delete_namespaced_deployment(
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
-            LOG.warn(e)
+            if ignore:
+                LOG.debug(repr(e))
+            else:
+                raise e
     
-    def rm_svc(self, name: str):
+    def rm_svc(self, name: str, ignore=True):
         
         try:
             self.k8s_backend.core_api.delete_namespaced_service(
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
-            LOG.warn(e)
+            if ignore:
+                LOG.debug(repr(e))
+            else:
+                raise e
     
     def close(self):
         
@@ -714,6 +724,15 @@ class KubeCaptain(Captain):
                 time.sleep(1)
         else:
             raise NhaDockerError("Timed out waiting for pod '{}'".format(pod.name))
+    
+    def assert_namespace(self):
+        
+        assert super()._find_sth(
+            what='namespaces',
+            name=self.namespace,
+            method=lambda: self.k8s_backend.core_api.list_namespace().items,
+            key=lambda i: i.metadata.name == self.namespace
+        ) is not None, ConfigurationError("Namespace '{}' does not exist".format(self.namespace))
     
     def assert_vol(self, cargo: Cargo):
         
