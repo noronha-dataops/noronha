@@ -12,8 +12,8 @@ nha -v -p model new \
 
 # record a dataset
 nha -s -v -p ds new \
---model iris-clf \
 --name iris-data-v0 \
+--model iris-clf \
 --details '{"extraction_date": "2019-04-01"}' \
 --path ./datasets/
 
