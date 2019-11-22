@@ -25,7 +25,12 @@ def info(**kwargs):
     
     """Information about a deployment"""
     
-    CMD.run(API, 'info', **kwargs)
+    def callback(x):
+        avail = x.get('availability', 0)
+        x['availability'] = '{}%'.format(int(100 * avail))
+        return x
+    
+    CMD.run(API, 'info', _response_callback=callback, **kwargs)
 
 
 @click.command()

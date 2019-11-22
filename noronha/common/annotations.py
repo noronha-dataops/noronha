@@ -141,7 +141,7 @@ class Patient(object):
     def _patience_wrapper(self, func):
         
         def wrapper(*args, **kwargs):
-            for attempt in range(self.timeout + 1):
+            for attempt in range(self.timeout):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
@@ -151,8 +151,9 @@ class Patient(object):
                         time.sleep(1)
                     else:
                         if isinstance(e, PatientError):
-                            e = e.original_exception
-                        raise e
+                            e.raise_callback()
+                        else:
+                            raise e
         
         return wrapper
     

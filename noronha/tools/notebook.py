@@ -2,20 +2,22 @@
 
 import os
 import papermill as pm
-from datetime import datetime
 
 from noronha.bay.barrel import NotebookBarrel
-from noronha.common.constants import OnBoard, DateFmt, Task, Extension
+from noronha.common.annotations import Patient, PatientError, patient
+from noronha.common.constants import OnBoard, Task, Extension
+from noronha.common.errors import NhaStorageError
 from noronha.common.logging import LOG
 from noronha.db.proj import Project
 from noronha.tools.main import NoronhaEngine
 from noronha.tools.utils import load_proc_monitor
 
 
-class NotebookRunner(object):
+class NotebookRunner(Patient):
 
     def __init__(self, debug=False):
         
+        super().__init__(timeout=3)
         self.debug = debug
         self.proj = Project.load()
         self.proc_mon = load_proc_monitor()
@@ -28,38 +30,62 @@ class NotebookRunner(object):
         
         return self.proc_mon.proc_name
     
-    def __call__(self, note_path: str, params: dict):
+    def _print_exc(self, e: Exception):
         
-        NoronhaEngine.progress_callback = lambda x: self.proc_mon.set_progress(x)
+        LOG.error("Notebook execution failed:")
+        LOG.error(e)
+        self.proc_mon.set_state(Task.State.FAILED)
+    
+    def _handle_exc(self, e: Exception):
         
-        kwargs = dict(
-            parameters=params,
-            engine_name=NoronhaEngine.alias,
-            input_path=os.path.join(OnBoard.APP_HOME, note_path),
-            output_path='.'.join([self.output_file_name, Extension.IPYNB])
-        )
+        if str(e) == "Kernel didn't respond in -1 seconds":
+            raise PatientError(original_exception=e, raise_callback=self._print_exc)
+        else:
+            self._print_exc(e)
+    
+    @patient
+    def _run(self, **kwargs):
         
         try:
-            LOG.debug("Papermill arguments:")
-            LOG.debug(kwargs)
+            LOG.debug("Notebook parameters:")
+            LOG.debug(kwargs.get('parameters', {}))
             self.proc_mon.set_state(Task.State.RUNNING)
             pm.execute_notebook(**kwargs)
         except Exception as e:
-            LOG.error("Notebook execution failed:")
-            LOG.error(e)
-            self.proc_mon.set_state(Task.State.FAILED)
-            return_code = 1
+            self._handle_exc(e)
         else:
             LOG.info("Notebook execution succeeded!")
             self.proc_mon.set_state(Task.State.FINISHED)
-            return_code = 0
+    
+    def _save_output(self, note_path, output_path):
         
-        if return_code != 0 or self.debug:
+        try:
             # TODO: convert to pdf (find a light-weight lib for that)
             NotebookBarrel(
                 proj=self.proj,
                 notebook=note_path,
-                file_name=kwargs['output_path']
+                file_name=output_path
             ).store_from_path(os.getcwd())
+        except Exception as e:
+            err = NhaStorageError("Failed to save output notebook '{}'".format(output_path))
+            e.__cause__ = e
+            LOG.error(err)
+    
+    def __call__(self, note_path: str, params: dict):
         
-        return return_code
+        NoronhaEngine.progress_callback = lambda x: self.proc_mon.set_progress(x)
+        output_path = '.'.join([self.output_file_name, Extension.IPYNB])
+        
+        self._run(**dict(
+            parameters=params,
+            engine_name=NoronhaEngine.alias,
+            input_path=os.path.join(OnBoard.APP_HOME, note_path),
+            output_path=output_path
+        ))
+        
+        code = 0 if self.proc_mon.task.state == Task.State.FINISHED else 1
+        
+        if code == 1 or self.debug:
+            self._save_output(note_path, output_path)
+        
+        return code

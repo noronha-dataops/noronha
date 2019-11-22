@@ -93,9 +93,23 @@ class NhaConsistencyError(PrettyError):
 
 class PatientError(Exception):
     
-    def __init__(self, wait_callback, original_exception):
+    def __init__(self, original_exception: Exception, raise_callback=None, wait_callback=None):
         
-        assert callable(wait_callback)
+        assert raise_callback is None or callable(raise_callback)
+        assert wait_callback is None or callable(wait_callback)
         assert isinstance(original_exception, Exception)
-        self.wait_callback = wait_callback
+        self._wait_callback = wait_callback
+        self._raise_callback = raise_callback
         self.original_exception = original_exception
+    
+    def raise_callback(self):
+        
+        if self._raise_callback is None:
+            raise self.original_exception
+        else:
+            self._raise_callback(self.original_exception)
+    
+    def wait_callback(self):
+        
+        if self._wait_callback is not None:
+            self._wait_callback()

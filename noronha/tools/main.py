@@ -33,17 +33,25 @@ class NoronhaNBExecManager(NotebookExecutionManager):
             ''.join(cell.source)
         ).strip()
     
-    def echo_outputs(self, cell):
-        import json
-        if hasattr(cell, 'outputs') and len(cell.outputs) > 0:
-            LOG.echo('-'*self.LINE_WIDTH)
-            LOG.echo(
-                '\n'.join([  # TODO: remove this debug shortcut
-                    json.dumps(node.dict())  # .get('text', '')
-                    for node in cell.outputs
-                ])
-            )
+    def _print_cell_output(self, out):
         
+        dyct = out.dict()
+        
+        if dyct.get('output_type') == 'error':
+            ename, evalue = dyct.get('ename', ''), dyct.get('evalue', '')
+            LOG.error('{}: {}'.format(ename, evalue))
+        else:
+            text = dyct.get('text', '')
+            LOG.echo(text.strip())
+    
+    def echo_outputs(self, cell):
+        
+        LOG.echo('-'*self.LINE_WIDTH)
+        
+        if not hasattr(cell, 'outputs') or len(cell.outputs) == 0:
+            return
+        
+        [self._print_cell_output(out) for out in cell.outputs]
         LOG.echo('-'*self.LINE_WIDTH)
     
     def cell_start(self, cell, *args, **kwargs):
@@ -91,7 +99,7 @@ class NoronhaEngine(NBConvertEngine):
         super().execute_managed_notebook(
             nb_man=nha_nb_man,
             kernel_name=kernel_name,
-            log_output=True,
+            log_output=False,
             execution_timeout=-1,
             start_timeout=-1
         )

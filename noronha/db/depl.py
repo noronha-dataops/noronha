@@ -48,7 +48,7 @@ class Deployment(SmartDoc):
             self.tasks.values())
         )
         
-        return '{}%'.format(int(100*len(avail_tasks)/self.replicas))
+        return round(len(avail_tasks)/self.replicas, 2)
     
     def pretty(self):
         
