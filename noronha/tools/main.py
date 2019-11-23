@@ -99,7 +99,9 @@ class NoronhaEngine(NBConvertEngine):
         super().execute_managed_notebook(
             nb_man=nha_nb_man,
             kernel_name=kernel_name,
-            log_output=False,
+            log_output=True,
             execution_timeout=-1,
             start_timeout=-1
         )
+        
+        nb_man.nb = nha_nb_man.nb

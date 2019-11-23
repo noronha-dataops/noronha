@@ -60,6 +60,7 @@ class NotebookRunner(Patient):
     def _save_output(self, note_path, output_path):
         
         try:
+            LOG.info("Saving output notebook: {}".format(output_path))
             # TODO: convert to pdf (find a light-weight lib for that)
             NotebookBarrel(
                 proj=self.proj,
