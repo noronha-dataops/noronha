@@ -266,7 +266,7 @@ class KubeCompass(CaptainCompass):
         for node in K8sBackend(logging_level=logging.ERROR).core_api.list_node().items:
             for node_addr in node.status.addresses:
                 if node_addr.type in ['InternalIP', 'ExternalIP']:
-                    if os.system("ping -c 1 -i 0.2 -W 1 {}".format(node_addr.address)) == 0:
+                    if os.system("ping -c 1 -i 0.2 -W 1 {} > /dev/null".format(node_addr.address)) == 0:
                         return node_addr.address
 
 
