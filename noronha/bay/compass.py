@@ -11,7 +11,6 @@ to decide how certain configuration parameters should be used (e.g.: Artifactory
 import logging
 import socket
 from abc import ABC, abstractmethod
-from conu import K8sBackend
 
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
@@ -262,6 +261,8 @@ class KubeCompass(CaptainCompass):
         return nfs
     
     def get_node_address(self):
+        
+        from conu import K8sBackend  # lazy import
         
         for node in K8sBackend(logging_level=logging.ERROR).core_api.list_node().items:
             for node_addr in node.status.addresses:
