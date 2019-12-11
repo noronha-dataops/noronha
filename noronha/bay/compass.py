@@ -11,7 +11,7 @@ to decide how certain configuration parameters should be used (e.g.: Artifactory
 import logging
 import socket
 from abc import ABC, abstractmethod
-from random import randrange
+from conu import K8sBackend
 
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
@@ -160,16 +160,6 @@ class CaptainCompass(Compass):
         
         return self.conf.get(self.KEY_TIMEOUT, self.DEFAULT_TIMEOUT)
     
-    @property
-    def some_node(self):
-        
-        nodes = self.conf.get(self.KEY_NODES, [])
-        
-        if len(nodes) == 0:
-            raise ConfigurationError("No node IP's configured for the container management cluster")
-        else:
-            return nodes[randrange(len(nodes))]
-    
     def get_resource_profile(self, ref_to_profile: str):
         
         prof = self.conf.get(self.KEY_PROFILES, {}).get(ref_to_profile)
@@ -211,6 +201,11 @@ class CaptainCompass(Compass):
     def get_stg_cls(self, section: str):
         
         pass
+    
+    @abstractmethod
+    def get_node_address(self) -> str:
+        
+        pass
 
 
 class SwarmCompass(CaptainCompass):
@@ -228,6 +223,10 @@ class SwarmCompass(CaptainCompass):
     def get_stg_cls(self, section: str):
         
         raise NotImplementedError("Container manager 'swarm' does not take a storage class")
+    
+    def get_node_address(self):
+        
+        raise NotImplementedError("In container manager 'swarm' services are mapped to localhost")
 
 
 class KubeCompass(CaptainCompass):
@@ -261,6 +260,14 @@ class KubeCompass(CaptainCompass):
             ConfigurationError("NFS server must be a mapping in the form {'server': 127.0.0.1, 'path': /shared/path}")
         
         return nfs
+    
+    def get_node_address(self):
+        
+        for node in K8sBackend(logging_level=logging.ERROR).core_api.list_node().items:
+            for address in node.status.addresses:
+                if address['type'] in ['InternalIP', 'ExternalIP']:
+                    if os.system("ping -c 1 {}".format(address['address'])) == 0:
+                        return address['address']
         
 
 class ProjectCompass(Compass):
@@ -412,9 +419,9 @@ class IslandCompass(ABC, TreasureCompass):
                 if self.on_board:
                     return self.service_name
                 else:
-                    return self.captain.some_node
+                    return self.captain.get_node_address()
             else:
-                raise ConfigurationError("Unrecognized container manager: {}".format(self.captain.tipe))
+                raise NotImplementedError("Unrecognized container manager: {}".format(self.captain.tipe))
         else:
             return configured
     
@@ -427,8 +434,6 @@ class IslandCompass(ABC, TreasureCompass):
             if self.captain.tipe == DockerConst.Managers.SWARM:
                 if is_it_open_sea():
                     return self.ORIGINAL_PORT
-                elif self.on_board:
-                    return configured
                 else:
                     return configured
             elif self.captain.tipe == DockerConst.Managers.KUBE:
@@ -437,7 +442,7 @@ class IslandCompass(ABC, TreasureCompass):
                 else:
                     return configured
             else:
-                raise ConfigurationError("Unrecognized container manager: {}".format(self.captain.tipe))
+                raise NotImplementedError("Unrecognized container manager: {}".format(self.captain.tipe))
         else:
             return configured
     
