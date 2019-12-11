@@ -270,6 +270,14 @@ class KubeCompass(CaptainCompass):
                         return address['address']
 
 
+def get_captain_compass():
+    
+    return {
+        DockerConst.Managers.SWARM: SwarmCompass,
+        DockerConst.Managers.KUBE: KubeCompass
+    }.get(CaptainCompass().tipe)()
+
+
 class ProjectCompass(Compass):
     
     conf = ProjConf
@@ -365,7 +373,7 @@ class IslandCompass(ABC, TreasureCompass):
     def __init__(self, perspective=None):
         
         super().__init__()
-        self.captain = CaptainCompass()
+        self.captain = get_captain_compass()
         
         if perspective is None:
             self.on_board = am_i_on_board()
