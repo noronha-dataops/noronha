@@ -264,10 +264,10 @@ class KubeCompass(CaptainCompass):
     def get_node_address(self):
         
         for node in K8sBackend(logging_level=logging.ERROR).core_api.list_node().items:
-            for address in node.status.addresses:
-                if address['type'] in ['InternalIP', 'ExternalIP']:
-                    if os.system("ping -c 1 -i 0.2 -W 1 {}".format(address['address'])) == 0:
-                        return address['address']
+            for node_addr in node.status.addresses:
+                if node_addr.type in ['InternalIP', 'ExternalIP']:
+                    if os.system("ping -c 1 -i 0.2 -W 1 {}".format(node_addr.address)) == 0:
+                        return node_addr.address
 
 
 def get_captain_compass():
