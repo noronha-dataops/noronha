@@ -3,7 +3,6 @@
 from mongoengine import CASCADE
 from mongoengine.fields import *
 
-from noronha.bay.utils import catch_ghost_tasks
 from noronha.db.bvers import EmbeddedBuildVersion
 from noronha.db.main import SmartDoc
 from noronha.db.movers import EmbeddedModelVersion
