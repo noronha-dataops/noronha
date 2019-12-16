@@ -3,6 +3,7 @@
 from mongoengine import CASCADE
 from mongoengine.fields import *
 
+from noronha.bay.utils import am_i_on_board
 from noronha.db.bvers import EmbeddedBuildVersion
 from noronha.db.main import SmartDoc
 from noronha.db.movers import EmbeddedModelVersion
@@ -32,9 +33,15 @@ class Deployment(SmartDoc):
     
     def clean(self):
         
+        super().clean()
+        
+        if not am_i_on_board():
+            self.clean_tasks()
+    
+    def clean_tasks(self):
+        
         from noronha.bay.captain import get_captain  # lazy import
         
-        super().clean()
         task_ids = self.tasks.keys()
         alive_tasks = get_captain(section=DockerConst.Section.DEPL).list_cont_or_pod_ids()
         

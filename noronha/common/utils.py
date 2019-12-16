@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
 from collections import OrderedDict
 from datetime import datetime
 from typing import List
 
-from noronha.common.constants import Encoding, DateFmt, Regex, EnvVar
+from noronha.common.constants import Encoding, DateFmt, Regex
 
 
 class StructCleaner(object):
@@ -157,13 +156,3 @@ def assert_extension(x, ext):
         x = x + '.' + ext
     
     return x
-
-
-def am_i_on_board():
-    
-    return os.environ.get(EnvVar.ON_BOARD, False)
-
-
-def is_it_open_sea():
-    
-    return os.environ.get(EnvVar.OPEN_SEA, False)

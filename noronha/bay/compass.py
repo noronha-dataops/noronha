@@ -17,7 +17,7 @@ from noronha.bay.tchest import TreasureChest
 from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
-from noronha.common.utils import am_i_on_board, is_it_open_sea
+from noronha.bay.utils import am_i_on_board, is_it_open_sea
 
 
 def find_cont_hostname():

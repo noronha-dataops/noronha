@@ -5,7 +5,17 @@ import pathlib
 import random_name
 from shutil import rmtree
 
-from noronha.common.constants import Paths
+from noronha.common.constants import Paths, EnvVar
+
+
+def am_i_on_board():
+    
+    return os.environ.get(EnvVar.ON_BOARD, False)
+
+
+def is_it_open_sea():
+    
+    return os.environ.get(EnvVar.OPEN_SEA, False)
 
 
 class Workpath(str):
