@@ -21,7 +21,10 @@ class DeploymentAPI(NoronhaAPI):
     @projected
     def info(self, name):
         
-        return super().info(name=name, proj=self.proj.name)
+        return self.doc.find_one(
+            name=name,
+            proj=self.proj.name
+        ).save().reload().pretty()  # save operation triggers cleaning of failed tasks
     
     @projected
     def rm(self, name):

@@ -3,12 +3,13 @@
 from mongoengine import CASCADE
 from mongoengine.fields import *
 
+from noronha.bay.utils import catch_ghost_tasks
 from noronha.db.bvers import EmbeddedBuildVersion
 from noronha.db.main import SmartDoc
 from noronha.db.movers import EmbeddedModelVersion
 from noronha.db.proj import Project
 from noronha.db.utils import TaskDoc
-from noronha.common.constants import DBConst, OnBoard, Task
+from noronha.common.constants import DBConst, OnBoard, Task, DockerConst
 
 
 class DeplTask(TaskDoc):
@@ -29,6 +30,18 @@ class Deployment(SmartDoc):
     tasks = DictField(EmbeddedDocumentField(DeplTask, default=DeplTask()), default={})
     details = DictField(default={})
     replicas = IntField(default=1)
+    
+    def clean(self):
+        
+        from noronha.bay.captain import get_captain  # lazy import
+        
+        super().clean()
+        task_ids = self.tasks.keys()
+        alive_tasks = get_captain(section=DockerConst.Section.DEPL).list_cont_or_pod_ids()
+        
+        for task_id in task_ids:
+            if self.tasks[task_id]['state'] in Task.State.END_STATES or task_id not in alive_tasks:
+                self.tasks.pop(task_id)
     
     def put_task(self, task_id, catch_existing=False):
         

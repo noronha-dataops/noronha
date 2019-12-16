@@ -95,6 +95,11 @@ class Captain(ABC, Configured, Patient):
             return items[0]
         else:
             raise NotImplementedError("Multiple {} with name '{}'".format(what, name))
+    
+    @abstractmethod
+    def list_cont_or_pod_ids(self):
+        
+        pass
 
 
 class SwarmCaptain(Captain):
@@ -227,6 +232,13 @@ class SwarmCaptain(Captain):
             return False
         else:
             return True
+    
+    def list_cont_or_pod_ids(self):
+        
+        return [
+            cont.get_id() for cont in
+            self.docker_backend.list_containers()
+        ]
     
     def find_cont(self, name):
         
@@ -649,6 +661,13 @@ class KubeCaptain(Captain):
         
         if self.mule is not None:
             self.rm_pod(self.mule.name)
+    
+    def list_cont_or_pod_ids(self):
+        
+        return [
+            pod.metadata.name for pod in
+            self.k8s_backend.core_api.list_namespaced_pod(namespace=self.namespace).items
+        ]
     
     def _find_sth(self, what, name, method, **kwargs):
         
