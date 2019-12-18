@@ -211,11 +211,6 @@ class SwarmCaptain(Captain):
     def rm_cont(self, x: DockerContainer):
         
         try:
-            x.kill()
-        except DockerAPIError:
-            pass
-        
-        try:
             x.delete(force=True)
         except DockerAPIError as e:
             LOG.error(e)

@@ -65,7 +65,7 @@ class ModelVersion(SmartDoc):
         mv = cls.find_by_pk(pk)
         
         if flag:
-            mv.pretrained = True
+            mv.use_as_pretrained = True
         
         return mv
     
