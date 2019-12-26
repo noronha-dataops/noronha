@@ -215,7 +215,8 @@ class Barrel(ABC):
         
         if self.schema:
             for file_spec in self.schema:
-                assert os.path.isfile(os.path.join(path, file_spec.name)),\
+                file_exists = os.path.isfile(os.path.join(path, file_spec.name))
+                assert file_exists or not file_spec.required,\
                     NhaStorageError("Required file '{}' is missing from {}".format(file_spec.name, self.subject))
     
     def deploy(self, path_to):
