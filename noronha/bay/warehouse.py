@@ -220,7 +220,7 @@ class NexusWarehouse(Warehouse):
                 file_name = os.path.basename(path_to)
                 work.deploy_text_file(name=file_name, content=content)
                 path_from = work.join(file_name)
-
+            
             dest_path = os.path.join(self.repo, self.section, path_to)
             self.client.upload(path_from, dest_path)
         except Exception as e:

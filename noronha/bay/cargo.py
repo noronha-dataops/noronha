@@ -366,6 +366,8 @@ class SharedCargo(Cargo):
     
     def get_deployables(self, path):
         
+        deployables = []
+        
         for subdir, content, tipe in zip(self.subdirs, self.contents, self.types):
             
             if not issubclass(tipe, HeavyCargo):
@@ -373,6 +375,6 @@ class SharedCargo(Cargo):
             
             assert isinstance(content, BarrelContent), NotImplementedError()
             subpath = os.path.join(path, subdir)
-            
-            for c in content.get_deployables(subpath):
-                yield c
+            deployables += content.get_deployables(subpath)
+        
+        return deployables

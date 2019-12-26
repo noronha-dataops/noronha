@@ -270,7 +270,7 @@ class Barrel(ABC):
                 path=path_to
             ))
         
-        return msgs, cmds
+        return zip(msgs, cmds)
     
     @abstractmethod
     def make_file_path(self, file_name: str = None):

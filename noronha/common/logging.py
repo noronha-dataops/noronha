@@ -35,9 +35,10 @@ class Logger(Configured, Lazy):
         'error': logging.ERROR,
     }
     
-    def __init__(self, **kwargs):
+    def __init__(self, name: str = LoggerConst.NAME, **kwargs):
         
         self._logger = None
+        self.name = name
         self.pretty = False
         self.cleaner = StructCleaner(depth=3)
         self.kwargs = kwargs
