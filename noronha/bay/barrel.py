@@ -227,6 +227,7 @@ class Barrel(ABC):
         
         for file_spec in download_schema:
             try:
+                LOG.info('Downloading file: {}'.format(file_spec.name))
                 self.warehouse.download(
                     path_from=self.make_file_path(file_spec.name),
                     path_to=os.path.join(path_to, file_spec.name)
@@ -256,13 +257,19 @@ class Barrel(ABC):
             for file_spec in download_schema
         ]
         
+        msgs = [
+            'Downloading file: {}'.format(file_spec.name)
+            for file_spec in download_schema
+        ]
+        
         if self.compressed:
+            msgs.append('Extracting {} to {}'.format(self.compressed, path_to))
             cmds.append('tar -xzf {tgz_file} {path} && rm -f {tgz_file}'.format(
                 tgz_file=self.compressed,
                 path=path_to
             ))
         
-        return cmds
+        return msgs, cmds
     
     @abstractmethod
     def make_file_path(self, file_name: str = None):

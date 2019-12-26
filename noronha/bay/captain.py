@@ -820,7 +820,9 @@ class KubeCaptain(Captain):
                     self.copy_to(src=work_path.join(file_name), dest=vol_path, pod=self.mule)
             
             if isinstance(cargo, (HeavyCargo, SharedCargo)):
-                [self._exec_in_pod(self.mule, cmd) for cmd in cargo.get_deployables(vol_path)]
+                for msg, cmd in cargo.get_deployables(vol_path):
+                    LOG.info(msg)
+                    self._exec_in_pod(self.mule, cmd)
         
         except Exception as e:
             self.rm_vol(cargo, ignore=True)
