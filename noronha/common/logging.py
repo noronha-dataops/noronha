@@ -35,11 +35,12 @@ class Logger(Configured, Lazy):
         'error': logging.ERROR,
     }
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         
         self._logger = None
         self.pretty = False
         self.cleaner = StructCleaner(depth=3)
+        self.kwargs = kwargs
     
     def __getattribute__(self, attr_name):
         
@@ -53,7 +54,7 @@ class Logger(Configured, Lazy):
         if self._logger is not None:
             return self
         
-        compass = LoggerCompass()
+        compass = LoggerCompass(custom_conf=self.kwargs)
         pathlib.Path(compass.log_file_dir).mkdir(parents=True, exist_ok=True)
         handler = RotatingFileHandler(**compass.file_handler_kwargs)
         handler.setLevel(compass.lvl)

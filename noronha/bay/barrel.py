@@ -226,10 +226,16 @@ class Barrel(ABC):
             download_schema = self.infer_schema_from_repo()
         
         for file_spec in download_schema:
-            self.warehouse.download(
-                path_from=self.make_file_path(file_spec.name),
-                path_to=os.path.join(path_to, file_spec.name)
-            )
+            try:
+                self.warehouse.download(
+                    path_from=self.make_file_path(file_spec.name),
+                    path_to=os.path.join(path_to, file_spec.name)
+                )
+            except NhaStorageError as e:
+                if file_spec.required:
+                    raise e
+                else:
+                    LOG.info('Ignoring absent file: {}'.format(file_spec.name))
         
         self._decompress(path_to)
         self._verify_schema(path_to)

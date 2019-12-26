@@ -36,9 +36,15 @@ def find_bridge_ip():
 
 class Compass(Configured):
     
-    def __init__(self):
+    conf: LazyConf = None
+    
+    def __init__(self, custom_conf: dict = None):
         
         self.conf.get('')  # triggering conf load
+        
+        if custom_conf is not None:
+            self.conf = self.conf.load().as_dict().copy()
+            self.conf.update(custom_conf)
 
 
 class TreasureCompass(Compass):
