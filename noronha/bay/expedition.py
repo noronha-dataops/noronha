@@ -8,7 +8,7 @@ from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, Sha
 from noronha.bay.compass import DockerCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.common.constants import DockerConst, EnvVar
-from noronha.common.logging import LOG
+from noronha.common.logging import Logged
 from noronha.common.utils import join_dicts
 from noronha.db.proj import Project
 from noronha.db.bvers import BuildVersion
@@ -17,7 +17,7 @@ from noronha.db.main import SmartBaseDoc
 from noronha.db.movers import ModelVersion
 
 
-class Expedition(ABC):
+class Expedition(Logged, ABC):
     
     section = None
     is_fleet = False
@@ -26,6 +26,7 @@ class Expedition(ABC):
                  movers: List[ModelVersion] = None, datasets: List[Dataset] = None, docs: List[SmartBaseDoc] = None,
                  **kwargs):
         
+        Logged.__init__(self, log=kwargs.get('log'))
         self.docker_compass = DockerCompass()
         self.mock = self.docker_compass.mock
         self.captain: Captain = get_captain(section=self.section, **kwargs)
@@ -56,7 +57,7 @@ class Expedition(ABC):
             bvers = BuildVersion.find_one_or_none(tag=tag, proj=proj)
             
             if bvers is None:
-                LOG.info(
+                self.LOG.info(
                     "Build version {}:{} not found. Using project's Docker repository directly: {}:{}"
                     .format(proj.name, tag, proj.docker_repo, tag)
                 )
@@ -154,14 +155,14 @@ class ShortExpedition(Expedition, ABC):
             self.captain.dispose_run(self.make_name())
             
             for cargo in self.cargos:
-                if isinstance(cargo, LogsCargo) and (LOG.debug_mode or not completed):
-                    LOG.debug("Keeping logs from volume '{}'".format(cargo.name))
+                if isinstance(cargo, LogsCargo) and (self.LOG.debug_mode or not completed):
+                    self.LOG.debug("Keeping logs from volume '{}'".format(cargo.name))
                 else:
                     self.captain.rm_vol(cargo, ignore=True)
             
             self.captain.close()
         except Exception:
-            LOG.warn("Failed to close resource '{}'".format(self.captain.__class__.__name__))
+            self.LOG.warn("Failed to close resource '{}'".format(self.captain.__class__.__name__))
 
 
 class LongExpedition(Expedition, ABC):
@@ -184,19 +185,19 @@ class LongExpedition(Expedition, ABC):
             self.captain.dispose_deploy(self.make_name())
             
             for cargo in self.cargos:
-                if isinstance(cargo, LogsCargo) and LOG.debug_mode:
-                    LOG.debug("Keeping logs from volume '{}'".format(cargo.name))
+                if isinstance(cargo, LogsCargo) and self.LOG.debug_mode:
+                    self.LOG.debug("Keeping logs from volume '{}'".format(cargo.name))
                 else:
                     self.captain.rm_vol(cargo, ignore=ignore_vols)
             
             self.close()
         except Exception as e:
-            LOG.error("Failed to revert deployment of '{}'".format(self.make_alias()))
-            LOG.error(e)
+            self.LOG.error("Failed to revert deployment of '{}'".format(self.make_alias()))
+            self.LOG.error(e)
     
     def close(self):
         
         try:
             self.captain.close()
         except Exception:
-            LOG.error("Failed to close resource '{}'".format(self.captain.__class__.__name__))
+            self.LOG.error("Failed to close resource '{}'".format(self.captain.__class__.__name__))

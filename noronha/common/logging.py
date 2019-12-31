@@ -8,18 +8,15 @@ from logging.handlers import RotatingFileHandler
 
 from noronha.bay.compass import LoggerCompass
 from noronha.common.annotations import Configured, Lazy, ready
-from noronha.common.conf import LoggerConf
 from noronha.common.constants import DateFmt, LoggerConst
 from noronha.common.utils import assert_json, assert_str, StructCleaner, order_yaml
 
 
 class Logger(Configured, Lazy):
     
-    conf = LoggerConf
-    
     _LOGGER_METHODS = tuple(['debug', 'info', 'warn', 'warning', 'error'])
     
-    _LAZY_PROPERTIES = ['level', 'debug_mode']
+    _LAZY_PROPERTIES = ['level', 'debug_mode', 'path', 'pretty', 'background']
     
     _TAG_PER_METHOD = {
         'debug': 'DEBUG',
@@ -35,13 +32,17 @@ class Logger(Configured, Lazy):
         'error': logging.ERROR,
     }
     
-    def __init__(self, name: str = LoggerConst.NAME, **kwargs):
+    def __init__(self, name: str = LoggerConst.DEFAULT_NAME, **kwargs):
         
         self._logger = None
         self.name = name
+        self.path = None
         self.pretty = False
+        self.background = False
+        self.file_handle = None
         self.cleaner = StructCleaner(depth=3)
         self.kwargs = kwargs
+        self.kwargs['name'] = self.name
     
     def __getattribute__(self, attr_name):
         
@@ -55,17 +56,25 @@ class Logger(Configured, Lazy):
         if self._logger is not None:
             return self
         
+        self._logger = logging.getLogger(self.name)
+        
+        if len(self._logger.handlers) > 0:
+            return self
+        
         compass = LoggerCompass(custom_conf=self.kwargs)
         pathlib.Path(compass.log_file_dir).mkdir(parents=True, exist_ok=True)
         handler = RotatingFileHandler(**compass.file_handler_kwargs)
         handler.setLevel(compass.lvl)
-        self._logger = logging.getLogger(LoggerConst.NAME)
+        
         self._logger.setLevel(compass.lvl)
         self._logger.addHandler(handler)
         self._logger.propagate = False
-        self.pretty = self.conf.get('pretty')
+        self.pretty = compass.conf.get('pretty', False)
+        self.background = compass.conf.get('background', False)
+        self.path = compass.path_to_log_file
+        self.file_handle = open(self.path, 'a')
         
-        if self.conf.get('join_root'):
+        if compass.conf.get('join_root') and self.name == LoggerConst.DEFAULT_NAME:
             logging.getLogger('root').addHandler(handler)
         
         return self
@@ -116,7 +125,7 @@ class Logger(Configured, Lazy):
         msg = self.format(msg, force_pretty=force_pretty, tag=tag)
         getattr(self._logger, method)(msg)
         
-        if lvl >= self._logger.level or force_print:
+        if (lvl >= self._logger.level or force_print) and not self.background:
             print(msg)
     
     def echo(self, msg):
@@ -155,3 +164,51 @@ class Logger(Configured, Lazy):
 
 
 LOG = Logger()
+
+
+class LoggerHub(object):
+    
+    kwargs = {}
+    
+    hub = {
+        LoggerConst.DEFAULT_NAME: LOG
+    }
+    
+    @classmethod
+    def get_logger(cls, name: str = LoggerConst.DEFAULT_NAME):
+        
+        return cls.hub.get(name) or cls.make_logger(name)
+    
+    @classmethod
+    def make_logger(cls, name: str):
+        
+        assert name not in cls.hub
+        logger = Logger(name=name, **cls.kwargs)
+        cls.hub[name] = logger
+        return logger
+    
+    @classmethod
+    def configure(cls, param, value):
+        
+        assert param not in cls.kwargs
+        assert hasattr(LOG, param)
+        cls.kwargs[param] = value
+        
+        for logger in cls.hub.values():
+            logger.kwargs[param] = value
+            setattr(logger, param, value)
+
+
+class Logged(object):
+    
+    def __init__(self, log: Logger = None):
+        
+        self.LOG = log or LOG
+    
+    def set_logger(self, name):
+        
+        self.LOG = LoggerHub.get_logger(name=name)
+    
+    def reset_logger(self):
+        
+        self.LOG = LOG

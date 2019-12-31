@@ -6,10 +6,10 @@ from noronha.api.utils import ProjResolver, DefaultValidation
 from noronha.db.main import Documented, SmartDoc
 from noronha.db.proj import Project, Projected
 from noronha.common.annotations import Interactive, Scoped, Validated, validate
-from noronha.common.logging import LOG
+from noronha.common.logging import Logged
 
 
-class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
+class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, Logged, ABC):
     
     valid = DefaultValidation
     
@@ -18,6 +18,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
         self.proj = proj
         Scoped.__init__(self, scope=scope)
         Interactive.__init__(self, interactive=interactive)
+        Logged.__init__(self)
     
     class Scope(object):
         
@@ -65,7 +66,7 @@ class NoronhaAPI(Documented, Interactive, Projected, Scoped, Validated, ABC):
     def new(self, _replace: bool = None, _duplicate_filter=None, **kwargs):
         
         if _duplicate_filter is not None and len(self.doc.objects(**_duplicate_filter)) > 0:
-            LOG.warn("{} exists".format(self.doc.__name__))
+            self.LOG.warn("{} exists".format(self.doc.__name__))
             
             if _replace is None:
                 self._decide("Would you like to overwrite it?", default=True, interrupt=True)

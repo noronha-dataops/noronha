@@ -25,17 +25,18 @@ from noronha.common.annotations import Configured, Patient, patient
 from noronha.common.conf import CaptainConf
 from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex
 from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
-from noronha.common.logging import LOG
+from noronha.common.logging import Logged
 from noronha.common.utils import dict_to_kv_list, assert_str, StructCleaner
 
 
-class Captain(ABC, Configured, Patient):
+class Captain(ABC, Configured, Patient, Logged):
     
     conf = CaptainConf
     compass_cls: Type[CaptainCompass] = None
     
-    def __init__(self, section: str, resource_profile: str = None):
+    def __init__(self, section: str, resource_profile: str = None, **kwargs):
         
+        Logged.__init__(self, log=kwargs.get('log'))
         self.docker_compass = DockerCompass()
         self.captain_compass = self.compass_cls()
         self.section = section
@@ -113,7 +114,7 @@ class SwarmCaptain(Captain):
     def __init__(self, section: str, **kwargs):
         
         super().__init__(section, **kwargs)
-        LOG.warn("Using Docker Swarm as container manager. This is not recommended for distributed environments")
+        self.LOG.warn("Using Docker Swarm as container manager. This is not recommended for distributed environments")
         self.docker_api = self.docker_compass.get_api()
         self.docker_backend = DockerBackend(logging_level=logging.ERROR)
     
@@ -132,7 +133,11 @@ class SwarmCaptain(Captain):
         kwargs = self.cleaner(dict(
             command=cmd,
             volumes=self.conu_mounts(mounts) + self.conu_vols(cargos),
-            additional_opts=additional_opts
+            additional_opts=additional_opts,
+            popen_params=dict(
+                stdout=self.LOG.file_handle,
+                stderr=self.LOG.file_handle
+            ) if self.LOG.background else None
         ))
         
         if foreground:
@@ -169,13 +174,13 @@ class SwarmCaptain(Captain):
         ))
         
         if depl is None:
-            LOG.debug("Creating container service '{}' with kwargs:".format(name))
-            LOG.debug(kwargs)
+            self.LOG.debug("Creating container service '{}' with kwargs:".format(name))
+            self.LOG.debug(kwargs)
             return self.docker_api.create_service(**kwargs)
         else:
             kwargs.update(service=depl['ID'], version=depl['Version']['Index'])
-            LOG.debug("Updating container service '{}' with kwargs:".format(name))
-            LOG.debug(kwargs)
+            self.LOG.debug("Updating container service '{}' with kwargs:".format(name))
+            self.LOG.debug(kwargs)
             return self.docker_api.update_service(**kwargs)
     
     def dispose_run(self, name: str):
@@ -202,18 +207,18 @@ class SwarmCaptain(Captain):
             return True
         except DockerAPIError as e:
             if ignore:
-                LOG.error(e)
+                self.LOG.error(e)
                 return False
             else:
                 msg = "Waiting up to {} seconds for removal of volume {}".format(self.timeout, cargo.name)
-                raise PatientError(wait_callback=lambda: LOG.info(msg), original_exception=e)
+                raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def rm_cont(self, x: DockerContainer):
         
         try:
             x.delete(force=True)
         except DockerAPIError as e:
-            LOG.error(e)
+            self.LOG.error(e)
             return False
         else:
             return True
@@ -223,7 +228,7 @@ class SwarmCaptain(Captain):
         try:
             self.docker_api.remove_service(name)
         except Exception as e:
-            LOG.error(e)
+            self.LOG.error(e)
             return False
         else:
             return True
@@ -268,7 +273,7 @@ class SwarmCaptain(Captain):
         existing = self.find_cont(name)
         
         if existing is not None:
-            LOG.warn("Removing old container '{}'".format(name))
+            self.LOG.warn("Removing old container '{}'".format(name))
             self.rm_cont(existing)
     
     def watch_cont(self, container: DockerContainer):
@@ -302,8 +307,8 @@ class SwarmCaptain(Captain):
             ingress=False
         )  # standard properties for a network that is meant to be used only by Swarm services
         
-        LOG.info("Creating Docker network")
-        LOG.debug(kwargs)
+        self.LOG.info("Creating Docker network")
+        self.LOG.debug(kwargs)
         self.docker_api.create_network(**kwargs)
         self.wait_for_net()
     
@@ -331,7 +336,7 @@ class SwarmCaptain(Captain):
             return False
         
         try:
-            LOG.debug("Loading volume '{}'".format(cargo.name))
+            self.LOG.debug("Loading volume '{}'".format(cargo.name))
             mule = self.get_mule(cargo, mule_alias)
             self.clear_mule(mule)
             work_path = Workpath.get_tmp()
@@ -516,8 +521,8 @@ class KubeCaptain(Captain):
             }
         ))
         
-        LOG.info("Creating Pod '{}'".format(name))
-        LOG.debug(template)
+        self.LOG.info("Creating Pod '{}'".format(name))
+        self.LOG.debug(template)
         
         pod = Pod(namespace=self.namespace, from_template=template)
         self.handle_svc(name, port_defs)
@@ -570,13 +575,13 @@ class KubeCaptain(Captain):
         ))
         
         if self.find_depl(name) is None:
-            LOG.info("Creating deployment '{}'".format(name))
-            LOG.debug(template)
+            self.LOG.info("Creating deployment '{}'".format(name))
+            self.LOG.debug(template)
             yaml = Kaptan().import_config(template).export(handler='yaml')
             depl = Deployment(namespace=self.namespace, create_in_cluster=True, from_template=yaml)
         else:
-            LOG.info("Updating deployment '{}'".format(name))
-            LOG.debug(template)
+            self.LOG.info("Updating deployment '{}'".format(name))
+            self.LOG.debug(template)
             self.k8s_backend.apps_api.replace_namespaced_deployment(name, self.namespace, template)
             depl = self.find_depl(name)
         
@@ -603,7 +608,7 @@ class KubeCaptain(Captain):
         
         if self.mule is None:
             if ignore:
-                LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.name))
+                self.LOG.warn("Missing auxiliary Pod for deletion of volume '{}'".format(cargo.name))
                 return False
             else:
                 self.prepare_mule(cargo.name)
@@ -614,7 +619,7 @@ class KubeCaptain(Captain):
             return True
         except Exception as e:
             if ignore:
-                LOG.debug(repr(e))
+                self.LOG.debug(repr(e))
                 return False
             else:
                 raise e
@@ -626,7 +631,7 @@ class KubeCaptain(Captain):
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
             if ignore:
-                LOG.debug(repr(e))
+                self.LOG.debug(repr(e))
             else:
                 raise e
     
@@ -637,7 +642,7 @@ class KubeCaptain(Captain):
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
             if ignore:
-                LOG.debug(repr(e))
+                self.LOG.debug(repr(e))
             else:
                 raise e
     
@@ -648,7 +653,7 @@ class KubeCaptain(Captain):
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
             if ignore:
-                LOG.debug(repr(e))
+                self.LOG.debug(repr(e))
             else:
                 raise e
     
@@ -711,7 +716,7 @@ class KubeCaptain(Captain):
         existing = self.find_pod(name)
         
         if existing is not None:
-            LOG.warn("Removing old pod '{}'".format(name))
+            self.LOG.warn("Removing old pod '{}'".format(name))
             self.rm_pod(existing.name)
     
     def watch_pod(self, pod: Pod):
@@ -725,7 +730,7 @@ class KubeCaptain(Captain):
         
         try:
             for line in logs:
-                LOG.echo(line.decode(Encoding.UTF_8).strip())
+                self.LOG.echo(line.decode(Encoding.UTF_8).strip())
         except (KeyboardInterrupt, InterruptedError):
             self.interrupted = True
     
@@ -764,8 +769,8 @@ class KubeCaptain(Captain):
         )
         
         if self.find_vol(cargo) is None:
-            LOG.info("Creating persistent volume claim '{}'".format(cargo.name))
-            LOG.debug(template)
+            self.LOG.info("Creating persistent volume claim '{}'".format(cargo.name))
+            self.LOG.debug(template)
             self.k8s_backend.core_api.create_namespaced_persistent_volume_claim(self.namespace, template)
             return True
         else:
@@ -774,11 +779,11 @@ class KubeCaptain(Captain):
     def handle_svc(self, name, port_defs):
         
         if self.find_svc(name) is not None:
-            LOG.info("Removing old version of service '{}'".format(name))
+            self.LOG.info("Removing old version of service '{}'".format(name))
             self.rm_svc(name)
         
         if len(port_defs) == 0:
-            LOG.info('Skipping service creation')
+            self.LOG.info('Skipping service creation')
             return
         
         svc = dict(
@@ -792,8 +797,8 @@ class KubeCaptain(Captain):
             )
         )
         
-        LOG.info("Creating service '{}'".format(name))
-        LOG.debug(svc)
+        self.LOG.info("Creating service '{}'".format(name))
+        self.LOG.debug(svc)
         self.k8s_backend.core_api.create_namespaced_service(self.namespace, svc)
     
     def load_vol(self, cargo: Cargo, mule_alias: str = None):
@@ -809,7 +814,7 @@ class KubeCaptain(Captain):
         
         try:
             self.prepare_mule(mule_alias)
-            LOG.debug("Creating volume '{}'".format(cargo.name))
+            self.LOG.debug("Creating volume '{}'".format(cargo.name))
             self.clear_mule(self.mule, vol_path)
             work_path = Workpath.get_tmp()
             
@@ -821,7 +826,7 @@ class KubeCaptain(Captain):
             
             if isinstance(cargo, (HeavyCargo, SharedCargo)):
                 for msg, cmd in cargo.get_deployables(vol_path):
-                    LOG.info(msg)
+                    self.LOG.info(msg)
                     self._exec_in_pod(self.mule, cmd)
         
         except Exception as e:
@@ -857,8 +862,8 @@ class KubeCaptain(Captain):
             }
         )
         
-        LOG.debug("Creating auxiliar Pod '{}' for handling volumes".format(name))
-        LOG.debug(template)
+        self.LOG.debug("Creating auxiliar Pod '{}' for handling volumes".format(name))
+        self.LOG.debug(template)
         
         self.mule = Pod(namespace=self.namespace, from_template=template)
         self.wait_for_pod(self.mule)

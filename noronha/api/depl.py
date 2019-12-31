@@ -5,8 +5,7 @@ import json
 from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import LongExpedition
 from noronha.common.annotations import validate, projected
-from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst, EnvVar, Task
-from noronha.common.logging import LOG
+from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst, EnvVar
 from noronha.common.utils import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
 from noronha.db.depl import Deployment
@@ -17,6 +16,16 @@ class DeploymentAPI(NoronhaAPI):
     
     doc = Deployment
     valid = NoronhaAPI.valid
+    
+    def set_logger(self, name):
+        
+        super().set_logger(
+            name='-'.join([
+                DockerConst.Section.DEPL,
+                self.proj.name,
+                name
+            ])
+        )
     
     @projected
     def info(self, name):
@@ -53,6 +62,7 @@ class DeploymentAPI(NoronhaAPI):
     def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = 'predict', details: dict = None,
             params: dict = None, movers: list = None, port: int = None, _replace: bool = None, **kwargs):
         
+        self.set_logger(name)
         bv = BuildVersion.find_one_or_none(tag=tag, proj=self.proj)
         
         depl = super().new(
@@ -71,9 +81,11 @@ class DeploymentAPI(NoronhaAPI):
             depl,
             port,
             tag,
-            resource_profile=kwargs.get('resource_profile')
+            resource_profile=kwargs.get('resource_profile'),
+            log=self.LOG
         ).launch(**kwargs)
         
+        self.reset_logger()
         return depl
 
 
@@ -129,4 +141,4 @@ class DeploymentExp(LongExpedition):
             self.depl.notebook,
             '--params',
             json.dumps(self.depl.details['params']),
-        ] + (['--debug'] if LOG.debug_mode else [])
+        ] + (['--debug'] if self.LOG.debug_mode else [])

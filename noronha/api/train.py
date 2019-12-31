@@ -6,7 +6,6 @@ from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import ShortExpedition
 from noronha.common.annotations import validate, projected
 from noronha.common.constants import DockerConst, Extension, OnBoard, Task
-from noronha.common.logging import LOG
 from noronha.common.utils import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
 from noronha.db.ds import Dataset
@@ -18,6 +17,16 @@ class TrainingAPI(NoronhaAPI):
     
     doc = Training
     valid = NoronhaAPI.valid
+    
+    def set_logger(self, name):
+        
+        super().set_logger(
+            name='-'.join([
+                DockerConst.Section.TRAIN,
+                self.proj.name,
+                name
+            ])
+        )
     
     @projected
     def info(self, name):
@@ -49,6 +58,7 @@ class TrainingAPI(NoronhaAPI):
             details: dict = None, datasets: list = None, pretrained: list = None, _replace: bool = None,
             **kwargs):
         
+        self.set_logger(name)
         bv = BuildVersion.find_one_or_none(tag=tag, proj=self.proj)
         movers = [ModelVersion.parse_ref(mv) for mv in pretrained or []]
         datasets = [Dataset.find_by_pk(ds) for ds in datasets or []]
@@ -61,7 +71,7 @@ class TrainingAPI(NoronhaAPI):
         
         for mv in movers:
             mv.use_as_pretrained = True
-            LOG.info("Pre-trained model '{}' will be available in this training".format(mv.show()))
+            self.LOG.info("Pre-trained model '{}' will be available in this training".format(mv.show()))
         
         train: Training = super().new(
             name=name,
@@ -77,9 +87,11 @@ class TrainingAPI(NoronhaAPI):
             tag=tag,
             datasets=datasets,
             movers=movers,
-            resource_profile=kwargs.get('resource_profile')
+            resource_profile=kwargs.get('resource_profile'),
+            log=self.LOG
         ).launch(**kwargs)
         
+        self.reset_logger()
         return train.reload()
 
 
@@ -103,13 +115,13 @@ class TrainingExp(ShortExpedition):
             super().close(completed)
             
             if self.captain.interrupted or not completed:
-                LOG.warn('Failing training due to an interruption')
+                self.LOG.warn('Failing training due to an interruption')
                 self.train.reload()
                 self.train.task.state = Task.State.FAILED
                 self.train.save()
 
         except Exception:
-            LOG.error("Failed to close training '{}'".format(self.make_alias()))
+            self.LOG.error("Failed to close training '{}'".format(self.make_alias()))
     
     def make_alias(self):
         
@@ -123,4 +135,4 @@ class TrainingExp(ShortExpedition):
             self.train.notebook,
             '--params',
             json.dumps(self.train.details['params'])
-        ] + (['--debug'] if LOG.debug_mode else [])
+        ] + (['--debug'] if self.LOG.debug_mode else [])

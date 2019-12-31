@@ -272,9 +272,8 @@ class LoggerConst(object):
     
     """Constants used when logging"""
     
-    NAME = 'noronha'
+    DEFAULT_NAME = 'noronha'
     FILE_EXT = Extension.LOG
-    FILE = '{}.{}'.format(NAME, FILE_EXT)
     DIR_ON_BOARD = OnBoard.LOG_DIR  # log directory inside a container, mapped to outside volume/mount
     DEFAULT_DIR_OFFBOARD = HostUser.LOG_DIR
     PRETTY_FMT = 'yaml'

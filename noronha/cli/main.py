@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import click
-import logging
 import pkg_resources
 
 from noronha.api.island import IslandAPI
@@ -17,34 +16,28 @@ from noronha.cli.proj import proj
 from noronha.cli.tchest import tchest
 from noronha.cli.train import train
 from noronha.common.constants import FrameworkConst
-from noronha.common.logging import LOG
+from noronha.common.logging import LoggerHub, LOG
 
 
 @click.group()
 @click.option('--skip', '-s', default=False, type=bool, is_flag=True, help="Skip questions")
-@click.option('--quiet', '-q', default=False, type=bool, is_flag=True, help="Suppress all messages")
-@click.option('--verbose', '-v', default=False, type=bool, is_flag=True, help="Show more explicit messages")
-@click.option('--debug', '-d', default=False, type=bool, is_flag=True, help="Show logs for debugging purposes")
-@click.option('--pretty', '-p', default=False, type=bool, is_flag=True, help="Less compact, more readable")
+@click.option('--log-level', '-l', default='INFO', type=str, help="Level of log verbosity (DEBUG, INFO, WARN, ERROR)")
+@click.option('--debug', '-d', default=False, type=bool, is_flag=True, help="Set log level to DEBUG")
+@click.option('--pretty', '-p', default=False, type=bool, is_flag=True, help="Less compact, more readable output")
+@click.option('--background', '-b', default=False, type=bool, is_flag=True, help="Run in background, only log to files")
 @click.pass_context
-def nha(_, quiet, verbose, debug, pretty, skip):
+def nha(_, skip: bool, log_level: str, debug: bool, pretty: bool, background: bool):
     
     """Command line interface for Noronha DataOps framework"""
     
     CMD.interactive_mode = not skip
-    LOG.setup()
     
     if debug:
-        LOG.level = logging.DEBUG
-    elif verbose:
-        LOG.level = logging.INFO
-    elif quiet:
-        LOG.level = logging.ERROR
-    else:
-        LOG.level = logging.WARN
+        log_level = 'DEBUG'
     
-    if pretty:
-        LOG.pretty = True
+    LoggerHub.configure('level', log_level)
+    LoggerHub.configure('pretty', pretty)
+    LoggerHub.configure('background', background)
 
 
 @click.command()

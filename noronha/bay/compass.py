@@ -304,11 +304,16 @@ class LoggerCompass(Compass):
     
     conf = LoggerConf
     
+    KEY_NAME = 'name'
     KEY_LVL = 'level'
     KEY_DIR = 'directory'
-    KEY_FILE_NAME = 'file_name'
     KEY_MAX_BYTES = 'max_bytes'
     KEY_BKP_COUNT = 'bkp_count'
+    
+    @property
+    def name(self):
+        
+        return self.conf.get(self.KEY_NAME, LoggerConst.DEFAULT_NAME)
     
     @property
     def lvl(self):
@@ -330,17 +335,14 @@ class LoggerCompass(Compass):
     def log_file_dir(self):
         
         if am_i_on_board():
-            return LoggerConst.DIR_ON_BOARD
+            return os.path.join(LoggerConst.DIR_ON_BOARD, find_cont_hostname())
         else:
             return self.conf.get(self.KEY_DIR, LoggerConst.DEFAULT_DIR_OFFBOARD)
     
     @property
     def log_file_name(self):
         
-        if am_i_on_board():
-            return '{}.{}'.format(find_cont_hostname(), LoggerConst.FILE_EXT)
-        else:
-            return self.conf.get(self.KEY_FILE_NAME, LoggerConst.FILE)
+        return '{}.{}'.format(self.name, LoggerConst.FILE_EXT)
     
     @property
     def path_to_log_file(self):
