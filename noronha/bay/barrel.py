@@ -262,7 +262,7 @@ class Barrel(ABC, Logged):
         ]
         
         msgs = [
-            'Downloading file: {}'.format(file_spec.name)
+            'Injecting file: {}'.format(file_spec.name)
             for file_spec in download_schema
         ]
         

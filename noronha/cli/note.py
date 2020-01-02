@@ -10,9 +10,12 @@ from noronha.common.utils import kv_list_to_dict
 
 
 @click.command()
-@click.option('--tag', '-t', default='latest',
-              help="""The IDE runs on top of a Docker image that belongs to the current working project. """
-                   """You may specify the image's Docker tag or let it default to "latest\"""")
+@click.option('--proj', help="Name of the project you'd like to work with")
+@click.option(
+    '--tag', '-t', default='latest',
+    help="""The IDE runs on top of a Docker image that belongs to the project. """
+    """You may specify the image's Docker tag or let it default to "latest\""""
+)
 @click.option(
     '--port', '-p', default=NoteConst.HOST_PORT,
     help="Host port that will be routed to the notebook's user interface (default: {})".format(NoteConst.HOST_PORT)
@@ -48,7 +51,7 @@ from noronha.common.utils import kv_list_to_dict
 )
 def note(env_vars: list, mounts: list, port: int, edit: bool = False, **kwargs):
     
-    """Access to an interactive notebook (IDE)"""
+    """Access to the Jupyter Notebook (IDE)"""
     
     edit_mount = ['{}:{}:rw'.format(os.getcwd(), OnBoard.APP_HOME)] if edit else []
     
