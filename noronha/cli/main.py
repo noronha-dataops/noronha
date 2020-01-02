@@ -20,17 +20,17 @@ from noronha.common.logging import LoggerHub, LOG
 
 
 @click.group()
-@click.option('--skip', '-s', default=False, type=bool, is_flag=True, help="Skip questions")
+@click.option('--skip-questions', '-s', default=False, type=bool, is_flag=True, help="Skip questions")
 @click.option('--log-level', '-l', default='INFO', type=str, help="Level of log verbosity (DEBUG, INFO, WARN, ERROR)")
 @click.option('--debug', '-d', default=False, type=bool, is_flag=True, help="Set log level to DEBUG")
 @click.option('--pretty', '-p', default=False, type=bool, is_flag=True, help="Less compact, more readable output")
 @click.option('--background', '-b', default=False, type=bool, is_flag=True, help="Run in background, only log to files")
 @click.pass_context
-def nha(_, skip: bool, log_level: str, debug: bool, pretty: bool, background: bool):
+def nha(_, skip_questions: bool, log_level: str, debug: bool, pretty: bool, background: bool):
     
     """Command line interface for Noronha DataOps framework"""
     
-    CMD.interactive_mode = not skip
+    CMD.interactive_mode = not skip_questions
     
     if debug:
         log_level = 'DEBUG'

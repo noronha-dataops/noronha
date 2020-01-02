@@ -1,9 +1,10 @@
 #!/bin/bash
 
 set -x
+flags="--debug --pretty --skip-questions"
 
 # define a model
-nha -v -p model new \
+nha ${flags} model new \
 --name iris-clf \
 --desc "Iris flower classifier" \
 --model-file '{"name": "clf.pkl", "required": true, "desc": "Classifier saved as pickle"}' \
@@ -11,14 +12,14 @@ nha -v -p model new \
 --data-file '{"name": "species.csv"}'
 
 # record a dataset
-nha -s -v -p ds new \
+nha ${flags} ds new \
 --name iris-data-v0 \
 --model iris-clf \
 --details '{"extraction_date": "2019-04-01"}' \
 --path ./datasets/
 
 # create your project
-nha -s -v -p proj new \
+nha ${flags} proj new \
 --name botanics \
 --desc "An experiment in the field of botanics" \
 --git-repo 'https://my_git_server/botanics' \
@@ -26,30 +27,37 @@ nha -s -v -p proj new \
 --model iris-clf
 
 # build your project # now it's "dockerized" :)
-nha -d -p proj build \
+nha ${flags} proj build \
 --from-here
 
 # note that a docker image has been created for you
 docker images noronha/*botanics*
 
 # and it's also versioned in noronha's database
-nha -v bvers list
+nha ${flags} bvers list
 
-# run a notebook for editing and testing your code at http://localhost:30088
-# nha -d note --edit --dataset iris-clf:iris-data-v0
+# Run a Jupyter Notebook for editing and testing your code:
+# nha ${flags} note --edit --dataset iris-clf:iris-data-v0
+#
+# The Jupyter IDE is available at http://localhost:30088
+# All packages listed in requirements.txt can be found in the default Python environment
+#
+# The dataset iris-data-v0 of the model iris-clf can be accessed by the following shortcut:
+# from noronha.tools.shortcuts import *
+# data_path('measures.csv')  # returns '/data/iris.iris-data-v0/measures.csv'
 
 # execute your first training # this is going to use the training notebook
-nha -s -d -p train new \
+nha ${flags} train new \
 --name experiment-v1 \
 --nb notebooks/train \
 --params '{"gamma": 0.001, "kernel": "poly"}' \
 --dataset iris-clf:iris-data-v0
 
 # check out which model versions have been produced so far
-nha -v movers list
+nha ${flags} movers list
 
 # deploy a model version to homologation
-nha -s -d -p depl new \
+nha ${flags} depl new \
 --name homolog \
 --nb notebooks/predict \
 --port 30050 \

@@ -11,7 +11,7 @@ from noronha.bay.warehouse import get_warehouse
 from noronha.bay.utils import Workpath
 from noronha.common.constants import WarehouseConst, Extension
 from noronha.common.errors import NhaStorageError
-from noronha.common.logging import LOG
+from noronha.common.logging import Logged
 from noronha.common.utils import cape_list
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion
@@ -32,14 +32,15 @@ class FileSpec(FileDoc):
         return cls(alias=doc.name, **doc.as_dict())
 
 
-class Barrel(ABC):
+class Barrel(ABC, Logged):
     
     section: str = None
     subject = None
     
-    def __init__(self, schema: List[FileSpec] = None, compress_to: str = None):
+    def __init__(self, schema: List[FileSpec] = None, compress_to: str = None, log=None):
         
-        self.warehouse = get_warehouse(section=self.section)
+        Logged.__init__(self, log=log)
+        self.warehouse = get_warehouse(section=self.section, log=log)
         self.compressed = None if not compress_to else '{}.tar.gz'.format(compress_to)
         
         if schema is None:
@@ -56,7 +57,7 @@ class Barrel(ABC):
         
         files = [f.name for f in schema]
         caped = cape_list(files)
-        LOG.info("Files: {}".format(caped))
+        self.LOG.info("Files: {}".format(caped))
     
     def infer_schema_from_dict(self, dyct):
         
@@ -85,7 +86,7 @@ class Barrel(ABC):
                 if len(schema) == 1:
                     schema = [FileSpec(name=schema[0].name, alias=os.path.basename(path))]
                     path = os.path.dirname(path)
-                    LOG.warn("File '{}' will be renamed to '{}'".format(schema[0].alias, schema[0].name))
+                    self.LOG.warn("File '{}' will be renamed to '{}'".format(schema[0].alias, schema[0].name))
                 else:
                     n_reqs = len(list(filter(lambda f: f.required, schema)))
                     assert n_reqs == 1, NhaStorageError("Cannot find all required files in path {}".format(path))
@@ -95,7 +96,7 @@ class Barrel(ABC):
     def infer_schema_from_repo(self):
         
         if self.schema is None:
-            LOG.warn("Deploying {} without a strict definition of files".format(self.subject))
+            self.LOG.warn("Deploying {} without a strict definition of files".format(self.subject))
             schema = [
                 FileSpec(name=name) for name in
                 self.warehouse.list_dir(self.make_file_path())
@@ -144,6 +145,7 @@ class Barrel(ABC):
                 if file_spec.required:
                     raise NhaStorageError("File '{}' not found in path: {}".format(file_spec.name, path))
                 else:
+                    self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
                     continue
             elif self.compressed:
                 to_compress.append(file_spec)
@@ -173,6 +175,7 @@ class Barrel(ABC):
     
     def _store_file(self, file_name, **kwargs):
         
+        self.LOG.info("Uploading file: {}".format(file_name))
         self.warehouse.upload(
             path_to=self.make_file_path(file_name),
             **kwargs
@@ -228,7 +231,7 @@ class Barrel(ABC):
         
         for file_spec in download_schema:
             try:
-                LOG.info('Downloading file: {}'.format(file_spec.name))
+                self.LOG.info('Downloading file: {}'.format(file_spec.name))
                 self.warehouse.download(
                     path_from=self.make_file_path(file_spec.name),
                     path_to=os.path.join(path_to, file_spec.name)
@@ -237,7 +240,7 @@ class Barrel(ABC):
                 if file_spec.required:
                     raise e
                 else:
-                    LOG.info('Ignoring absent file: {}'.format(file_spec.name))
+                    self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
         
         self._decompress(path_to)
         self._verify_schema(path_to)
@@ -282,14 +285,15 @@ class DatasetBarrel(Barrel):
     
     section = WarehouseConst.Section.DATASETS
     
-    def __init__(self, ds: Dataset):
+    def __init__(self, ds: Dataset, **kwargs):
         
         self.ds_name = ds.name
         self.model_name = ds.model.name
         self.subject = "dataset '{}'".format(ds.show())
         super().__init__(
             schema=ds.model.data_files,
-            compress_to=None if not ds.compressed else ds.name
+            compress_to=None if not ds.compressed else ds.name,
+            **kwargs
         )
     
     def make_file_path(self, file_name: str = None):
@@ -301,14 +305,15 @@ class MoversBarrel(Barrel):
     
     section = WarehouseConst.Section.MODELS
     
-    def __init__(self, mv: ModelVersion):
+    def __init__(self, mv: ModelVersion, **kwargs):
         
         self.mv_name = mv.name
         self.model_name = mv.model.name
         self.subject = "model version '{}'".format(mv.show())
         super().__init__(
             schema=mv.model.model_files,
-            compress_to=None if not mv.compressed else mv.name
+            compress_to=None if not mv.compressed else mv.name,
+            **kwargs
         )
     
     def make_file_path(self, file_name: str = None):

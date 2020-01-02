@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 from noronha.bay.compass import LoggerCompass
 from noronha.common.annotations import Configured, Lazy, ready
 from noronha.common.constants import DateFmt, LoggerConst
-from noronha.common.utils import assert_json, assert_str, StructCleaner, order_yaml
+from noronha.common.utils import assert_json, assert_str, StructCleaner, order_yaml, resolve_log_level
 
 
 class Logger(Configured, Lazy):
@@ -98,14 +98,14 @@ class Logger(Configured, Lazy):
         return self._logger.level
     
     @level.setter
-    def level(self, level):
+    def level(self, level: str):
         
         self.set_level(level)
     
     @ready
-    def set_level(self, level):
+    def set_level(self, level: (str, int)):
         
-        self._logger.setLevel(level)
+        self._logger.setLevel(resolve_log_level(level))
     
     def wrap_logger(self, log_method):
         
@@ -203,6 +203,7 @@ class Logged(object):
     
     def __init__(self, log: Logger = None):
         
+        assert log is None or isinstance(log, Logger)
         self.LOG = log or LOG
     
     def set_logger(self, name):

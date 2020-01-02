@@ -2,7 +2,6 @@
 
 """Module for handling Docker volumes"""
 
-import json
 import os
 import pathlib
 import random_name
@@ -276,7 +275,7 @@ class HeavyCargo(Cargo):
 
 class DatasetCargo(HeavyCargo):
     
-    def __init__(self, ds: Dataset, section: str):
+    def __init__(self, ds: Dataset, section: str, **kwargs):
         
         assert ds.stored, NhaStorageError(
             """Dataset '{}' is not stored by the framework, so it cannot be mounted in a container"""
@@ -289,14 +288,14 @@ class DatasetCargo(HeavyCargo):
             alias='dataset-{}'.format(ds.get_pk()),
             mount_to=os.path.join(dyr, subdir),
             mode='ro',
-            barrel=DatasetBarrel(ds),
+            barrel=DatasetBarrel(ds, **kwargs),
             section=section
         )
 
 
 class MoversCargo(HeavyCargo):
     
-    def __init__(self, mv: ModelVersion, section: str, pretrained=False, local=False):
+    def __init__(self, mv: ModelVersion, section: str, pretrained=False, local=False, **kwargs):
         
         pretrained = pretrained or (mv.use_as_pretrained is True)
         subdir = mv.get_dir_name()
@@ -316,7 +315,7 @@ class MoversCargo(HeavyCargo):
             alias='movers-{}'.format(mv.get_pk()),
             mount_to=os.path.join(dyr, subdir),
             mode='rw',
-            barrel=MoversBarrel(mv),
+            barrel=MoversBarrel(mv, **kwargs),
             section=section
         )
 

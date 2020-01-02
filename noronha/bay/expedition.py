@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from noronha.bay.captain import get_captain, Captain
-from noronha.bay.cargo import DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo, TimezoneCargo
+from noronha.bay.cargo import Cargo, DatasetCargo, MetaCargo, ConfCargo, LogsCargo, SharedCargo, MoversCargo,\
+    TimezoneCargo
 from noronha.bay.compass import DockerCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.common.constants import DockerConst, EnvVar
@@ -92,12 +93,12 @@ class Expedition(Logged, ABC):
         meta_cargo = MetaCargo(**kwargs, docs=self.docs)
         
         ds_cargos = [
-            DatasetCargo(ds, section=self.section)
+            DatasetCargo(ds, section=self.section, log=self.LOG)
             for ds in self.datasets
         ]
         
         mv_cargos = [
-            MoversCargo(mv, section=self.section)
+            MoversCargo(mv, section=self.section, log=self.LOG)
             for mv in self.movers
         ]
         

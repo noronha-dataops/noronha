@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 from collections import OrderedDict
 from datetime import datetime
 from typing import List
@@ -156,3 +157,13 @@ def assert_extension(x, ext):
         x = x + '.' + ext
     
     return x
+
+
+def resolve_log_level(lvl: (str, int)):
+    
+    if isinstance(lvl, int):
+        return lvl
+    elif isinstance(lvl, str):
+        return getattr(logging, lvl.strip().upper())
+    else:
+        raise TypeError("Cannot resolve log level from reference '{}' of type {}".format(lvl, type(lvl)))

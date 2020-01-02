@@ -22,16 +22,17 @@ from noronha.common.annotations import Configured
 from noronha.common.conf import LazyConf
 from noronha.common.constants import Config, Perspective
 from noronha.common.errors import ResolutionError, NhaStorageError
-from noronha.common.logging import LOG
+from noronha.common.logging import Logged
 
 
-class Warehouse(ABC, Configured):
+class Warehouse(ABC, Configured, Logged):
     
     conf = LazyConf(namespace=Config.Namespace.WAREHOUSE)
     compass_cls: Type[WarehouseCompass] = WarehouseCompass
     
-    def __init__(self, section: str):
+    def __init__(self, section: str, log=None):
         
+        Logged.__init__(self, log=log)
         self.section = section
         self.compass: (ArtifCompass, NexusCompass) = self.compass_cls()
         self.repo = self.compass.get_repo()
@@ -89,17 +90,17 @@ class ArtifWarehouse(Warehouse):
     compass_cls = ArtifCompass
     
     def get_client(self):
-
+        
         return ArtifactoryPath(
             os.path.join(self.compass.address, 'artifactory', self.repo),
             auth=(self.compass.user, self.compass.pswd),
             verify=self.compass.check_certificate
         )
-
+    
     def assert_repo_exists(self):
-
+    
         assert self.client.exists(), NhaStorageError("""The {} repository does not exist""".format(self.repo))
-
+    
     def format_artif_path(self, path):
         
         return self.client.joinpath(self.section, path)
@@ -149,7 +150,7 @@ class ArtifWarehouse(Warehouse):
             message = "Delete from Artifactory failed. Check if the path exists: {}".format(uri)
             
             if ignore:
-                LOG.warn(message)
+                self.LOG.warn(message)
                 return False
             else:
                 raise NhaStorageError(message) from e
@@ -247,7 +248,7 @@ class NexusWarehouse(Warehouse):
             message = "Delete from Nexus failed. Check if the path exists: {}".format(uri)
             
             if ignore:
-                LOG.warn(message)
+                self.LOG.warn(message)
                 return False
             else:
                 raise NhaStorageError(message)
