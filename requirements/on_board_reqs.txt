@@ -5,7 +5,7 @@
 scikit-learn
 pyvalid==0.9.2
 kaptan
-mongoengine
+mongoengine==0.18.2
 artifactory
 nexus3-cli==1.0.2
 random_name
