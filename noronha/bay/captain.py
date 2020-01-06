@@ -8,10 +8,12 @@ from conu import DockerBackend, K8sBackend
 from conu.backend.docker.container import DockerContainer
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.pod import Pod
+from conu.exceptions import ConuException
 from datetime import datetime
 from docker.errors import APIError as DockerAPIError
 from docker.types import ServiceMode, TaskTemplate, ContainerSpec, Resources, Healthcheck
 from kaptan import Kaptan
+from kubernetes.client.rest import  ApiException as K8sApiException
 from kubernetes.stream import stream
 import random_name
 from subprocess import Popen, PIPE
@@ -669,14 +671,19 @@ class KubeCaptain(Captain):
             self.k8s_backend.core_api.list_namespaced_pod(namespace=self.namespace).items
         ]
     
+    @patient
     def _find_sth(self, what, name, method, **kwargs):
         
-        return super()._find_sth(
-            what=what,
-            name=name,
-            method=lambda: method(self.namespace).items,
-            key=lambda i: i.metadata.name == name
-        )
+        try:
+            return super()._find_sth(
+                what=what,
+                name=name,
+                method=lambda: method(self.namespace).items,
+                key=lambda i: i.metadata.name == name
+            )
+        except (ConuException, K8sApiException) as e:
+            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, what, name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def find_vol(self, cargo: Cargo):
         
@@ -734,13 +741,18 @@ class KubeCaptain(Captain):
         except (KeyboardInterrupt, InterruptedError):
             self.interrupted = True
     
+    @patient
     def wait_for_pod(self, pod: Pod):
         
         for _ in range(self.timeout):
-            if pod.get_status().conditions is not None and pod.is_ready():
-                return
-            else:
-                time.sleep(1)
+            try:
+                if pod.get_status().conditions is not None and pod.is_ready():
+                    return
+                else:
+                    time.sleep(1)
+            except (ConuException, K8sApiException) as e:
+                msg = "Waiting up to {} seconds for pod '{}' to start".format(self.timeout, pod.name)
+                raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
         else:
             raise NhaDockerError("Timed out waiting for pod '{}'".format(pod.name))
     
