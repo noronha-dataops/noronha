@@ -30,7 +30,7 @@ class TaskDoc(SimpleDoc):
     
     def clean(self):
         
-        if self.progress == 1:
+        if self.progress == 1 and self.state not in Task.State.END_STATES:
             self.state = Task.State.FINISHED
         elif self.state == Task.State.FINISHED:
             self.progress = 1.0
