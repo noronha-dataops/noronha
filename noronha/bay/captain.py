@@ -8,6 +8,7 @@ from conu import DockerBackend, K8sBackend
 from conu.backend.docker.container import DockerContainer
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.pod import Pod
+from conu.backend.k8s.pod import PodPhase
 from conu.exceptions import ConuException
 from datetime import datetime
 from docker.errors import APIError as DockerAPIError
@@ -693,14 +694,19 @@ class KubeCaptain(Captain):
             name=cargo.name
         )
     
+    @patient
     def find_pod(self, name):
         
-        return super()._find_sth(
-            what='pods',
-            method=self.k8s_backend.list_pods,
-            name=name,
-            namespace=self.namespace
-        )
+        try:
+            return super()._find_sth(
+                what='pods',
+                method=self.k8s_backend.list_pods,
+                name=name,
+                namespace=self.namespace
+            )
+        except (ConuException, K8sApiException) as e:
+            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, what, name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def find_depl(self, name):
         
@@ -744,26 +750,28 @@ class KubeCaptain(Captain):
     @patient
     def wait_for_pod(self, pod: Pod):
         
-        for _ in range(self.timeout):
-            try:
-                if pod.get_status().conditions is not None and pod.is_ready():
-                    return
-                else:
-                    time.sleep(1)
-            except (ConuException, K8sApiException) as e:
-                msg = "Waiting up to {} seconds for pod '{}' to start".format(self.timeout, pod.name)
-                raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
-        else:
-            raise NhaDockerError("Timed out waiting for pod '{}'".format(pod.name))
+        try:
+            if pod.get_phase() == PodPhase.RUNNING:
+                return
+            else:
+                raise NhaDockerError("Timed out waiting for pod '{}'".format(pod.name))
+        except (ConuException, K8sApiException, NhaDockerError) as e:
+            msg = "Waiting up to {} seconds for pod '{}' to start".format(self.timeout, pod.name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
+    @patient
     def assert_namespace(self):
         
-        assert super()._find_sth(
-            what='namespaces',
-            name=self.namespace,
-            method=lambda: self.k8s_backend.core_api.list_namespace().items,
-            key=lambda i: i.metadata.name == self.namespace
-        ) is not None, ConfigurationError("Namespace '{}' does not exist".format(self.namespace))
+        try:
+            assert super()._find_sth(
+                what='namespaces',
+                name=self.namespace,
+                method=lambda: self.k8s_backend.core_api.list_namespace().items,
+                key=lambda i: i.metadata.name == self.namespace
+            ) is not None, ConfigurationError("Namespace '{}' does not exist".format(self.namespace))
+        except (ConuException, K8sApiException) as e:
+            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, what, name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def assert_vol(self, cargo: Cargo):
         
