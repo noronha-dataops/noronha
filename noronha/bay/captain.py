@@ -751,7 +751,7 @@ class KubeCaptain(Captain):
     def wait_for_pod(self, pod: Pod):
         
         try:
-            if pod.get_phase() == PodPhase.RUNNING:
+            if pod.get_phase() == PodPhase.RUNNING and pod.is_ready():
                 return
             else:
                 raise NhaDockerError("Timed out waiting for pod '{}'".format(pod.name))
