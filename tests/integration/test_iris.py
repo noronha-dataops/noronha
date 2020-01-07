@@ -106,7 +106,7 @@ out = check_output([
         deploy='homolog',
         data=[1, 2, 3, 4]
     )),
-    'http://127.0.0.1:30080'
+    'http://127.0.0.1:30082'
 ]).decode('UTF-8')
 
 # validation
