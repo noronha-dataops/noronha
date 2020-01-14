@@ -74,12 +74,12 @@ def _list(_filter, expand, **kwargs):
     '--notebook', '--nb', 'notebook',
     help="Relative path, inside the project's directory structure, to the notebook that will be executed"
 )
-@click.option('--params', '-p', help="JSON with parameters to be injected in the notebook")
+@click.option('--params', help="JSON with parameters to be injected in the notebook")
 @click.option('--tag', '-t', default='latest',
               help="""Each deployment task runs on top of a Docker image that belongs to the project. """
                    """You may specify the image's Docker tag or let it default to "latest\"""")
 @click.option('--n-tasks', '-n', default=1, help="Number of tasks (containers) for deployment replication (default: 1)")
-@click.option('--port', '-p', help="Host port to be routed to each container's inference service")
+@click.option('--port', help="Host port to be routed to each container's inference service")
 @click.option('--env-var', '-e', 'env_vars', multiple=True, help="Environment variable in the form KEY=VALUE")
 @click.option('--mount', '-m', 'mounts', multiple=True,
               help="""A host path or docker volume to mount on each deployment container.\n"""
