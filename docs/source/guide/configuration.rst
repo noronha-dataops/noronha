@@ -167,6 +167,17 @@ Another interesting strategy is to specify default resource profiles according t
         memory: 4096
         cpu: 4
 
+- **healthcheck:** A mapping that describes how the container manager is going to probe each container's liveness and readiness in a deployment. The values in the following example are the default ones:
+
+.. parsed-literal::
+
+    healthcheck:
+      enabled: false  # whether to apply healthchecks or not
+      start_period: 60  # seconds before healthchecks start
+      interval: 30  # seconds between each healtchcheck
+      timeout: 3  # seconds for the container to respond to a healthcheck
+      retries: 3  # number of consecutive healthcheck failures for a container to be force-restarted
+
 The following parameters are only used if the chosen container manager is Kubernetes:
 
 - **namespace:** An existing Kubernetes namespace in which Noronha will create its resources (default: default).
