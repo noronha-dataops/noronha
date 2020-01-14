@@ -84,6 +84,8 @@ The following properties are found under the key *project* and they refer to how
 
 - **working_project:** this tells the framework which project you are working on right now. This is important because many features such as training or deploying models can only be performed inside the scope of a project. However, before looking into this property the framework checks two other alternatives: was a project name provided as argument to the function? Is the current working directory a local repository for a project?
 
+.. _log-configuration:
+
 Logger
 ======
 The following properties are found under the key *logger* and they refer to how Noronha logs messages.

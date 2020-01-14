@@ -19,13 +19,22 @@ Note that the Conda environment in which you :ref:`installed <installation-intro
 needs to be activated so that this entrypoint is accessible. Besides, we assume these
 commands are executed from the :ref:`host machine <orchestration-concepts>`.
 
-The entrypoint also accepts flags for customizing a command's output::
+The entrypoint also accepts the following flags and options for customizing a command's output::
 
-    -q, --quiet         Suppress all messages
-    -v, --verbose       Show standard messages
-    -d, --debug         Show standard messages plus detailed logs for debugging purposes
-    -p, --pretty        Less compact, better readable output
-    -s, --skip          Skip questions
+    -l, --log-level TEXT  Level of log verbosity (DEBUG, INFO, WARN, ERROR)
+    -d, --debug           Set log level to DEBUG
+    -p, --pretty          Less compact, more readable output
+    -s, --skip-questions  Skip questions
+    -b, --background      Run in background, only log to files
+
+Usage example for skipping questions in background and keeping only pretty warning messages in the log files:
+
+.. parsed-literal::
+
+    nha --background --skip-questions --log-level WARN --pretty proj list
+    nha -b -s -l WARN -p proj list  # same command, shorter version with aliases
+
+The default directory for log files is **~/.nha/logs**. For further log configuration options see the :ref:`log configuration section <log-configuration>`.
 
 There's also a special command for *newbies*, that's accesible directly from the entrypoint::
 
