@@ -17,7 +17,7 @@ from noronha.common.constants import Package
 
 
 TEST_CASE = 'iris'
-DELAY = 15  # seconds
+DELAY = 20  # seconds
 
 # setup
 copytree(os.path.join(Package.EXAMPLES, TEST_CASE), TEST_CASE)
