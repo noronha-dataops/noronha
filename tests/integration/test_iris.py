@@ -17,7 +17,8 @@ from noronha.common.constants import Package
 
 
 TEST_CASE = 'iris'
-DELAY = 15  # seconds
+DELAY = 20  # seconds
+ATTEMPTS = 3
 
 # setup
 copytree(os.path.join(Package.EXAMPLES, TEST_CASE), TEST_CASE)
@@ -96,24 +97,34 @@ depl_api.new(
     tasks=1
 )
 
-time.sleep(DELAY)
 
 # test your api (call through model router)
-out = check_output([
-    'curl', '-X', 'POST', '-H', 'Content-Type: application/JSON',
-    '--data', json.dumps(dict(
-        project='botanics',
-        deploy='homolog',
-        data=[1, 2, 3, 4]
-    )),
-    'http://127.0.0.1:30082'
-]).decode('UTF-8')
+def call_router():
+    return check_output([
+        'curl', '-X', 'POST', '-H', 'Content-Type: application/JSON',
+        '--data', json.dumps(dict(
+            project='botanics',
+            deploy='homolog',
+            data=[1, 2, 3, 4]
+        )),
+        'http://127.0.0.1:30082'
+    ]).decode('UTF-8')
+
 
 # validation
-try:
-    assert json.loads(out).get('result') == 'setosa'
-except Exception as e:
-    raise ValueError("Unexpected request response: {}".format(out)) from e
+out, error = None, None
+
+for _ in range(ATTEMPTS):
+    try:
+        time.sleep(DELAY)
+        out = call_router()
+        assert json.loads(out).get('result') == 'setosa'
+    except Exception as e:
+        error = e
+    else:
+        break
+else:
+    raise ValueError("Unexpected request response: {}".format(out)) from error
 
 # resizing to 2 tasks
 depl_api.new(

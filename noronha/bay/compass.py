@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.bay.utils import am_i_on_board, is_it_open_sea
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
 from noronha.common.utils import resolve_log_level
@@ -355,7 +355,8 @@ class LoggerCompass(Compass):
         return dict(
             filename=self.path_to_log_file,
             maxBytes=self.max_bytes,
-            backupCount=self.bkp_count
+            backupCount=self.bkp_count,
+            encoding=Encoding.UTF_8
         )
 
 
