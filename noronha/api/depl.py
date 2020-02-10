@@ -81,7 +81,7 @@ class DeploymentAPI(NoronhaAPI):
             depl,
             port,
             tag,
-            resource_profile=kwargs.get('resource_profile'),
+            resource_profile=kwargs.pop('resource_profile', None),
             log=self.LOG
         ).launch(**kwargs)
         

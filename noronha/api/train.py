@@ -87,7 +87,7 @@ class TrainingAPI(NoronhaAPI):
             tag=tag,
             datasets=datasets,
             movers=movers,
-            resource_profile=kwargs.get('resource_profile'),
+            resource_profile=kwargs.pop('resource_profile', None),
             log=self.LOG
         ).launch(**kwargs)
         
