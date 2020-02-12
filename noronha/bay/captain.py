@@ -812,7 +812,7 @@ class KubeCaptain(Captain):
             metadata={'name': name},
             spec=dict(
                 selector={'app': name},
-                type='NodePort',
+                type='LoadBalancer',
                 ports=port_defs
             )
         )
