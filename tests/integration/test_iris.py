@@ -17,7 +17,7 @@ from noronha.common.constants import Package
 
 
 TEST_CASE = 'iris'
-DELAY = 20  # seconds
+DELAY = 60  # seconds
 ATTEMPTS = 3
 
 # setup
