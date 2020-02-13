@@ -12,7 +12,7 @@ from mongoengine.fields import StringField, ListField, ReferenceField
 
 from noronha.common.annotations import projected
 from noronha.common.constants import DBConst, OnBoard, Flag
-from noronha.common.errors import NhaAPIError
+from noronha.common.errors import NhaAPIError, ResolutionError
 from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.model import Model
 
@@ -37,6 +37,17 @@ class Project(SmartDoc):
     git_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
     docker_repo = StringField(max_length=DBConst.MAX_REPO_LEN)
     models = ListField(ReferenceField(Model, reverse_delete_rule=DENY))
+    
+    @property
+    def model(self):
+        
+        if len(self.models) == 1:
+            return self.models[0]
+        else:
+            raise ResolutionError(
+                "Could not resolve model inside project {}. Options are: {}"
+                .format(self.name, [m.name for m in self.models])
+            )
 
 
 class Projected(object):

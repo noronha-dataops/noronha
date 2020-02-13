@@ -2,10 +2,13 @@
 
 import os
 
+from noronha.bay.barrel import DatasetBarrel, MoversBarrel
+from noronha.bay.cargo import MetaCargo
 from noronha.common.constants import EnvVar, OnBoard, Paths, DockerConst
 from noronha.common.errors import ResolutionError
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion
+from noronha.db.proj import Project
 
 
 def get_purpose():
@@ -74,28 +77,14 @@ def data_path(file_name: str = '', model: str = None, dataset: str = None):
     return os.path.join(path, file_name)
 
 
-def model_path(file_name: str = '', model: str = None, version: str = None, pretrain=False):
-    
-    """Shortcut for addressing the models directory"""
-    
-    path = _resolve_path(
-        doc_cls=ModelVersion,
-        dyr=OnBoard.LOCAL_PRET_MODEL_DIR if pretrain else OnBoard.LOCAL_DEPL_MODEL_DIR,
-        model=model,
-        obj_name=version,
-        is_dir=True
-    )
-    
-    return os.path.join(path, file_name)
-
-
-def depl_mdl_path(file_name: str = '', version: str = None, model: str = None):
+def model_path(file_name: str = '', model: str = None, version: str = None):
     
     """Shortcut for addressing the deployed model directory
     
-    When Noronha starts a container for deployment or IDE usage, all model versions that may be used for prediction
-    are mounted and organized inside a volume. Those are called *deployed model versions*. This function provides a
-    standard way of resolving the path to the directory or files of one of this model versions.
+    When Noronha starts a container for deployment or IDE usage,
+    all required model versions are mounted and organized inside a volume.
+    This function provides a standard way of resolving the path to the directory
+    or files that compose one of this model versions.
     
     :param file_name: Name of the file to be addressed.
            If not specified, then the path to the directory will be returned.
@@ -110,31 +99,15 @@ def depl_mdl_path(file_name: str = '', version: str = None, model: str = None):
            or the given reference matched zero ore multiple model versions.
     """
     
-    return model_path(file_name, model, version, pretrain=False)
-
-
-def pret_mdl_path(file_name: str = '', version: str = None, model: str = None):
+    path = _resolve_path(
+        doc_cls=ModelVersion,
+        dyr=OnBoard.LOCAL_MODEL_DIR,
+        model=model,
+        obj_name=version,
+        is_dir=True
+    )
     
-    """Shortcut for addressing the deployed model directory
-    
-    When Noronha starts a container for training or IDE usage, all model versions that may be used as pre-trained assets
-    are mounted and organized inside a volume. Those are called *pre-trained model versions*. This function provides a
-    standard way of resolving the path to the directory or files of one of this model versions.
-    
-    :param file_name: Name of the file to be addressed.
-           If not specified, then the path to the directory will be returned.
-    :param model: Name of the model to which the version belongs.
-           If you haven't mounted versions of different models, this parameter may be left out.
-    :param version: Name of the version.
-           If you haven't mounted multiple model versions, this parameter may be left out.
-    
-    :returns: A string containing the requested path.
-    
-    :raise ResolutionError: If the requested model version is not present,
-           or the given reference matched zero ore multiple model versions.
-    """
-    
-    return model_path(file_name, model, version, pretrain=True)
+    return os.path.join(path, file_name)
 
 
 def _resolve_metadata(doc_cls, ignore: bool = False, **kwargs):
@@ -204,4 +177,36 @@ def movers_meta(model: str = None, version: str = None, ignore: bool = False):
         model=model,
         obj_name=version,
         ignore=ignore
+    )
+
+
+def _require_asset(doc_cls, barrel_cls, obj_name: str, tgt_path: str, model: str = None):
+    
+    model = model or Project.load().model
+    doc: [Dataset, ModelVersion] = doc_cls.find_one(name=obj_name, model=model)
+    dyr = os.path.join(tgt_path, doc.get_dir_name())
+    os.makedirs(dyr, exist_ok=True)
+    barrel_cls(doc).deploy(dyr)
+    MetaCargo(docs=[doc], section=get_purpose()).deploy()
+
+
+def require_dataset(name: str, model: str = None):
+    
+    _require_asset(
+        doc_cls=Dataset,
+        barrel_cls=DatasetBarrel,
+        obj_name=name,
+        tgt_path=OnBoard.LOCAL_DATA_DIR,
+        model=model
+    )
+
+
+def require_movers(version: str, model: str = None):
+    
+    _require_asset(
+        doc_cls=ModelVersion,
+        barrel_cls=MoversBarrel,
+        obj_name=version,
+        tgt_path=OnBoard.LOCAL_MODEL_DIR,
+        model=model
     )

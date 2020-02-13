@@ -416,8 +416,7 @@ disposable environment that is much like the environment your code is going to f
                           Syntax: <model_name>:<dataset_name>
                           Example: iris-clf:iris-data-v0
     --movers, --mv        Reference to a model version to be mounted on the IDE's container.
-                          Any flag in the third position means that this model is going to be used as a pre-trained asset.
-                          Syntax: <model_name>:<version_name>:<is_pretrained>
+                          Syntax: <model_name>:<version_name>
                           Example: word2vec:en-us-v1:true
     --resource-profile    Name of a resource profile to be applied for each container.
                           This profile should be configured in your nha.yaml file

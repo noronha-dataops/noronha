@@ -26,7 +26,7 @@ from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured, Patient, patient
 from noronha.common.conf import CaptainConf
-from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex
+from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst
 from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
 from noronha.common.logging import Logged
 from noronha.common.utils import dict_to_kv_list, assert_str, StructCleaner
@@ -117,7 +117,13 @@ class SwarmCaptain(Captain):
     def __init__(self, section: str, **kwargs):
         
         super().__init__(section, **kwargs)
-        self.LOG.warn("Using Docker Swarm as container manager. This is not recommended for distributed environments")
+        
+        if self.LOG.name != LoggerConst.DEFAULT_NAME:
+            self.LOG.warn(
+                "Using Docker Swarm as container manager."
+                "This is not recommended for distributed environments"
+            )
+        
         self.docker_api = self.docker_compass.get_api()
         self.docker_backend = DockerBackend(logging_level=logging.ERROR)
     

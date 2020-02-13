@@ -55,12 +55,12 @@ class TrainingAPI(NoronhaAPI):
         params=(dict, None)
     )
     def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = None, params: dict = None,
-            details: dict = None, datasets: list = None, pretrained: list = None, _replace: bool = None,
+            details: dict = None, datasets: list = None, movers: list = None, _replace: bool = None,
             **kwargs):
         
         self.set_logger(name)
         bv = BuildVersion.find_one_or_none(tag=tag, proj=self.proj)
-        movers = [ModelVersion.parse_ref(mv) for mv in pretrained or []]
+        movers = [ModelVersion.find_by_pk(mv).to_embedded() for mv in movers or []]
         datasets = [Dataset.find_by_pk(ds) for ds in datasets or []]
         
         if name is None:
@@ -70,7 +70,6 @@ class TrainingAPI(NoronhaAPI):
                 name = all_names.pop()
         
         for mv in movers:
-            mv.use_as_pretrained = True
             self.LOG.info("Pre-trained model '{}' will be available in this training".format(mv.show()))
         
         train: Training = super().new(

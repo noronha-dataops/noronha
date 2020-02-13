@@ -41,8 +41,7 @@ from noronha.common.utils import kv_list_to_dict
 @click.option(
     '--movers', '--mv', 'movers',  multiple=True, help=
     """Reference to a model version to be mounted on the IDE's container. """
-    """Any flag in the third position means that this model is going to be used as a pre-trained asset. """
-    """Syntax: <model_name>:<version_name>:<is_pretrained>. Example: word2vec:en-us-v1:true"""
+    """Syntax: <model_name>:<version_name>. Example: word2vec:en-us-v1"""
 )
 @click.option(
     '--resource-profile', '--rp', 'resource_profile', help=

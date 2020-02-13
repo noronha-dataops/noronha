@@ -10,9 +10,7 @@ Reference for functions inside the `shortcuts module <https://gitlab.eva.bot/ass
 
 .. autofunction:: noronha.tools.shortcuts.data_path
 
-.. autofunction:: noronha.tools.shortcuts.depl_mdl_path
-
-.. autofunction:: noronha.tools.shortcuts.pret_mdl_path
+.. autofunction:: noronha.tools.shortcuts.model_path
 
 .. autofunction:: noronha.tools.shortcuts.dataset_meta
 

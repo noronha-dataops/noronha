@@ -295,22 +295,10 @@ class DatasetCargo(HeavyCargo):
 
 class MoversCargo(HeavyCargo):
     
-    def __init__(self, mv: ModelVersion, section: str, pretrained=False, local=False, **kwargs):
+    def __init__(self, mv: ModelVersion, section: str, local=False, **kwargs):
         
-        pretrained = pretrained or (mv.use_as_pretrained is True)
         subdir = mv.get_dir_name()
-        
-        dyr = {
-            'local': {
-                'pretrain': OnBoard.LOCAL_PRET_MODEL_DIR,
-                'deployed': OnBoard.LOCAL_DEPL_MODEL_DIR
-            },  # deploy files to the container's local file system instead of using the nfs mounted path
-            'shared': {
-                'pretrain': OnBoard.SHARED_PRET_MODEL_DIR,
-                'deployed': OnBoard.SHARED_DEPL_MODEL_DIR
-            }
-        }.get('local' if local else 'shared').get('pretrain' if pretrained else 'deployed')
-        
+        dyr = OnBoard.LOCAL_MODEL_DIR if local else OnBoard.SHARED_MODEL_DIR
         super().__init__(
             alias='movers-{}'.format(mv.get_pk()),
             mount_to=os.path.join(dyr, subdir),

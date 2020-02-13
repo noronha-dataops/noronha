@@ -46,7 +46,6 @@ class ModelVersion(SmartDoc):
     def __init__(self, *args, **kwargs):
         
         super().__init__(*args, **kwargs)
-        self.use_as_pretrained = False
     
     name = StringField(required=True, max_length=DBConst.MAX_NAME_LEN)
     model = ReferenceField(Model, required=True, reverse_delete_rule=CASCADE)
@@ -56,23 +55,9 @@ class ModelVersion(SmartDoc):
     details = DictField(default={})
     pretrained = EmbeddedDocumentField(EmbeddedModelVersion, default=None)
     
-    @classmethod
-    def parse_ref(cls, ref: str):
-        
-        parts = (ref + ':').split(':')
-        pk = ':'.join(parts[:2])
-        flag = bool(parts[2])
-        mv = cls.find_by_pk(pk)
-        
-        if flag:
-            mv.use_as_pretrained = True
-        
-        return mv
-    
     def to_embedded(self):
         
         emb: EmbeddedModelVersion = super().to_embedded()
-        emb.use_as_pretrained = self.use_as_pretrained
         
         if isinstance(self.pretrained, EmbeddedModelVersion):
             emb.pretrained = self.pretrained.show()

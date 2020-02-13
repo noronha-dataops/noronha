@@ -88,7 +88,7 @@ def _list(_filter, expand, **kwargs):
     """Syntax: <model_name>:<dataset_name>. Example: iris-clf:iris-data-v0"""
 )
 @click.option(
-    '--pretrained',  multiple=True, help=
+    '--pretrained', 'movers',  multiple=True, help=
     """Reference to a model version that will be used as a pre-trained model during this training. """
     """Syntax: <model_name>:<version_name>. Example: word2vec:en-us-v1"""
 )
