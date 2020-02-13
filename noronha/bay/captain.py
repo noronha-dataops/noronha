@@ -41,13 +41,13 @@ class Captain(ABC, Configured, Patient, Logged):
         
         Logged.__init__(self, log=kwargs.get('log'))
         self.docker_compass = DockerCompass()
-        self.captain_compass = self.compass_cls()
+        self.compass = self.compass_cls()
         self.section = section
         self.interrupted = False
         self.cleaner = StructCleaner()
-        self.healthcheck = self.captain_compass.healthcheck
-        self.resources = self.captain_compass.get_resource_profile(resource_profile or section)
-        Patient.__init__(self, timeout=self.captain_compass.api_timeout)
+        self.healthcheck = self.compass.healthcheck
+        self.resources = self.compass.get_resource_profile(resource_profile or section)
+        Patient.__init__(self, timeout=self.compass.api_timeout)
     
     @abstractmethod
     def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
@@ -487,10 +487,10 @@ class KubeCaptain(Captain):
         
         super().__init__(section, **kwargs)
         self.secret = self.docker_compass.secret
-        self.namespace = self.captain_compass.get_namespace()
+        self.namespace = self.compass.get_namespace()
         self.k8s_backend = K8sBackend(logging_level=logging.ERROR)
-        self.nfs = self.captain_compass.get_nfs_server()
-        self.stg_cls = self.captain_compass.get_stg_cls(section)
+        self.nfs = self.compass.get_nfs_server()
+        self.stg_cls = self.compass.get_stg_cls(section)
         self.mule = None
         self.assert_namespace()
     
@@ -1062,7 +1062,7 @@ class KubeCaptain(Captain):
             return None
 
 
-def get_captain(section: str, **kwargs):
+def get_captain(section: str = DockerConst.Section.IDE, **kwargs):
     
     manager_ref = CaptainCompass().tipe
     cls_lookup = {

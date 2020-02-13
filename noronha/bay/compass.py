@@ -209,7 +209,7 @@ class CaptainCompass(Compass):
         pass
     
     @abstractmethod
-    def get_node_address(self) -> str:
+    def get_node(self) -> str:
         
         pass
 
@@ -230,7 +230,7 @@ class SwarmCompass(CaptainCompass):
         
         raise NotImplementedError("Container manager 'swarm' does not take a storage class")
     
-    def get_node_address(self):
+    def get_node(self):
         
         raise NotImplementedError("In container manager 'swarm' services are mapped to localhost")
 
@@ -267,7 +267,7 @@ class KubeCompass(CaptainCompass):
         
         return nfs
     
-    def get_node_address(self):
+    def get_node(self):
         
         from conu import K8sBackend  # lazy import
         
@@ -437,7 +437,7 @@ class IslandCompass(ABC, TreasureCompass):
                 if self.on_board:
                     return self.service_name
                 else:
-                    return self.captain.get_node_address()
+                    return self.captain.get_node()
             else:
                 raise NotImplementedError("Unrecognized container manager: {}".format(self.captain.tipe))
         else:

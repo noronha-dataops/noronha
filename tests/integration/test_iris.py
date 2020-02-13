@@ -13,6 +13,7 @@ from noronha.api.movers import ModelVersionAPI
 from noronha.api.train import TrainingAPI
 from noronha.api.depl import DeploymentAPI
 from noronha.api.bvers import BuildVersionAPI
+from noronha.bay.captain import get_captain
 from noronha.common.constants import Package
 
 
@@ -97,6 +98,8 @@ depl_api.new(
     tasks=1
 )
 
+node_ip = get_captain().compass.get_node()
+
 
 # test your api (call through model router)
 def call_router():
@@ -107,7 +110,7 @@ def call_router():
             deploy='homolog',
             data=[1, 2, 3, 4]
         )),
-        'http://127.0.0.1:30082'
+        'http://{}:30082'.format(node_ip)
     ]).decode('UTF-8')
 
 
