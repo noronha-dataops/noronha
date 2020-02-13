@@ -232,7 +232,7 @@ class SwarmCompass(CaptainCompass):
     
     def get_node(self):
         
-        raise NotImplementedError("In container manager 'swarm' services are mapped to localhost")
+        return socket.gethostname()
 
 
 class KubeCompass(CaptainCompass):
