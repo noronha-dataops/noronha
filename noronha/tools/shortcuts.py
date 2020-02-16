@@ -192,6 +192,16 @@ def _require_asset(doc_cls, barrel_cls, obj_name: str, tgt_path: str, model: str
 
 def require_dataset(name: str, model: str = None):
     
+    """short description
+
+    long description
+
+    :param name: etc
+    :param model: etc
+    
+    :raise ResolutionError: etc
+    """
+    
     _require_asset(
         doc_cls=Dataset,
         barrel_cls=DatasetBarrel,
@@ -202,6 +212,16 @@ def require_dataset(name: str, model: str = None):
 
 
 def require_movers(version: str, model: str = None):
+    
+    """short description
+    
+    long description
+    
+    :param version: etc
+    :param model: etc
+    
+    :raise ResolutionError: etc
+    """
     
     _require_asset(
         doc_cls=ModelVersion,

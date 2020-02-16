@@ -16,6 +16,10 @@ Reference for functions inside the `shortcuts module <https://gitlab.eva.bot/ass
 
 .. autofunction:: noronha.tools.shortcuts.movers_meta
 
+.. autofunction:: noronha.tools.shortcuts.require_dataset
+
+.. autofunction:: noronha.tools.shortcuts.require_movers
+
 Publish
 =======
 Reference for the model publisher, which can be found in the `publish module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/publish.py>`_.
