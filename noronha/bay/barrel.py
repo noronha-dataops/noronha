@@ -37,10 +37,10 @@ class Barrel(ABC, Logged):
     section: str = None
     subject = None
     
-    def __init__(self, schema: List[FileSpec] = None, compress_to: str = None, log=None):
+    def __init__(self, schema: List[FileSpec] = None, compress_to: str = None, log=None, lightweight=False):
         
         Logged.__init__(self, log=log)
-        self.warehouse = get_warehouse(section=self.section, log=log)
+        self.warehouse = get_warehouse(section=self.section, log=log, lightweight=lightweight)
         self.compressed = None if not compress_to else '{}.tar.gz'.format(compress_to)
         
         if schema is None:
@@ -99,7 +99,7 @@ class Barrel(ABC, Logged):
             self.LOG.warn("Deploying {} without a strict definition of files".format(self.subject))
             schema = [
                 FileSpec(name=name) for name in
-                self.warehouse.list_dir(self.make_file_path())
+                self.warehouse.lyst(self.make_file_path())
             ]
             self._print_files(schema)
         else:
@@ -293,6 +293,7 @@ class DatasetBarrel(Barrel):
         super().__init__(
             schema=ds.model.data_files,
             compress_to=None if not ds.compressed else ds.name,
+            lightweight=ds.check_if_lightweight(),
             **kwargs
         )
     
@@ -313,6 +314,7 @@ class MoversBarrel(Barrel):
         super().__init__(
             schema=mv.model.model_files,
             compress_to=None if not mv.compressed else mv.name,
+            lightweight=mv.check_if_lightweight(),
             **kwargs
         )
     

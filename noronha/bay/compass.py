@@ -542,7 +542,22 @@ class MongoCompass(IslandCompass):
 
 class WarehouseCompass(IslandCompass):
     
-    conf = WarehouseConf
+    KEY_TIPE = 'type'
+    
+    @property
+    def tipe(self):
+        
+        return self.conf[self.KEY_TIPE]
+    
+    @abstractmethod
+    def get_store(self):
+        
+        pass
+
+
+class FSWarehouseCompass(WarehouseCompass):
+    
+    conf = FS_WarehouseConf
     file_manager_type = None
     
     KEY_REPO = 'repository'
@@ -555,7 +570,12 @@ class WarehouseCompass(IslandCompass):
         assert self.conf.get('type') == self.file_manager_type,\
             ResolutionError("Current file manager type is '{}'".format(self.conf.get('type')))
     
-    def get_repo(self):
+    def get_store(self):
+        
+        return self.repo
+    
+    @property
+    def repo(self):
         
         return self.conf.get(self.KEY_REPO, self.DEFAULT_REPO)
     
@@ -569,7 +589,7 @@ class WarehouseCompass(IslandCompass):
         )
 
 
-class NexusCompass(WarehouseCompass):
+class NexusCompass(FSWarehouseCompass):
     
     alias = 'nexus'
     file_manager_type = WarehouseConst.Types.NEXUS
@@ -578,7 +598,7 @@ class NexusCompass(WarehouseCompass):
     DEFAULT_USER = 'admin'
 
 
-class ArtifCompass(WarehouseCompass):
+class ArtifCompass(FSWarehouseCompass):
     
     alias = 'artif'
     file_manager_type = WarehouseConst.Types.ARTIF
@@ -587,7 +607,48 @@ class ArtifCompass(WarehouseCompass):
     DEFAULT_REPO = 'example-repo-local'
     DEFAULT_USER = 'admin'
     DEFAULT_PSWD = 'password'
-     
+
+
+class LWWarehouseCompass(WarehouseCompass):
+    
+    conf = LW_WarehouseConf
+    
+    KEY_ENABLED = 'enabled'
+    DEFAULT_ENABLED = False
+    KEY_KEYSPACE = 'keyspace'
+    DEFAULT_KEYSPACE = 'noronha'
+    KEY_HOST = 'hosts'
+    KEY_REPLICATION = 'replication_factor'
+    DEFAULT_REPLICATION = 1
+    
+    def get_store(self):
+        
+        return self.keyspace
+    
     @property
-    def auth(self):
-        return self.user, self.pswd
+    def enabled(self):
+        
+        return self.conf.get(self.KEY_ENABLED, self.DEFAULT_ENABLED)
+    
+    @property
+    def keyspace(self):
+        
+        return self.conf.get(self.KEY_KEYSPACE, self.DEFAULT_KEYSPACE)
+    
+    @property
+    def hosts(self):
+        
+        return [super().host]
+
+    @property
+    def replication(self):
+
+        if self.native:
+            return 1
+        else:
+            return self.conf.get(self.KEY_REPLICATION, self.DEFAULT_REPLICATION)
+
+
+class CassWarehouseCompass(LWWarehouseCompass):
+    
+    alias = 'cass'

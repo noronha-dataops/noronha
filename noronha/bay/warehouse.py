@@ -11,73 +11,94 @@ Objects handled:
 import os
 from abc import ABC, abstractmethod
 from artifactory import ArtifactoryPath
+from cassandra.cluster import Cluster
+from cassandra.cqlengine.management import create_keyspace_simple
 from nexuscli import nexus_client
-from typing import Type
+from typing import Type, List
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 
-from noronha.bay.compass import WarehouseCompass, ArtifCompass, NexusCompass
+from noronha.bay.compass import FSWarehouseCompass, ArtifCompass, NexusCompass, LWWarehouseCompass, CassWarehouseCompass,\
+                                WarehouseCompass
 from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured
 from noronha.common.conf import LazyConf
-from noronha.common.constants import Config, Perspective
-from noronha.common.errors import ResolutionError, NhaStorageError
+from noronha.common.constants import Config, Perspective, Flag
+from noronha.common.errors import ResolutionError, NhaStorageError, MisusageError
 from noronha.common.logging import Logged
 
 
 class Warehouse(ABC, Configured, Logged):
     
-    conf = LazyConf(namespace=Config.Namespace.WAREHOUSE)
-    compass_cls: Type[WarehouseCompass] = WarehouseCompass
-    
+    compass_cls = WarehouseCompass
+
     def __init__(self, section: str, log=None):
         
         Logged.__init__(self, log=log)
         self.section = section
-        self.compass: (ArtifCompass, NexusCompass) = self.compass_cls()
-        self.repo = self.compass.get_repo()
-        
-        if not self.compass.check_certificate:
-            disable_warnings(InsecureRequestWarning)
-        
+        self.compass = self.compass_cls()
         self.client = self.get_client()
-        self.assert_repo_exists()
     
     @abstractmethod
     def get_client(self):
         
         pass
-    
-    @abstractmethod
-    def assert_repo_exists(self):
-        
-        pass
-    
+
     @abstractmethod
     def upload(self, path_to, path_from=None, content=None):
         
         pass
-    
+
     @abstractmethod
     def download(self, path_from, path_to):
         
         pass
-    
+
     @abstractmethod
     def delete(self, path_to_file, ignore=False):
         
         pass
-    
+
     @abstractmethod
     def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
         pass
     
     @abstractmethod
-    def list_dir(self, path):
+    def lyst(self, path):
         
         pass
 
+
+class FileStoreWarehouse(Warehouse, ABC):
+    
+    conf = LazyConf(namespace=Config.Namespace.FS_WAREHOUSE)
+    compass_cls = FSWarehouseCompass
+    
+    def __init__(self, **kwargs):
+        
+        super().__init__(**kwargs)
+        self.compass: FSWarehouseCompass = self.compass 
+        
+        if not self.compass.check_certificate:
+            disable_warnings(InsecureRequestWarning)
+        
+        self.assert_repo_exists()
+    
+    @property
+    def repo(self):
+        
+        return self.compass.get_store()
+    
+    @property
+    def address(self):
+        
+        return self.compass.address
+    
+    @abstractmethod
+    def assert_repo_exists(self):
+        pass
+    
     def make_local_file(self, basename, content):
         work = Workpath.get_tmp()
         work.deploy_text_file(name=basename, content=content)
@@ -85,14 +106,14 @@ class Warehouse(ABC, Configured, Logged):
         return path_from
 
 
-class ArtifWarehouse(Warehouse):
+class ArtifWarehouse(FileStoreWarehouse):
     
     compass_cls = ArtifCompass
     
     def get_client(self):
         
         return ArtifactoryPath(
-            os.path.join(self.compass.address, 'artifactory', self.repo),
+            os.path.join(self.address, 'artifactory', self.repo),
             auth=(self.compass.user, self.compass.pswd),
             verify=self.compass.check_certificate
         )
@@ -177,19 +198,19 @@ class ArtifWarehouse(Warehouse):
 
         return ' && '.join([curl, move])
     
-    def list_dir(self, path):
+    def lyst(self, path):
 
         path = self.format_artif_path(path)
         return [x.name for x in path.iterdir() if not x.is_dir()]
 
 
-class NexusWarehouse(Warehouse):
+class NexusWarehouse(FileStoreWarehouse):
     
     compass_cls = NexusCompass
-
+    
     def format_nexus_path(self, path):
         return os.path.join(
-            self.compass.address,
+            self.address,
             'repository',
             self.repo,
             self.section,
@@ -199,7 +220,7 @@ class NexusWarehouse(Warehouse):
     def get_client(self):
         
         return nexus_client.NexusClient(
-            url=self.compass.address,
+            url=self.address,
             user=self.compass.user,
             password=self.compass.pswd,
             verify=self.compass.check_certificate
@@ -277,23 +298,157 @@ class NexusWarehouse(Warehouse):
         
         return ' && '.join([curl, move])
     
-    def list_dir(self, path):
+    def lyst(self, path):
         
         path = self.format_nexus_path(path)
         return self.client.list(path)  # TODO: format list items in order to get only the file names
 
 
-def get_warehouse(**kwargs):
+class LWWarehouse(Warehouse, ABC):
     
-    cls_lookup = {'artif': ArtifWarehouse, 'nexus': NexusWarehouse}
-    warehouse_ref = Warehouse.conf.get('type')
+    conf = LazyConf(namespace=Config.Namespace.LW_WAREHOUSE)
+    compass_cls = LWWarehouseCompass
+    
+    NO_KEYSP_EXC: Type[Exception] = None
+    NO_TABLE_EXC: Type[Exception] = None
+
+    def __init__(self, file_schema: List[str], **kwargs):
+        
+        super().__init__(**kwargs)
+        self.compass: LWWarehouseCompass = self.compass
+        self.file_schema = sorted(file_schema)
+    
+    @property
+    def keyspace(self):
+        
+        return self.compass.get_store()
+    
+    @abstractmethod
+    def create_keyspace(self):
+        
+        pass
+    
+    @abstractmethod
+    def create_table(self):
+        
+        pass
+
+    def _keysp_depending_wrapper(self, func):
+
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except self.NO_KEYSP_EXC:
+                self.create_keyspace()
+            return func(*args, **kwargs)
+
+        return wrapper
+    
+    def _table_depending_wrapper(self, func):
+        
+        def wrapper(*args, **kwargs):            
+            try:
+                return func(*args, **kwargs)
+            except self.NO_TABLE_EXC:
+                self.create_table()
+            return func(*args, **kwargs)
+        
+        return wrapper
+    
+    def __getattribute__(self, attr_name):
+        
+        attr = super().__getattribute__(attr_name)
+        
+        if getattr(attr, Flag.KEYSP_DEP, False):
+            return self._keysp_depending_wrapper(attr)
+        elif getattr(attr, Flag.TABLE_DEP, False):
+            return self._table_depending_wrapper(attr)
+        else:
+            return attr
+
+    def lyst(self, path):
+        
+        raise MisusageError(
+            "Lightweight store does not support models/datasets without a strict file schema definition")
+
+
+def keysp_dependent(func):
+    
+    setattr(func, Flag.KEYSP_DEP, True)
+    return func
+
+
+def table_dependent(func):
+    
+    setattr(func, Flag.TABLE_DEP, True)
+    return func
+
+
+class CassWarehouse(LWWarehouse):
+    
+    compass_cls = CassWarehouseCompass
+    
+    NO_KEYSP_EXC = Exception  # TODO
+    NO_TABLE_EXC = Exception  # TODO
+    
+    @keysp_dependent
+    def get_client(self):
+        
+        self.client = Cluster(
+            contact_points=self.compass.hosts,
+            port=self.compass.port
+        ).connect(self.compass.keyspace)
+    
+    def create_keyspace(self):
+        
+        create_keyspace_simple(
+            name=self.keyspace,
+            replication_factor=self.compass.replication
+        )
+    
+    def create_table(self):
+        
+        pass  # TODO
+    
+    @table_dependent
+    def upload(self, path_to, path_from=None, content=None):
+        
+        pass  # TODO
+    
+    @table_dependent
+    def download(self, path_from, path_to):
+        
+        pass  # TODO
+
+    @table_dependent
+    def delete(self, path_to_file, ignore=False):
+        
+        pass  # TODO
+
+    @table_dependent
+    def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
+        
+        pass
+        # TODO: is this even possible in cassandra? think about some workaround
+        # maybe skip get_deployables and use standard deploy in this case (check and handle inside SharedCargo)
+
+
+def get_warehouse(lightweight=False, **kwargs) -> Warehouse:
+    
+    wh_compass = LWWarehouseCompass if lightweight else FSWarehouseCompass
+    wh_type = wh_compass().tipe.strip().lower()
+    
+    cls_lookup = {
+        'std': {'artif': ArtifWarehouse, 'nexus': NexusWarehouse},
+        'lw': {'cass': CassWarehouse}
+    }.get('lw' if lightweight else 'std')
     
     try:
-        warehouse_cls: Type[ArtifWarehouse, NexusWarehouse] = cls_lookup[warehouse_ref.strip().lower()]
-    except (KeyError, AttributeError):
+        warehouse_cls = cls_lookup[wh_type]
+    except KeyError:
         raise ResolutionError(
-            "Could not resolve file manager by reference '{}'. Options are: {}"
-            .format(warehouse_ref, list(cls_lookup.keys()))
+            "Could not resolve {}file manager by reference '{}'. Options are: {}"
+            .format('lightweight ' if lightweight else '', wh_type, list(cls_lookup.keys()))
         )
     else:
         return warehouse_cls(**kwargs)

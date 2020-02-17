@@ -22,10 +22,15 @@ router:
   native: true
   port: 30080
 
-file_manager:
+file_store:
   native: true
   port: 30023
   type: artif
+
+lightweight_store:
+  enabled: false
+  native: true
+  type: cass
 
 docker:
   daemon_address: unix:/var/run/docker.sock

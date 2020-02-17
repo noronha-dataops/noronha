@@ -73,6 +73,8 @@ class Flag(object):
     VALIDATION = 'this_method_is_an_argument_validation'
     READY = 'the_lazy_class_must_be_ready_before_using_this_method'
     PATIENT = 'this_method_retries_until_timeout_is_exceeded'
+    KEYSP_DEP = 'this_method_depends_on_the_existence_of_a_keyspace'
+    TABLE_DEP = 'this_method_depends_on_the_existence_of_a_table'
 
 
 class DBConst(object):
@@ -83,6 +85,7 @@ class DBConst(object):
     MAX_DESC_LEN = 512
     MAX_REPO_LEN = 512
     MAX_EXPAND_DEPTH = 4
+    MAX_MB_LW_FILE = 10  # max megabytes for a model or dataset file to be considered lightweight
 
 
 class IslandConst(object):
@@ -236,7 +239,8 @@ class Config(object):
         MONGO = 'mongo'
         PROJECT = 'project'
         ROUTER = 'router'
-        WAREHOUSE = 'file_manager'
+        FS_WAREHOUSE = 'file_store'
+        LW_WAREHOUSE = 'lightweight_store'
         ONLINE = 'predict.online'
 
 
