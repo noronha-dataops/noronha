@@ -125,6 +125,7 @@ class Barrel(ABC, Logged):
                     work.deploy_text_file(name=file_spec.name, content=file_content)
                     to_compress.append(file_spec)
                 else:
+                    # TODO: keep a list of "to_store", then call _store_files with the path and list
                     self._store_file(file_spec.name, content=file_content)
             
             if self.compressed:
@@ -150,6 +151,7 @@ class Barrel(ABC, Logged):
             elif self.compressed:
                 to_compress.append(file_spec)
             else:
+                # TODO: keep a list of "to_store", then call _store_files with the path and list
                 self._store_file(file_spec.name, path_from=file_path)
         
         if self.compressed:
@@ -174,7 +176,8 @@ class Barrel(ABC, Logged):
                 shutil.move(file_path, os.path.join(path_to, file_spec.name))
     
     def _store_file(self, file_name, **kwargs):
-        
+
+        # TODO: change to _store_files, move to warehouse, iterate and use abstract hierarchy
         self.LOG.info("Uploading file: {}".format(file_name))
         self.warehouse.upload(
             path_to=self.make_file_path(file_name),
@@ -200,6 +203,7 @@ class Barrel(ABC, Logged):
                     file_path = os.path.join(path, file_spec.alias)
                     f.add(file_path, arcname=file_spec.name)
             
+            # TODO: use wh._store_files instead and pass [self.compressed]
             self._store_file(self.compressed, path_from=target)
         finally:
             work.dispose()
@@ -225,11 +229,12 @@ class Barrel(ABC, Logged):
     def deploy(self, path_to):
         
         if self.compressed:
-            download_schema = [FileSpec(name=self.compressed)]
+            file_schema = [FileSpec(name=self.compressed)]
         else:
-            download_schema = self.infer_schema_from_repo()
+            file_schema = self.infer_schema_from_repo()
         
-        for file_spec in download_schema:
+        # TODO: move this loop to warehouse. pass abstract hierachy (obj_type, obj_id)
+        for file_spec in file_schema:
             try:
                 self.LOG.info('Downloading file: {}'.format(file_spec.name))
                 self.warehouse.download(
@@ -248,9 +253,9 @@ class Barrel(ABC, Logged):
     def get_deployables(self, path_to, on_board_perspective=True):
         
         if self.compressed:
-            download_schema = [FileSpec(name=self.compressed)]
+            file_schema = [FileSpec(name=self.compressed)]
         else:
-            download_schema = self.infer_schema_from_repo()
+            file_schema = self.infer_schema_from_repo()
         
         cmds = [
             self.warehouse.get_download_cmd(
@@ -258,12 +263,12 @@ class Barrel(ABC, Logged):
                 path_to=os.path.join(path_to, file_spec.name),
                 on_board_perspective=on_board_perspective
             )
-            for file_spec in download_schema
+            for file_spec in file_schema
         ]
         
         msgs = [
             'Injecting file: {}'.format(file_spec.name)
-            for file_spec in download_schema
+            for file_spec in file_schema
         ]
         
         if self.compressed:

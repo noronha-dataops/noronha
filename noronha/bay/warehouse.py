@@ -371,6 +371,12 @@ class LWWarehouse(Warehouse, ABC):
         
         raise MisusageError(
             "Lightweight store does not support models/datasets without a strict file schema definition")
+    
+    def parse_insert_path(self, path_to: str):
+        
+        parts = path_to.split('/')
+        parts[0] = '_'.format(self.section, parts[0])
+        return dict(zip(['table', 'key', 'field'], parts))
 
 
 def keysp_dependent(func):
@@ -419,7 +425,7 @@ class CassWarehouse(LWWarehouse):
     @table_dependent
     def download(self, path_from, path_to):
         
-        pass  # TODO
+        pass
 
     @table_dependent
     def delete(self, path_to_file, ignore=False):
