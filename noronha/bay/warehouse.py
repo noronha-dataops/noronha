@@ -24,7 +24,7 @@ from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured
 from noronha.common.conf import LazyConf
 from noronha.common.constants import Config, Perspective, Flag
-from noronha.common.errors import ResolutionError, NhaStorageError, MisusageError
+from noronha.common.errors import ResolutionError, NhaStorageError, MisusageError, ConfigurationError
 from noronha.common.logging import Logged
 
 
@@ -316,6 +316,7 @@ class LWWarehouse(Warehouse, ABC):
         
         super().__init__(**kwargs)
         self.compass: LWWarehouseCompass = self.compass
+        assert self.compass.enabled, ConfigurationError("Lightweight store is disabled")
         self.file_schema = sorted(file_schema)
     
     @property
@@ -332,7 +333,7 @@ class LWWarehouse(Warehouse, ABC):
     def create_table(self):
         
         pass
-
+    
     def _keysp_depending_wrapper(self, func):
 
         def wrapper(*args, **kwargs):

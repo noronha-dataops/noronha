@@ -95,7 +95,7 @@ class BarrelContent(Content):
 class Cargo(object):
     
     def __init__(self, mount_to: str, mode: str, contents: List[Content] = None, require_mb: int = 10,
-                 section: str = None, alias: str = None, name: str = None):
+                 section: str = None, alias: str = None, name: str = None, lightweight=False):
         
         if name is None:
             assert section in DockerConst.Section.ALL
@@ -107,6 +107,7 @@ class Cargo(object):
         self.mode = mode
         self.contents = contents
         self.require_mb = require_mb
+        self.lightweight = lightweight
     
     @property
     def mount(self):
@@ -289,7 +290,8 @@ class DatasetCargo(HeavyCargo):
             mount_to=os.path.join(dyr, subdir),
             mode='ro',
             barrel=DatasetBarrel(ds, **kwargs),
-            section=section
+            section=section,
+            lightweight=ds.lightweight
         )
 
 
@@ -304,7 +306,8 @@ class MoversCargo(HeavyCargo):
             mount_to=os.path.join(dyr, subdir),
             mode='rw',
             barrel=MoversBarrel(mv, **kwargs),
-            section=section
+            section=section,
+            lightweight=mv.lightweight
         )
 
 
@@ -322,6 +325,7 @@ class SharedCargo(Cargo):
         
         self.subdirs = []
         self.types = []
+        self.lw_flags = []
         len_prefix = len(self.mount_to) + 1
         
         for cargo in cargos:
@@ -329,6 +333,7 @@ class SharedCargo(Cargo):
             self.subdirs += [subdir]*len(cargo.contents)
             self.contents += cargo.contents
             self.types += [type(cargo)]*len(cargo.contents)
+            self.lw_flags += [cargo.lightweight]*len(cargo.contents)
         
         self.estimate_mb = sum([c.estimate_mb for c in self.contents])
     
@@ -336,9 +341,9 @@ class SharedCargo(Cargo):
         
         path = path or self.mount_to
         
-        for subdir, content, tipe in zip(self.subdirs, self.contents, self.types):
+        for subdir, content, tipe, lightweight in zip(self.subdirs, self.contents, self.types, self.lw_flags):
             
-            if issubclass(tipe, HeavyCargo) and not include_heavy_cargos:
+            if issubclass(tipe, HeavyCargo) and not include_heavy_cargos and not lightweight:
                 continue
             
             subpath = os.path.join(path, subdir)

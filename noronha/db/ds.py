@@ -22,6 +22,7 @@ class EmbeddedDataset(SmartEmbeddedDoc):
     stored = BooleanField(default=True)
     compressed = BooleanField(default=False)
     details = DictField(default={})
+    lightweight = BooleanField(default=False)
 
 
 class Dataset(SmartDoc, ProtoDataset):
@@ -35,19 +36,4 @@ class Dataset(SmartDoc, ProtoDataset):
     stored = BooleanField(default=True)
     compressed = BooleanField(default=False)
     details = DictField(default={})
-    
-    @property
-    def has_strict_file_schema(self):
-        
-        return len(self.model.data_files) > 0
-    
-    def check_if_lightweight(self):
-        
-        if not self.has_strict_file_schema:
-            return False
-        
-        for fyle in self.model.data_files:
-            if fyle.max_mb > DBConst.MAX_MB_LW_FILE:
-                return False
-        else:
-            return True
+    lightweight = BooleanField(default=False)

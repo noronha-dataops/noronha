@@ -293,7 +293,7 @@ class DatasetBarrel(Barrel):
         super().__init__(
             schema=ds.model.data_files,
             compress_to=None if not ds.compressed else ds.name,
-            lightweight=ds.check_if_lightweight(),
+            lightweight=ds.lightweight,
             **kwargs
         )
     
@@ -314,7 +314,7 @@ class MoversBarrel(Barrel):
         super().__init__(
             schema=mv.model.model_files,
             compress_to=None if not mv.compressed else mv.name,
-            lightweight=mv.check_if_lightweight(),
+            lightweight=mv.lightweight,
             **kwargs
         )
     

@@ -68,13 +68,18 @@ class DatasetAPI(NoronhaAPI):
     
     @validate(name=valid.dns_safe_or_none, files=(dict, None), details=(dict, None))
     def new(self, name: str = None, model: str = None, path: str = None, files: dict = None, skip_upload=False,
-            **kwargs):
+            lightweight=False, **kwargs):
         
         model = Model.find_one(name=model)
+        
+        if lightweight:
+            model.assert_datasets_can_be_lightweight()
+        
         barrel = None
         ds = super().new(
             name=name,
             model=model,
+            lightweight=lightweight,
             **kwargs,
             _duplicate_filter=dict(name=name, model=model)
         )

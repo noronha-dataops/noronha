@@ -69,12 +69,15 @@ class ModelVersionAPI(NoronhaAPI):
     
     @validate(name=valid.dns_safe_or_none, details=(dict, None))
     def new(self, name: str = None, model: str = None, train: str = None, ds: str = None, path: str = None,
-            pretrained: str = None, skip_upload=False, **kwargs):
+            pretrained: str = None, skip_upload=False, lightweight=False, **kwargs):
         
         if path is None:
             raise NhaAPIError("Cannot publish model version if path to model files is not provided")
         
         model = Model.find_one(name=model)
+        
+        if lightweight:
+            model.assert_movers_can_be_lightweight()
         
         if ds is not None:
             kwargs['ds'] = Dataset.find_one(name=ds, model=model).to_embedded()
@@ -92,6 +95,7 @@ class ModelVersionAPI(NoronhaAPI):
         mv: ModelVersion = super().new(
             name=name,
             model=model,
+            lightweight=lightweight,
             **kwargs,
             _duplicate_filter=dict(name=name, model=model)
         )

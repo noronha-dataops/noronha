@@ -109,7 +109,8 @@ class Publisher(object):
     def __call__(self, src_path: str = Paths.TMP, details: dict = None,
                  version_name: str = None, model_name: str = None,
                  uses_dataset: bool = True, dataset_name: str = None,
-                 uses_pretrained: bool = False, pretrained_with: str = None):
+                 uses_pretrained: bool = False, pretrained_with: str = None,
+                 lightweight: bool = False):
         
         model_name = self._infer_parent_model(model_name)
         
@@ -121,6 +122,7 @@ class Publisher(object):
             path=src_path,
             details=details or {},
             pretrained=self._infer_pretrained(uses_pretrained, pretrained_with),
+            lightweight=lightweight,
             _replace=True
         )
         

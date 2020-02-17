@@ -35,6 +35,7 @@ class EmbeddedModelVersion(SmartEmbeddedDoc):
     compressed = BooleanField(default=False)
     details = DictField(default={})
     pretrained = StringField(default=None)
+    lightweight = BooleanField(default=False)
 
 
 class ModelVersion(SmartDoc):
@@ -54,6 +55,7 @@ class ModelVersion(SmartDoc):
     compressed = BooleanField(default=False)
     details = DictField(default={})
     pretrained = EmbeddedDocumentField(EmbeddedModelVersion, default=None)
+    lightweight = BooleanField(default=False)
     
     def to_embedded(self):
         
@@ -63,19 +65,3 @@ class ModelVersion(SmartDoc):
             emb.pretrained = self.pretrained.show()
         
         return emb
-
-    @property
-    def has_strict_file_schema(self):
-        
-        return len(self.model.model_files) > 0
-    
-    def check_if_lightweight(self):
-        
-        if not self.has_strict_file_schema:
-            return False
-        
-        for fyle in self.model.model_files:
-            if fyle.max_mb > DBConst.MAX_MB_LW_FILE:
-                return False
-        else:
-            return True
