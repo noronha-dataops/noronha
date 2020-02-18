@@ -4,8 +4,78 @@ import os
 import pathlib
 import random_name
 from shutil import rmtree
+from collections import namedtuple
 
 from noronha.common.constants import Paths, EnvVar
+from noronha.db.utils import FileDoc
+
+
+class StoreHierarchy(object):
+    
+    _NAMED_TUPLE = namedtuple('StoreHierarchy', ['parent', 'child'])
+    
+    def __init__(self, parent: str, child: str):
+        
+        self.hierarchy = self._NAMED_TUPLE(parent, child)
+    
+    @property
+    def parent(self):
+        
+        return self.hierarchy.parent
+    
+    @property
+    def child(self):
+        
+        return self.hierarchy.child
+    
+    def join_as_path(self, file_name: str = ''):
+        
+        return os.path.join(self.parent, self.child, file_name)
+    
+    def join_as_table_name(self, section: str):
+        
+        return '_'.join([section, self.parent])
+
+
+class FileSpec(FileDoc):
+
+    def __init__(self, alias: str = None, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        self.alias = alias or self.name
+        self.path_from = None
+        self.content = None
+    
+    @classmethod
+    def from_doc(cls, doc: FileDoc):
+        
+        return cls(alias=doc.name, **doc.as_dict())
+    
+    def set_path(self, path: str):
+        
+        self.path_from = os.path.join(path, self.alias)
+    
+    @property
+    def kwargs(self):
+        
+        return dict(
+            path_from=self.path_from,
+            content=self.content
+        )
+    
+    def get_name_as_table_field(self, include_type=False):
+        
+        return '"{}"{}'.format(
+            self.name,
+            ' BLOB' if include_type else ''
+        )
+    
+    def get_bytes(self):
+
+        if self.content is None:
+            return open(self.path_from, 'rb').read()
+        else:
+            return bytes(self.content)
 
 
 def am_i_on_board():

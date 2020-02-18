@@ -20,7 +20,7 @@ from urllib3.exceptions import InsecureRequestWarning
 
 from noronha.bay.compass import FSWarehouseCompass, ArtifCompass, NexusCompass, LWWarehouseCompass, CassWarehouseCompass,\
                                 WarehouseCompass
-from noronha.bay.utils import Workpath
+from noronha.bay.utils import Workpath, FileSpec, StoreHierarchy
 from noronha.common.annotations import Configured
 from noronha.common.conf import LazyConf
 from noronha.common.constants import Config, Perspective, Flag
@@ -45,17 +45,7 @@ class Warehouse(ABC, Configured, Logged):
         pass
 
     @abstractmethod
-    def upload(self, path_to, path_from=None, content=None):
-        
-        pass
-
-    @abstractmethod
-    def download(self, path_from, path_to):
-        
-        pass
-
-    @abstractmethod
-    def delete(self, path_to_file, ignore=False):
+    def delete(self, hierarchy: StoreHierarchy, ignore=False):
         
         pass
 
@@ -66,6 +56,16 @@ class Warehouse(ABC, Configured, Logged):
     
     @abstractmethod
     def lyst(self, path):
+        
+        pass
+    
+    @abstractmethod
+    def store_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec]):
+        
+        pass
+    
+    @abstractmethod
+    def deploy_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], path_to: str):
         
         pass
 
@@ -97,6 +97,17 @@ class FileStoreWarehouse(Warehouse, ABC):
     
     @abstractmethod
     def assert_repo_exists(self):
+        
+        pass
+
+    @abstractmethod
+    def upload(self, path_to, path_from=None, content=None):
+
+        pass
+    
+    @abstractmethod
+    def download(self, path_from, path_to):
+
         pass
     
     def make_local_file(self, basename, content):
@@ -104,6 +115,28 @@ class FileStoreWarehouse(Warehouse, ABC):
         work.deploy_text_file(name=basename, content=content)
         path_from = work.join(basename)
         return path_from
+
+    def store_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec]):
+        
+        for file_spec in file_schema:
+            self.LOG.info("Uploading file: {}".format(file_spec.name))
+            path_to = hierarchy.join_as_path(file_spec.name)
+            self.upload(path_to, **file_spec.kwargs)
+
+    def deploy_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], path_to: str):
+        
+        for file_spec in file_schema:
+            try:
+                self.LOG.info('Downloading file: {}'.format(file_spec.name))
+                self.download(
+                    path_from=hierarchy.join_as_path(file_spec.name),
+                    path_to=os.path.join(path_to, file_spec.name)
+                )
+            except NhaStorageError as e:
+                if file_spec.required:
+                    raise e
+                else:
+                    self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
 
 
 class ArtifWarehouse(FileStoreWarehouse):
@@ -156,8 +189,9 @@ class ArtifWarehouse(FileStoreWarehouse):
         except Exception as e:
             raise NhaStorageError("Download failed. Check if the remote artifact exists in the repository") from e
 
-    def delete(self, path, ignore=False):
+    def delete(self, hierarchy: StoreHierarchy, ignore=False):
         
+        path = hierarchy.join_as_path()
         uri = self.format_artif_path(path)
         
         try:
@@ -260,9 +294,10 @@ class NexusWarehouse(FileStoreWarehouse):
         except Exception as e:
             raise NhaStorageError("Download failed. Check if the remote artifact exists in the repository") from e
     
-    def delete(self, path_to_file, ignore=False):
+    def delete(self, hierarchy: StoreHierarchy, ignore=False):
         
-        uri = os.path.join(self.repo, self.section, path_to_file)  # TODO use format_nexus_path function
+        path = hierarchy.join_as_path()
+        uri = os.path.join(self.repo, self.section, path)  # TODO use format_nexus_path function
         del_count = self.client.delete(uri)
         
         if del_count == 0:
@@ -330,7 +365,7 @@ class LWWarehouse(Warehouse, ABC):
         pass
     
     @abstractmethod
-    def create_table(self):
+    def create_table(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], *_, **__):
         
         pass
     
@@ -347,11 +382,11 @@ class LWWarehouse(Warehouse, ABC):
     
     def _table_depending_wrapper(self, func):
         
-        def wrapper(*args, **kwargs):            
+        def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
             except self.NO_TABLE_EXC:
-                self.create_table()
+                self.create_table(**kwargs)
             return func(*args, **kwargs)
         
         return wrapper
@@ -370,13 +405,14 @@ class LWWarehouse(Warehouse, ABC):
     def lyst(self, path):
         
         raise MisusageError(
-            "Lightweight store does not support models/datasets without a strict file schema definition")
-    
-    def parse_insert_path(self, path_to: str):
+            "Lightweight store does not support models/datasets without a strict file schema definition"
+        )
+
+    def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
         
-        parts = path_to.split('/')
-        parts[0] = '_'.format(self.section, parts[0])
-        return dict(zip(['table', 'key', 'field'], parts))
+        raise MisusageError(
+            "Lightweight store does not support indirect deployment of models/datasets"
+        )
 
 
 def keysp_dependent(func):
@@ -413,31 +449,88 @@ class CassWarehouse(LWWarehouse):
             replication_factor=self.compass.replication
         )
     
-    def create_table(self):
+    def create_table(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], *_, **__):
         
-        pass  # TODO
+        fields = sorted([
+            fyle.get_name_as_table_field(include_type=True)
+            for fyle in file_schema
+        ])
+        
+        stmt = """
+            CREATE TABLE {keysp}.{table} (
+                id VARCHAR,
+                {fields},
+                primary_key((id))   
+            )
+        """.format(
+            keysp=self.keyspace,
+            table=hierarchy.join_as_table_name(self.section),
+            fields=', '.join(fields)
+        )  # TODO: review cql syntax
+        
+        self.client.execute(stmt)
     
-    @table_dependent
-    def upload(self, path_to, path_from=None, content=None):
+    def delete(self, hierarchy: StoreHierarchy, ignore=False):
         
-        pass  # TODO
-    
-    @table_dependent
-    def download(self, path_from, path_to):
+        stmt = "DELETE FROM {keysp}.{table} WHERE id='{_id}'".format(
+            keysp=self.keyspace,
+            table=hierarchy.join_as_table_name(self.section),
+            _id=hierarchy.child
+        )  # TODO: review cql syntax
         
-        pass
+        self.client.execute(stmt)
 
     @table_dependent
-    def delete(self, path_to_file, ignore=False):
+    def store_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec]):
         
-        pass  # TODO
+        fields = []
+        values = []
+        
+        for file_spec in file_schema:
+            fields.append(file_spec.get_name_as_table_field())
+            values.append(memoryview(file_spec.get_bytes()))
 
-    @table_dependent
-    def get_download_cmd(self, path_from, path_to, on_board_perspective=True):
+        self.LOG.info("Storing as blobs: {}".format(fields))
         
-        pass
-        # TODO: is this even possible in cassandra? think about some workaround
-        # maybe skip get_deployables and use standard deploy in this case (check and handle inside SharedCargo)
+        stmt = """
+            INSERT INTO TABLE {keysp}.{table}
+            FIELDS (id, {fields})
+            VALUES ('{_id}', {values})"
+        """.format(
+            keysp=self.keyspace,
+            table=hierarchy.join_as_table_name(self.section),
+            _id=hierarchy.child,
+            fields=', '.join(fields),
+            values=['%s']*len(fields)
+        )  # TODO: review cql syntax
+        
+        self.client.execute(stmt, values)
+    
+    @table_dependent
+    def deploy_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], path_to: str):
+        
+        stmt = """
+            SELECT * FROM {keysp}.{table}
+            WHERE id='{_id}'
+        """.format(
+            keysp=self.keyspace,
+            table=hierarchy.join_as_table_name(self.section),
+            _id=hierarchy.child
+        )  # TODO: review cql syntax
+        
+        row = self.client.execute(stmt).one()
+        
+        for file_spec in file_schema:
+            self.LOG.info('Deploying file: {}'.format(file_spec.name))
+            bites = row.get(file_spec.name)
+            
+            if bites:
+                write_path = os.path.join(path_to, file_spec.name)
+                open(write_path, 'wb').write(bites)
+            elif file_spec.required:
+                raise NhaStorageError("Missing required file: {}".format(file_spec.name))
+            else:
+                self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
 
 
 def get_warehouse(lightweight=False, **kwargs) -> Warehouse:

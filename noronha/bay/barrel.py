@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from noronha.bay.warehouse import get_warehouse
-from noronha.bay.utils import Workpath
+from noronha.bay.utils import Workpath, FileSpec, StoreHierarchy
 from noronha.common.constants import WarehouseConst, Extension
 from noronha.common.errors import NhaStorageError
 from noronha.common.logging import Logged
@@ -16,20 +16,6 @@ from noronha.common.utils import cape_list
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion
 from noronha.db.proj import Project
-from noronha.db.utils import FileDoc
-
-
-class FileSpec(FileDoc):
-    
-    def __init__(self, alias: str = None, *args, **kwargs):
-        
-        super().__init__(*args, **kwargs)
-        self.alias = alias or self.name
-    
-    @classmethod
-    def from_doc(cls, doc: FileDoc):
-        
-        return cls(alias=doc.name, **doc.as_dict())
 
 
 class Barrel(ABC, Logged):
@@ -99,7 +85,7 @@ class Barrel(ABC, Logged):
             self.LOG.warn("Deploying {} without a strict definition of files".format(self.subject))
             schema = [
                 FileSpec(name=name) for name in
-                self.warehouse.lyst(self.make_file_path())
+                self.warehouse.lyst(self.make_hierarchy())
             ]
             self._print_files(schema)
         else:
@@ -110,6 +96,7 @@ class Barrel(ABC, Logged):
     def store_from_dict(self, dyct: dict = None):
         
         to_compress = []
+        to_store = []
         work = None if not self.compressed else Workpath.get_tmp()
         
         try:
@@ -125,11 +112,16 @@ class Barrel(ABC, Logged):
                     work.deploy_text_file(name=file_spec.name, content=file_content)
                     to_compress.append(file_spec)
                 else:
-                    # TODO: keep a list of "to_store", then call _store_files with the path and list
-                    self._store_file(file_spec.name, content=file_content)
+                    file_spec.content = file_content
+                    to_store.append(file_spec)
             
             if self.compressed:
                 self._compress_and_store(work, to_compress=to_compress)
+            else:
+                self.warehouse.store_files(
+                    hierarchy=self.make_hierarchy(),
+                    file_schema=to_store
+                )
         finally:
             if work is not None:
                 work.dispose()
@@ -138,6 +130,7 @@ class Barrel(ABC, Logged):
         
         path, schema = self.infer_schema_from_path(path)
         to_compress = []
+        to_store = []
         
         for file_spec in schema:
             file_path = os.path.join(path, file_spec.alias)
@@ -151,11 +144,16 @@ class Barrel(ABC, Logged):
             elif self.compressed:
                 to_compress.append(file_spec)
             else:
-                # TODO: keep a list of "to_store", then call _store_files with the path and list
-                self._store_file(file_spec.name, path_from=file_path)
+                file_spec.set_path(path)
+                to_store.append(file_spec)
         
         if self.compressed:
             self._compress_and_store(path, to_compress=to_compress)
+        else:
+            self.warehouse.store_files(
+                hierarchy=self.make_hierarchy(),
+                file_schema=to_store
+            )
     
     def move(self, path_from, path_to):
         
@@ -175,19 +173,10 @@ class Barrel(ABC, Logged):
             else:
                 shutil.move(file_path, os.path.join(path_to, file_spec.name))
     
-    def _store_file(self, file_name, **kwargs):
-
-        # TODO: change to _store_files, move to warehouse, iterate and use abstract hierarchy
-        self.LOG.info("Uploading file: {}".format(file_name))
-        self.warehouse.upload(
-            path_to=self.make_file_path(file_name),
-            **kwargs
-        )
-    
     def purge(self, ignore=False):
         
         return self.warehouse.delete(
-            self.make_file_path(),
+            self.make_hierarchy(),
             ignore=ignore
         )
     
@@ -203,8 +192,10 @@ class Barrel(ABC, Logged):
                     file_path = os.path.join(path, file_spec.alias)
                     f.add(file_path, arcname=file_spec.name)
             
-            # TODO: use wh._store_files instead and pass [self.compressed]
-            self._store_file(self.compressed, path_from=target)
+            self.warehouse.store_files(
+                hierarchy=self.make_hierarchy(),
+                file_schema=[FileSpec(name=self.compressed)]
+            )
         finally:
             work.dispose()
     
@@ -233,19 +224,11 @@ class Barrel(ABC, Logged):
         else:
             file_schema = self.infer_schema_from_repo()
         
-        # TODO: move this loop to warehouse. pass abstract hierachy (obj_type, obj_id)
-        for file_spec in file_schema:
-            try:
-                self.LOG.info('Downloading file: {}'.format(file_spec.name))
-                self.warehouse.download(
-                    path_from=self.make_file_path(file_spec.name),
-                    path_to=os.path.join(path_to, file_spec.name)
-                )
-            except NhaStorageError as e:
-                if file_spec.required:
-                    raise e
-                else:
-                    self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
+        self.warehouse.deploy_files(
+            hierarchy=self.make_hierarchy(),
+            file_schema=file_schema,
+            path_to=path_to
+        )
         
         self._decompress(path_to)
         self._verify_schema(path_to)
@@ -257,9 +240,11 @@ class Barrel(ABC, Logged):
         else:
             file_schema = self.infer_schema_from_repo()
         
+        hierarchy = self.make_hierarchy()
+        
         cmds = [
             self.warehouse.get_download_cmd(
-                path_from=self.make_file_path(file_spec.name),
+                path_from=hierarchy.join_as_path(file_spec.name),
                 path_to=os.path.join(path_to, file_spec.name),
                 on_board_perspective=on_board_perspective
             )
@@ -281,7 +266,7 @@ class Barrel(ABC, Logged):
         return zip(msgs, cmds)
     
     @abstractmethod
-    def make_file_path(self, file_name: str = None):
+    def make_hierarchy(self) -> StoreHierarchy:
         
         pass
 
@@ -302,9 +287,12 @@ class DatasetBarrel(Barrel):
             **kwargs
         )
     
-    def make_file_path(self, file_name: str = None):
+    def make_hierarchy(self) -> StoreHierarchy:
         
-        return '{}/{}/{}'.format(self.model_name, self.ds_name, file_name or '')
+        return StoreHierarchy(
+            parent=self.model_name,
+            child=self.ds_name
+        )
 
 
 class MoversBarrel(Barrel):
@@ -323,9 +311,12 @@ class MoversBarrel(Barrel):
             **kwargs
         )
     
-    def make_file_path(self, file_name: str = None):
+    def make_hierarchy(self) -> StoreHierarchy:
         
-        return '{}/{}/{}'.format(self.model_name, self.mv_name, file_name or '')
+        return StoreHierarchy(
+            parent=self.model_name,
+            child=self.mv_name
+        )
 
 
 class NotebookBarrel(Barrel):
@@ -343,6 +334,9 @@ class NotebookBarrel(Barrel):
             ]
         )
     
-    def make_file_path(self, file_name: str = None):
+    def make_hierarchy(self) -> StoreHierarchy:
         
-        return '{}/{}/{}'.format(self.proj_name, self.notebook, file_name or '')
+        return StoreHierarchy(
+            parent=self.proj_name,
+            child=self.notebook
+        )
