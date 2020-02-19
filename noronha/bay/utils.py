@@ -6,7 +6,7 @@ import random_name
 from shutil import rmtree
 from collections import namedtuple
 
-from noronha.common.constants import Paths, EnvVar, Encoding
+from noronha.common.constants import Paths, Encoding, Regex
 from noronha.db.utils import FileDoc
 
 
@@ -34,7 +34,10 @@ class StoreHierarchy(object):
     
     def join_as_table_name(self, section: str):
         
-        return '_'.join([section, self.parent])
+        return '_'.join([
+            section,
+            Regex.DNS_SPECIAL.sub('_', self.parent)
+        ])
 
 
 class FileSpec(FileDoc):
@@ -78,16 +81,6 @@ class FileSpec(FileDoc):
             return self.content
         else:
             return self.content.encode(Encoding.DEFAULT)
-
-
-def am_i_on_board():
-    
-    return os.environ.get(EnvVar.ON_BOARD, False)
-
-
-def is_it_open_sea():
-    
-    return os.environ.get(EnvVar.OPEN_SEA, False)
 
 
 class Workpath(str):

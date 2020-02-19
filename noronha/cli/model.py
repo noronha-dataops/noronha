@@ -6,7 +6,7 @@ import json
 from noronha.api.model import ModelAPI as API
 from noronha.cli.callback import ListingCallback
 from noronha.cli.handler import CMD
-from noronha.common.utils import assert_dict
+from noronha.common.parser import assert_dict
 
 
 MODEL_FILE_EXAMPLE = dict(

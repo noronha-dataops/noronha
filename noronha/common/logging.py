@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 from noronha.bay.compass import LoggerCompass
 from noronha.common.annotations import Configured, Lazy, ready
 from noronha.common.constants import DateFmt, LoggerConst
-from noronha.common.utils import assert_json, assert_str, StructCleaner, order_yaml, resolve_log_level
+from noronha.common.parser import assert_json, assert_str, StructCleaner, order_yaml, resolve_log_level
 
 
 class Logger(Configured, Lazy):

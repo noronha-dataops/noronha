@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from noronha.common.utils import StructCleaner
+from noronha.common.parser import StructCleaner
 
 
 class PrettyError(Exception):

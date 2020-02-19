@@ -6,7 +6,7 @@ from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import LongExpedition
 from noronha.common.annotations import validate, projected
 from noronha.common.constants import DockerConst, Extension, OnBoard, OnlineConst, EnvVar
-from noronha.common.utils import assert_extension, join_dicts
+from noronha.common.parser import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
 from noronha.db.depl import Deployment
 from noronha.db.movers import ModelVersion

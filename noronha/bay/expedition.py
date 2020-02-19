@@ -10,7 +10,7 @@ from noronha.bay.compass import DockerCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.common.constants import DockerConst, EnvVar
 from noronha.common.logging import Logged
-from noronha.common.utils import join_dicts
+from noronha.common.parser import join_dicts
 from noronha.db.proj import Project
 from noronha.db.bvers import BuildVersion
 from noronha.db.ds import Dataset

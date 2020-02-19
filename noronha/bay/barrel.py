@@ -12,7 +12,7 @@ from noronha.bay.utils import Workpath, FileSpec, StoreHierarchy
 from noronha.common.constants import WarehouseConst, Extension
 from noronha.common.errors import NhaStorageError
 from noronha.common.logging import Logged
-from noronha.common.utils import cape_list
+from noronha.common.parser import cape_list
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion
 from noronha.db.proj import Project

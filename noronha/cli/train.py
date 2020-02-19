@@ -6,7 +6,7 @@ import os
 from noronha.api.train import TrainingAPI as API
 from noronha.cli.callback import ListingCallback
 from noronha.cli.handler import CMD
-from noronha.common.utils import assert_dict, kv_list_to_dict
+from noronha.common.parser import assert_dict, kv_list_to_dict
 
 
 @click.group()

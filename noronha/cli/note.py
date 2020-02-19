@@ -6,7 +6,7 @@ import os
 from noronha.api.note import NotebookAPI as API
 from noronha.cli.handler import CMD
 from noronha.common.constants import OnBoard, NoteConst
-from noronha.common.utils import kv_list_to_dict
+from noronha.common.parser import kv_list_to_dict
 
 
 @click.command()

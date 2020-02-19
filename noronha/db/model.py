@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from mongoengine.fields import *
+from typing import List
 
 from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.utils import FileDoc
@@ -35,7 +36,7 @@ class Model(SmartDoc):
     model_files = EmbeddedDocumentListField(ModelFile, default=[])
     data_files = EmbeddedDocumentListField(DatasetFile, default=[])
     
-    def _assert_lightweight(self, title, file_schema):
+    def _assert_lightweight(self, title: str, file_schema: List[FileDoc]):
         
         assert len(file_schema) > 0, NhaValidationError(
             "{} for model {} cannot be stored in lightweight mode has no strict file schema"
@@ -43,10 +44,13 @@ class Model(SmartDoc):
         )
         
         for fyle in file_schema:
-            if fyle.max_mb > DBConst.MAX_MB_LW_FILE:
-                return False
-        else:
-            return True
+            assert fyle.max_mb <= DBConst.MAX_MB_LW_FILE,\
+                NhaValidationError(
+                    "File '{}' for {} of model {} is allowed to be up to {} MB. "
+                    .format(fyle.name, title.lower(), self.name, fyle.max_mb) +
+                    "Lightweight storage accepts only files up to {} MB"
+                    .format(DBConst.MAX_MB_LW_FILE)
+                )
     
     def assert_datasets_can_be_lightweight(self):
         

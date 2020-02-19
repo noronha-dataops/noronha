@@ -6,8 +6,8 @@ from kaptan import Kaptan
 from noronha.common.annotations import Lazy, ready
 from noronha.common.constants import Package, Config, HostUser
 from noronha.common.errors import ConfigurationError
-from noronha.common.utils import join_dicts
-from noronha.bay.utils import am_i_on_board
+from noronha.common.parser import join_dicts
+from noronha.common.utils import am_i_on_board
 
 
 class ConfSource(object):

@@ -11,7 +11,7 @@ from noronha.bay.utils import Workpath
 from noronha.common.constants import DockerConst, FrameworkConst, Regex
 from noronha.common.errors import NhaDockerError, ResolutionError
 from noronha.common.logging import LOG
-from noronha.common.utils import assert_dict
+from noronha.common.parser import assert_dict
 from noronha.db.bvers import BuildVersion
 from noronha.db.proj import Project
 

@@ -14,11 +14,11 @@ from abc import ABC, abstractmethod
 
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
-from noronha.bay.utils import am_i_on_board, is_it_open_sea
+from noronha.common.utils import is_it_open_sea
 from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
-from noronha.common.utils import resolve_log_level
+from noronha.common.parser import resolve_log_level
 
 
 def find_cont_hostname():
@@ -374,7 +374,7 @@ class IslandCompass(ABC, TreasureCompass):
     KEY_MAX_MB = 'disk_allocation_mb'
     KEY_SSL = 'use_ssl'
     KEY_CERT = 'check_certificate'
-    DEFAULT_HOST = None
+    DEFAULT_HOST = 'localhost'
     DEFAULT_PORT = None
     DEFAULT_USER = None
     DEFAULT_PSWD = None
@@ -567,8 +567,11 @@ class FSWarehouseCompass(WarehouseCompass):
     def __init__(self, **kwargs):
         
         super().__init__(**kwargs)
-        assert self.conf.get('type') == self.file_manager_type,\
-            ResolutionError("Current file manager type is '{}'".format(self.conf.get('type')))
+        assert self.conf.get('type') == self.file_manager_type or self.file_manager_type is None,\
+            ResolutionError(
+                "Current file manager type is '{}', not '{}'"
+                .format(self.conf.get('type'), self.file_manager_type)
+            )
     
     def get_store(self):
         
@@ -603,7 +606,6 @@ class ArtifCompass(FSWarehouseCompass):
     alias = 'artif'
     file_manager_type = WarehouseConst.Types.ARTIF
     
-    DEFAULT_HOST = 'localhost'
     DEFAULT_REPO = 'example-repo-local'
     DEFAULT_USER = 'admin'
     DEFAULT_PSWD = 'password'
@@ -616,7 +618,6 @@ class LWWarehouseCompass(WarehouseCompass):
     KEY_ENABLED = 'enabled'
     DEFAULT_ENABLED = False
     KEY_KEYSPACE = 'keyspace'
-    DEFAULT_KEYSPACE = 'noronha'
     KEY_HOST = 'hosts'
     KEY_REPLICATION = 'replication_factor'
     DEFAULT_REPLICATION = 1
@@ -633,12 +634,17 @@ class LWWarehouseCompass(WarehouseCompass):
     @property
     def keyspace(self):
         
-        return self.conf.get(self.KEY_KEYSPACE, self.DEFAULT_KEYSPACE)
+        return self.conf[self.KEY_KEYSPACE]
     
     @property
     def hosts(self):
         
-        return [super().host]
+        hosts = super().host
+        
+        if isinstance(hosts, list):
+            return hosts
+        else:
+            return [hosts]
 
     @property
     def replication(self):
@@ -652,3 +658,6 @@ class LWWarehouseCompass(WarehouseCompass):
 class CassWarehouseCompass(LWWarehouseCompass):
     
     alias = 'cass'
+    file_manager_type = WarehouseConst.Types.CASS
+    
+    ORIGINAL_PORT = 9042

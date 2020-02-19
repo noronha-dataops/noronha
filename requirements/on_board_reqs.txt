@@ -17,3 +17,4 @@ Flask
 pyOpenSSL
 keyring
 keyring_jeepney
+cassandra-driver==3.21.0

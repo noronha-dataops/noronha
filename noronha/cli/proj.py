@@ -5,7 +5,7 @@ import click
 from noronha.api.proj import ProjectAPI as API
 from noronha.cli.callback import ListingCallback
 from noronha.cli.handler import CMD
-from noronha.common.utils import assert_dict
+from noronha.common.parser import assert_dict
 
 
 @click.group()

@@ -9,7 +9,7 @@ from noronha.common.annotations import Interactive
 from noronha.common.constants import Flag
 from noronha.common.errors import PrettyError
 from noronha.common.logging import LOG
-from noronha.common.utils import StructCleaner
+from noronha.common.parser import StructCleaner
 
 
 class CommandHandler(Interactive):

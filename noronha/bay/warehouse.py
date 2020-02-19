@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from artifactory import ArtifactoryPath
 from cassandra import InvalidRequest
 from cassandra.cluster import Cluster
-from cassandra.cqlengine.management import create_keyspace_simple
+from cassandra.policies import RoundRobinPolicy
 from nexuscli import nexus_client
 from typing import Type, List
 from urllib3 import disable_warnings
@@ -36,12 +36,12 @@ class Warehouse(ABC, Configured, Logged):
     def __init__(self, section: str, log=None):
         
         Logged.__init__(self, log=log)
+        self.client = None
         self.section = section
         self.compass = self.compass_cls()
-        self.client = self.get_client()
     
     @abstractmethod
-    def get_client(self):
+    def connect(self):
         
         pass
 
@@ -79,7 +79,8 @@ class FileStoreWarehouse(Warehouse, ABC):
     def __init__(self, **kwargs):
         
         super().__init__(**kwargs)
-        self.compass: FSWarehouseCompass = self.compass 
+        self.compass: FSWarehouseCompass = self.compass
+        self.connect()
         
         if not self.compass.check_certificate:
             disable_warnings(InsecureRequestWarning)
@@ -144,9 +145,9 @@ class ArtifWarehouse(FileStoreWarehouse):
     
     compass_cls = ArtifCompass
     
-    def get_client(self):
+    def connect(self):
         
-        return ArtifactoryPath(
+        self.client = ArtifactoryPath(
             os.path.join(self.address, 'artifactory', self.repo),
             auth=(self.compass.user, self.compass.pswd),
             verify=self.compass.check_certificate
@@ -252,9 +253,9 @@ class NexusWarehouse(FileStoreWarehouse):
             path
         )
     
-    def get_client(self):
+    def connect(self):
         
-        return nexus_client.NexusClient(
+        self.client = nexus_client.NexusClient(
             url=self.address,
             user=self.compass.user,
             password=self.compass.pswd,
@@ -348,12 +349,12 @@ class LWWarehouse(Warehouse, ABC):
     NO_KEYSP_EXC: Type[Exception] = None
     NO_TABLE_EXC: Type[Exception] = None
 
-    def __init__(self, file_schema: List[str], **kwargs):
+    def __init__(self, **kwargs):
         
         super().__init__(**kwargs)
         self.compass: LWWarehouseCompass = self.compass
         assert self.compass.enabled, ConfigurationError("Lightweight store is disabled")
-        self.file_schema = sorted(file_schema)
+        self.connect()
     
     @property
     def keyspace(self):
@@ -435,11 +436,13 @@ class CassWarehouse(LWWarehouse):
     NO_KEYSP_EXC = InvalidRequest
     NO_TABLE_EXC = InvalidRequest
     
-    def get_client(self):
+    def connect(self):
         
         self.client = Cluster(
             contact_points=self.compass.hosts,
-            port=self.compass.port
+            port=self.compass.port,
+            protocol_version=4,
+            load_balancing_policy=RoundRobinPolicy()
         ).connect()
         
         self.set_keyspace()
@@ -453,20 +456,16 @@ class CassWarehouse(LWWarehouse):
         
         stmt = """
             CREATE KEYSPACE {keysp}
-            WITH REPLICATION = {
+            WITH REPLICATION = {{
                 'class': 'SimpleStrategy',
                 'replication_factor': '{repl}' 
-            }
+            }}
         """.format(
             keysp=self.keyspace,
             repl=self.compass.replication
         )
         
         self.client.execute(stmt)
-        create_keyspace_simple(
-            name=self.keyspace,
-            replication_factor=self.compass.replication
-        )
     
     def create_table(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], *_, **__):
         
@@ -514,7 +513,7 @@ class CassWarehouse(LWWarehouse):
         stmt = """
             INSERT INTO {keysp}.{table}
             (id, {fields})
-            VALUES ('{_id}', {values})"
+            VALUES ('{_id}', {values})
         """.format(
             keysp=self.keyspace,
             table=hierarchy.join_as_table_name(self.section),

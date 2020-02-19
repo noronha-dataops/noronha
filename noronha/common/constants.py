@@ -97,6 +97,7 @@ class IslandConst(object):
     NEXUS = 'nexus'
     MONGO = 'mongo'
     ROUTER = 'router'
+    CASS = 'cass'
     ESSENTIAL = [ARTIF, MONGO]
 
 
@@ -113,6 +114,7 @@ class WarehouseConst(object):
         
         ARTIF = IslandConst.ARTIF
         NEXUS = IslandConst.NEXUS
+        CASS = IslandConst.CASS
     
     class Section(object):
         

@@ -6,7 +6,7 @@ import os
 from noronha.api.movers import ModelVersionAPI as API
 from noronha.cli.callback import ListingCallback
 from noronha.cli.handler import CMD
-from noronha.common.utils import assert_dict
+from noronha.common.parser import assert_dict
 
 
 @click.group()
@@ -74,6 +74,7 @@ def _list(_filter, expand, **kwargs):
     help="Flag: compress all model files to a single tar.gz archive"
 )
 @click.option('--skip-upload', default=False, is_flag=True, help="Flag: don't upload any files, just record metadata")
+@click.option('--lightweight', '--lw', 'lightweight', default=False, is_flag=True, help="Flag: use lightweight storage")
 def new(details, path=None, **kwargs):
     
     """Record a new model version in the framework"""

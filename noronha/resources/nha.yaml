@@ -30,7 +30,9 @@ file_store:
 lightweight_store:
   enabled: false
   native: true
+  port: 30042
   type: cass
+  keyspace: nha_db
 
 docker:
   daemon_address: unix:/var/run/docker.sock

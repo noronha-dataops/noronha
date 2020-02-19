@@ -9,7 +9,7 @@ from werkzeug.serving import run_simple
 from noronha.common.constants import DateFmt, OnlineConst, Task
 from noronha.common.errors import NhaDataError, PrettyError
 from noronha.common.logging import LOG
-from noronha.common.utils import assert_json, assert_str
+from noronha.common.parser import assert_json, assert_str
 from noronha.db.depl import Deployment
 from noronha.tools.utils import load_proc_monitor
 
