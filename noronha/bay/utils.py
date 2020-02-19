@@ -6,7 +6,7 @@ import random_name
 from shutil import rmtree
 from collections import namedtuple
 
-from noronha.common.constants import Paths, EnvVar
+from noronha.common.constants import Paths, EnvVar, Encoding
 from noronha.db.utils import FileDoc
 
 
@@ -74,8 +74,10 @@ class FileSpec(FileDoc):
 
         if self.content is None:
             return open(self.path_from, 'rb').read()
+        elif isinstance(self.content, bytes):
+            return self.content
         else:
-            return bytes(self.content)
+            return self.content.encode(Encoding.DEFAULT)
 
 
 def am_i_on_board():

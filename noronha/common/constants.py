@@ -35,6 +35,7 @@ class Encoding(object):
     ASCII = 'ascii'
     ISO_8859_1 = 'ISO-8859-1'
     UTF_8 = 'UTF-8'
+    DEFAULT = UTF_8
     ALL = tuple([UTF_8, ASCII, ISO_8859_1])
 
 

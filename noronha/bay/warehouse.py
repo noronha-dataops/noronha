@@ -11,6 +11,7 @@ Objects handled:
 import os
 from abc import ABC, abstractmethod
 from artifactory import ArtifactoryPath
+from cassandra import InvalidRequest
 from cassandra.cluster import Cluster
 from cassandra.cqlengine.management import create_keyspace_simple
 from nexuscli import nexus_client
@@ -431,19 +432,37 @@ class CassWarehouse(LWWarehouse):
     
     compass_cls = CassWarehouseCompass
     
-    NO_KEYSP_EXC = Exception  # TODO
-    NO_TABLE_EXC = Exception  # TODO
+    NO_KEYSP_EXC = InvalidRequest
+    NO_TABLE_EXC = InvalidRequest
     
-    @keysp_dependent
     def get_client(self):
         
         self.client = Cluster(
             contact_points=self.compass.hosts,
             port=self.compass.port
-        ).connect(self.compass.keyspace)
+        ).connect()
+        
+        self.set_keyspace()
+    
+    @keysp_dependent
+    def set_keyspace(self):
+        
+        self.client.set_keyspace(self.keyspace)
     
     def create_keyspace(self):
         
+        stmt = """
+            CREATE KEYSPACE {keysp}
+            WITH REPLICATION = {
+                'class': 'SimpleStrategy',
+                'replication_factor': '{repl}' 
+            }
+        """.format(
+            keysp=self.keyspace,
+            repl=self.compass.replication
+        )
+        
+        self.client.execute(stmt)
         create_keyspace_simple(
             name=self.keyspace,
             replication_factor=self.compass.replication
@@ -460,13 +479,13 @@ class CassWarehouse(LWWarehouse):
             CREATE TABLE {keysp}.{table} (
                 id VARCHAR,
                 {fields},
-                primary_key((id))   
+                PRIMARY KEY(id)   
             )
         """.format(
             keysp=self.keyspace,
             table=hierarchy.join_as_table_name(self.section),
             fields=', '.join(fields)
-        )  # TODO: review cql syntax
+        )
         
         self.client.execute(stmt)
     
@@ -476,7 +495,7 @@ class CassWarehouse(LWWarehouse):
             keysp=self.keyspace,
             table=hierarchy.join_as_table_name(self.section),
             _id=hierarchy.child
-        )  # TODO: review cql syntax
+        )
         
         self.client.execute(stmt)
 
@@ -493,16 +512,16 @@ class CassWarehouse(LWWarehouse):
         self.LOG.info("Storing as blobs: {}".format(fields))
         
         stmt = """
-            INSERT INTO TABLE {keysp}.{table}
-            FIELDS (id, {fields})
+            INSERT INTO {keysp}.{table}
+            (id, {fields})
             VALUES ('{_id}', {values})"
         """.format(
             keysp=self.keyspace,
             table=hierarchy.join_as_table_name(self.section),
             _id=hierarchy.child,
             fields=', '.join(fields),
-            values=['%s']*len(fields)
-        )  # TODO: review cql syntax
+            values=', '.join(['%s']*len(fields))
+        )
         
         self.client.execute(stmt, values)
     
@@ -516,21 +535,22 @@ class CassWarehouse(LWWarehouse):
             keysp=self.keyspace,
             table=hierarchy.join_as_table_name(self.section),
             _id=hierarchy.child
-        )  # TODO: review cql syntax
+        )
         
         row = self.client.execute(stmt).one()
         
         for file_spec in file_schema:
             self.LOG.info('Deploying file: {}'.format(file_spec.name))
-            bites = row.get(file_spec.name)
+            bites = getattr(row, file_spec.name)
             
-            if bites:
+            if bites is None:
+                if file_spec.required:
+                    raise NhaStorageError("Missing required file: {}".format(file_spec.name))
+                else:
+                    self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
+            else:
                 write_path = os.path.join(path_to, file_spec.name)
                 open(write_path, 'wb').write(bites)
-            elif file_spec.required:
-                raise NhaStorageError("Missing required file: {}".format(file_spec.name))
-            else:
-                self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
 
 
 def get_warehouse(lightweight=False, **kwargs) -> Warehouse:
