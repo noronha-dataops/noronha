@@ -39,10 +39,8 @@ class ProcMonitor(object):
         
         if self.proc is not None:
             self.proc.reload()
-            
-            if self.task.state not in Task.State.END_STATES:
-                self.task.state = state
-                self.proc.save()
+            self.task.state = state
+            self.proc.save()
 
 
 class MockedProcMonitor(ProcMonitor):

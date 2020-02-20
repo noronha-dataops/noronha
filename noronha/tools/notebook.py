@@ -53,9 +53,11 @@ class NotebookRunner(Patient):
             pm.execute_notebook(**kwargs)
         except Exception as e:
             self._handle_exc(e)
+            return False
         else:
             LOG.info("Notebook execution succeeded!")
             self.proc_mon.set_state(Task.State.FINISHED)
+            return True
     
     def _save_output(self, note_path, output_path):
         
@@ -77,14 +79,14 @@ class NotebookRunner(Patient):
         NoronhaEngine.progress_callback = lambda x: self.proc_mon.set_progress(x)
         output_path = '.'.join([self.output_file_name, Extension.IPYNB])
         
-        self._run(**dict(
+        success = self._run(**dict(
             parameters=params,
             engine_name=NoronhaEngine.alias,
             input_path=os.path.join(OnBoard.APP_HOME, note_path),
             output_path=output_path
         ))
         
-        code = 0 if self.proc_mon.task.state == Task.State.FINISHED else 1
+        code = 0 if success and self.proc_mon.task.state == Task.State.FINISHED else 1
         
         if code == 1 or self.debug:
             self._save_output(note_path, output_path)
