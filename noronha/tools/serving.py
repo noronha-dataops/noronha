@@ -8,12 +8,11 @@ from flask import Flask, request
 from werkzeug.serving import run_simple
 
 from noronha.common.constants import DateFmt, OnlineConst, Task
-from noronha.common.errors import NhaDataError, PrettyError, MisusageError
+from noronha.common.errors import NhaDataError, PrettyError, MisusageError, ResolutionError
 from noronha.common.logging import LOG
 from noronha.common.parser import assert_json, assert_str, StructCleaner
 from noronha.db.depl import Deployment
-from noronha.db.model import Model
-from noronha.tools.shortcuts import require_movers
+from noronha.tools.shortcuts import require_movers, model_path
 from noronha.tools.utils import load_proc_monitor, HistoryQueue
 
 
@@ -67,7 +66,7 @@ class ModelServer(ABC):
         charset = request.mimetype_params.get('charset') or OnlineConst.DEFAULT_CHARSET
         return dict(
             body=body.decode(charset, 'replace'),
-            args=request.args()
+            args=request.args
         )
     
     @abstractmethod
@@ -84,7 +83,7 @@ class ModelServer(ABC):
         
         out, err, code = {}, None, None
         kwargs = self.make_request_kwargs()
-
+        
         try:
             out = self.make_result(**kwargs)
             code = OnlineConst.ReturnCode.OK
@@ -99,7 +98,7 @@ class ModelServer(ABC):
             else:
                 err = repr(e)
                 code = OnlineConst.ReturnCode.NOT_IMPLEMENTED
-
+            
             LOG.error(err)
         finally:
             if self._enrich:
@@ -191,24 +190,31 @@ class LazyModelServer(ModelServer):
         assert callable(load_model_func)
         super().__init__(predict_func=predict_func, enrich=False)
         self._load_model_func = load_model_func
-        self._model_name = Model.find_one(name=model_name).name  # TODO: resolve by project if not provided
+        self._model_name = model_name  # TODO: if not provided, resolve by shortcut model_meta
         self._max_models = max_models
         self._loaded_models = {}
         self._model_usage = HistoryQueue(max_size=max_models)
     
-    def purge_model(self):
+    def purge_least_used_model(self):
         
         least_used = self._model_usage.get()
         _ = self._loaded_models.pop(least_used)
     
+    def enforce_model_limit(self):
+        
+        while len(self._loaded_models) >= self._max_models:
+            self.purge_least_used_model()
+    
     def load_model(self, version):
         
-        if len(self._loaded_models) >= self._max_models:
-            self.purge_model()
-            self.load_model(version)
-        else:
+        self.enforce_model_limit()
+        
+        try:
+            path = model_path(model=self._model_name, version=version)
+        except ResolutionError:
             path = require_movers(model=self._model_name, version=version)
-            self._loaded_models[version] = self._load_model_func(path)
+        
+        self._loaded_models[version] = self._load_model_func(path)
     
     def fetch_model(self, version):
         
@@ -220,7 +226,7 @@ class LazyModelServer(ModelServer):
         
     def make_result(self, body, args):
         
-        model = self.fetch_model(args['version'])
+        model = self.fetch_model(args['model_version'])
         return self._predict_func(body, model)
     
     def make_metadata(self, body, args):
