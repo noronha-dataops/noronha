@@ -38,20 +38,26 @@ class PrettyDoc(BaseDocument):
     _fields_ordered = []
     meta = DOC_META
     
-    def get(self, key: str, _obj=None, default=None):
+    def get(self, key: (str, list), _obj=None, default=None):
         
-        _obj = _obj or self
-        keys = (key or '').split('.', 1)
+        if _obj is None:
+            _obj = self
         
-        if hasattr(_obj, keys[0]):
-            val = getattr(_obj, keys[0])
+        if isinstance(key, str):
+            key = (key or '').split('.', 1)
+        
+        if hasattr(_obj, key[0]):
+            val = getattr(_obj, key[0])
         else:
             return default
         
-        if len(keys) == 1:
+        if val is None:
+            return default
+        
+        if len(key) == 1:
             return val
         else:
-            return self.get(keys[1], val, default)
+            return self.get(key[1:], val, default)
     
     def as_dict(self, depth=0, pretty=False):
         
@@ -235,7 +241,7 @@ class SmartBaseDoc(PrettyDoc):
     
     def show(self):
         
-        pk = self.get_pk(default='None')
+        pk = self.get_pk(default='<any>')
         
         if issubclass(self.__class__, EmbeddedDocument):
             return ':'.join([

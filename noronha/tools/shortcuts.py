@@ -39,11 +39,15 @@ def _resolve_path(doc_cls, dyr: str, model: str = None, obj_name: str = None, is
         return os.path.join(dyr, match[0])
     elif ignore:
         return None
+    elif len(match) == 0:
+        detail = "No options found"
     else:
-        raise ResolutionError(
-            "Could not resolve path to {} '{}' under directory {}. Found {} child paths"
-            .format(doc_cls.__name__, doc.show(), dyr, len(files))
-        )
+        detail = "Found {} options: {}".format(len(match), match)
+    
+    raise ResolutionError(
+        "Could not resolve path to {} '{}' under directory {}. {}"
+        .format(doc_cls.__name__.lower(), doc.show(), dyr, detail)
+    )
 
 
 def data_path(file_name: str = '', model: str = None, dataset: str = None):

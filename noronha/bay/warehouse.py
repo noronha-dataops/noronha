@@ -415,6 +415,16 @@ class LWWarehouse(Warehouse, ABC):
         raise MisusageError(
             "Lightweight store does not support indirect deployment of models/datasets"
         )
+    
+    def _raise_not_found(self, hierarchy: StoreHierarchy):
+        
+        raise NhaStorageError(
+            "Nothing found in lightweight storage with key '{key}' (Table={table})"
+            .format(
+                table=hierarchy.join_as_table_name(self.section),
+                key=hierarchy.child
+            )
+        )
 
 
 def keysp_dependent(func):
@@ -538,9 +548,12 @@ class CassWarehouse(LWWarehouse):
         
         row = self.client.execute(stmt).one()
         
+        if row is None:
+            self._raise_not_found(hierarchy)
+        
         for file_spec in file_schema:
             self.LOG.info('Deploying file: {}'.format(file_spec.name))
-            bites = getattr(row, file_spec.name)
+            bites = getattr(row, file_spec.get_name_as_table_field())
             
             if bites is None:
                 if file_spec.required:

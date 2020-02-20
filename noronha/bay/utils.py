@@ -68,8 +68,8 @@ class FileSpec(FileDoc):
     
     def get_name_as_table_field(self, include_type=False):
         
-        return '"{}"{}'.format(
-            self.name,
+        return '{}{}'.format(
+            Regex.DNS_SPECIAL.sub('_', self.name),
             ' BLOB' if include_type else ''
         )
     
