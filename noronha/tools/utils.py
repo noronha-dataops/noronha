@@ -95,3 +95,31 @@ def load_proc_monitor(**kwargs):
         }.get(get_purpose())
         
         return proc_mon_cls(proc=proc, **kwargs)
+
+
+class HistoryQueue(object):
+    
+    def __init__(self, max_size: int):
+        
+        self.max_size = max_size
+        self.history = []
+    
+    @property
+    def size(self):
+        
+        return len(self.history)
+    
+    def put(self, item):
+        
+        if self.size >= self.max_size:
+            trunc_index = self.size - self.max_size + 1
+            self.history = self.history[trunc_index:]
+        
+        if item in self.history:
+            self.history.remove(item)
+        
+        self.history.append(item)
+    
+    def get(self):
+        
+        return self.history.pop(0)

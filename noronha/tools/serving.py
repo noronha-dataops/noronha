@@ -10,9 +10,11 @@ from werkzeug.serving import run_simple
 from noronha.common.constants import DateFmt, OnlineConst, Task
 from noronha.common.errors import NhaDataError, PrettyError, MisusageError
 from noronha.common.logging import LOG
-from noronha.common.parser import assert_json, assert_str, StructCleaner, join_dicts
+from noronha.common.parser import assert_json, assert_str, StructCleaner
 from noronha.db.depl import Deployment
-from noronha.tools.utils import load_proc_monitor
+from noronha.db.model import Model
+from noronha.tools.shortcuts import require_movers
+from noronha.tools.utils import load_proc_monitor, HistoryQueue
 
 
 class HealthCheck(object):
@@ -184,16 +186,41 @@ class OnlinePredict(ModelServer):
 
 class LazyModelServer(ModelServer):
     
-    def __init__(self, predict_func, load_model_func):
+    def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100):
         
         assert callable(load_model_func)
         super().__init__(predict_func=predict_func, enrich=False)
         self._load_model_func = load_model_func
-        # TODO: initialize data structures
+        self._model_name = Model.find_one(name=model_name).name  # TODO: resolve by project if not provided
+        self._max_models = max_models
+        self._loaded_models = {}
+        self._model_usage = HistoryQueue(max_size=max_models)
     
+    def purge_model(self):
+        
+        least_used = self._model_usage.get()
+        _ = self._loaded_models.pop(least_used)
+    
+    def load_model(self, version):
+        
+        if len(self._loaded_models) >= self._max_models:
+            self.purge_model()
+            self.load_model(version)
+        else:
+            path = require_movers(model=self._model_name, version=version)
+            self._loaded_models[version] = self._load_model_func(path)
+    
+    def fetch_model(self, version):
+        
+        if version not in self._loaded_models:
+            self.load_model(version)
+        
+        self._model_usage.put(version)
+        return self._loaded_models[version]
+        
     def make_result(self, body, args):
         
-        model = None  # TODO: get model based on param (load if necessary, update data structures, etc)
+        model = self.fetch_model(args['version'])
         return self._predict_func(body, model)
     
     def make_metadata(self, body, args):

@@ -192,6 +192,7 @@ def _require_asset(doc_cls, barrel_cls, obj_name: str, tgt_path: str, model: str
     os.makedirs(dyr, exist_ok=True)
     barrel_cls(doc).deploy(dyr)
     MetaCargo(docs=[doc], section=get_purpose()).deploy()
+    return dyr
 
 
 def require_dataset(name: str, model: str = None):
@@ -206,7 +207,7 @@ def require_dataset(name: str, model: str = None):
     :raise ResolutionError: etc
     """
     
-    _require_asset(
+    return _require_asset(
         doc_cls=Dataset,
         barrel_cls=DatasetBarrel,
         obj_name=name,
@@ -227,7 +228,7 @@ def require_movers(version: str, model: str = None):
     :raise ResolutionError: etc
     """
     
-    _require_asset(
+    return _require_asset(
         doc_cls=ModelVersion,
         barrel_cls=MoversBarrel,
         obj_name=version,
