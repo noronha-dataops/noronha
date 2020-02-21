@@ -105,12 +105,8 @@ node_ip = get_captain().compass.get_node()
 def call_router():
     return check_output([
         'curl', '-X', 'POST', '-H', 'Content-Type: application/JSON',
-        '--data', json.dumps(dict(
-            project='botanics',
-            deploy='homolog',
-            data=[1, 2, 3, 4]
-        )),
-        'http://{}:30082'.format(node_ip)
+        '--data', json.dumps([1, 2, 3, 4]),
+        'http://{}:30082/predict?project=botanics&deploy=homolog'.format(node_ip)
     ]).decode('UTF-8')
 
 
