@@ -5,25 +5,40 @@ from noronha.common.parser import StructCleaner
 
 class PrettyError(Exception):
     
-    def parse_cause(self):
+    @classmethod
+    def parse_cause(cls, exc: Exception = None):
         
-        if self.__cause__ is None:
-            return None
-        elif isinstance(self.__cause__, self.__class__):
-            return self.__cause__.pretty()
+        if exc.__cause__ is None:
+            if len(exc.args) == 1 and isinstance(exc.args[0], Exception):
+                exc.__cause__ = exc.args[0]
+            else:
+                return None
+        
+        if isinstance(exc.__cause__, cls):
+            return exc.__cause__.pretty()
         else:
             return '{}: {}'.format(
-                self.__cause__.__class__.__name__,
-                self.__cause__.__str__()
+                exc.__cause__.__class__.__name__,
+                exc.__cause__.__str__()
             )
+    
+    @classmethod
+    def parse_exc(cls, exc: Exception = None):
+        
+        dyct = StructCleaner()(dict(
+            Error=exc.__class__.__name__,
+            Message=str(exc),
+            cause=cls.parse_cause(exc)
+        ))
+        
+        if dyct.get('cause', {}).get('Message') == dyct.get('Message'):
+            _ = dyct.pop('Message', None)
+        
+        return dyct
     
     def pretty(self):
         
-        return StructCleaner()(dict(
-            Error=self.__class__.__name__,
-            Message=str(self),
-            cause=PrettyError.parse_cause(self)
-        ))
+        return self.parse_exc(self)
     
     def __str__(self):
         

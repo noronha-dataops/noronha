@@ -56,7 +56,7 @@ class Barrel(ABC, Logged):
     
     def infer_schema_from_path(self, path):
         
-        assert os.path.exists(path)
+        assert os.path.exists(path), NhaStorageError("Path not found: {}".format(path))
         
         if self.schema is None:
             if os.path.isdir(path):
@@ -93,6 +93,24 @@ class Barrel(ABC, Logged):
         
         return schema
     
+    def raise_for_file_size(self, file_spec: FileSpec, actual_size_mb: int):
+        
+        raise NhaStorageError(
+            "File {} is too large: {} MB"
+            .format(file_spec.name, actual_size_mb)
+        )
+    
+    def validate_file_sizes(self, file_schema: List[FileSpec]):
+        
+        for fyle in file_schema:
+            size = fyle.get_size_mb()
+            
+            if size > fyle.max_mb:
+                self.raise_for_file_size(
+                    file_spec=fyle,
+                    actual_size_mb=size
+                )
+    
     def store_from_dict(self, dyct: dict = None):
         
         to_compress = []
@@ -118,6 +136,7 @@ class Barrel(ABC, Logged):
             if self.compressed:
                 self._compress_and_store(work, to_compress=to_compress)
             else:
+                self.validate_file_sizes(to_store)
                 self.warehouse.store_files(
                     hierarchy=self.make_hierarchy(),
                     file_schema=to_store
@@ -150,6 +169,7 @@ class Barrel(ABC, Logged):
         if self.compressed:
             self._compress_and_store(path, to_compress=to_compress)
         else:
+            self.validate_file_sizes(to_store)
             self.warehouse.store_files(
                 hierarchy=self.make_hierarchy(),
                 file_schema=to_store
@@ -192,9 +212,11 @@ class Barrel(ABC, Logged):
                     file_path = os.path.join(path, file_spec.alias)
                     f.add(file_path, arcname=file_spec.name)
             
+            file_spec = FileSpec(name=self.compressed)
+            self.validate_file_sizes([file_spec])
             self.warehouse.store_files(
                 hierarchy=self.make_hierarchy(),
-                file_schema=[FileSpec(name=self.compressed)]
+                file_schema=[file_spec]
             )
         finally:
             work.dispose()
@@ -294,6 +316,13 @@ class DatasetBarrel(Barrel):
             child=self.ds_name
         )
 
+    def raise_for_file_size(self, file_spec: FileSpec, actual_size_mb: int):
+        
+        raise NhaStorageError(
+            "File {} in dataset '{}' of model '{}' is too large (expected size={} MB / actual size={} MB)"
+            .format(file_spec.name, self.ds_name, self.model_name, file_spec.max_mb, actual_size_mb)
+        )
+
 
 class MoversBarrel(Barrel):
     
@@ -318,6 +347,13 @@ class MoversBarrel(Barrel):
             child=self.mv_name
         )
 
+    def raise_for_file_size(self, file_spec: FileSpec, actual_size_mb: int):
+        
+        raise NhaStorageError(
+            "File {} in version '{}' of model '{}' is too large (expected size={} MB / actual size={} MB)"
+            .format(file_spec.name, self.mv_name, self.model_name, file_spec.max_mb, actual_size_mb)
+        )
+ 
 
 class NotebookBarrel(Barrel):
     

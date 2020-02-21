@@ -106,7 +106,6 @@ class ModelVersionAPI(NoronhaAPI):
             if not skip_upload:
                 barrel = self._store(mv, path)
         except Exception as e:
-            LOG.error(e)
             LOG.warn("Reverting creation of model version '{}'".format(mv.name))
             mv.delete()
             if barrel is not None:

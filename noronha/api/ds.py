@@ -88,7 +88,6 @@ class DatasetAPI(NoronhaAPI):
             if not skip_upload:
                 barrel = self._store(ds, path, files)
         except Exception as e:
-            LOG.error(e)
             LOG.warn("Reverting creation of dataset '{}'".format(ds.name))
             ds.delete()
             if barrel is not None:

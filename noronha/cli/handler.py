@@ -95,7 +95,7 @@ class CommandHandler(Interactive):
         if isinstance(exception, PrettyError):
             exc = exception.pretty()
         else:
-            exc = PrettyError.pretty(self=exception)
+            exc = PrettyError.parse_exc(exception)
         
         if callable(callback):
             detail = callback(exception)

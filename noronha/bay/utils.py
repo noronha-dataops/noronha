@@ -46,7 +46,7 @@ class FileSpec(FileDoc):
         
         super().__init__(*args, **kwargs)
         self.alias = alias or self.name
-        self.path_from = None
+        self.path_from = self.alias
         self.content = None
     
     @classmethod
@@ -81,6 +81,15 @@ class FileSpec(FileDoc):
             return self.content
         else:
             return self.content.encode(Encoding.DEFAULT)
+    
+    def get_size_mb(self):
+        
+        if self.content is None:
+            n_bites = os.path.getsize(self.path_from)
+        else:
+            n_bites = len(self.content)
+        
+        return int(n_bites/(1024*1024))
 
 
 class Workpath(str):
