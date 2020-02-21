@@ -7,7 +7,7 @@ app.use(express.json());
 
 const serv_port = 8080;
 const serv_endpoint = 'predict';
-const syntax = {project: 'project_name', deploy: 'deploy_name', data: 'predict_input'}
+const syntax = "/predict?project=<project_name>&deploy=<deploy_name>"
 const syntax_err = 'WRONG_SYNTAX'
 
 
@@ -31,13 +31,12 @@ function routerError(service, err, res) {
 }
 
 
-function getServiceHost(body, res) {
+function getServiceHost(query, res) {
     
-    var project = body.project
-    var deploy = body.deploy
-    var data = body.data;
+    var project = query.project
+    var deploy = query.deploy
     
-    if (project && deploy && data) {
+    if (project && deploy) {
         return `nha-depl-${project}-${deploy}`;
     } else {
         routerError(null, {errno: syntax_err}, res);
@@ -45,13 +44,13 @@ function getServiceHost(body, res) {
 }
 
 
-app.post('/', (req, cli_res) => {
+app.post('/predict', (req, cli_res) => {
     
-    var serv_host = getServiceHost(req.body, cli_res);
-
+    var serv_host = getServiceHost(req.query, cli_res);
+    
     request.post({
-        url:     `http:\/\/${serv_host}:${serv_port}/${serv_endpoint}`,
-        body:    JSON.stringify(req.body.data)
+        url:     `http:\/\/${serv_host}:${serv_port}${req.url}`,
+        body:    JSON.stringify(req.body)
     }, (err, res, body) => {
 
         if (err) {

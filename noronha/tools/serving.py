@@ -231,7 +231,7 @@ class LazyModelServer(ModelServer):
     
     def make_metadata(self, body, args):
         
-        raise MisusageError(
+        raise MisusageError(  # TODO: implement some decent metadata at least for debugging purposes
             "Inference metadata for {} is ambiguous"
             .format(self.__class__.__name__)
         )
