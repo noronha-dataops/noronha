@@ -109,7 +109,7 @@ class DeploymentExp(LongExpedition):
     def additional_launch_kwargs(self):
         
         return dict(
-            allow_probe=True
+            allow_probe=not self.mock
         )
     
     def make_env_vars(self):
