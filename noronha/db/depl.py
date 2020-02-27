@@ -40,7 +40,7 @@ class Deployment(SmartDoc):
     
     def clean_tasks(self):
         
-        from noronha.bay.captain import get_captain  # 2_lazy import
+        from noronha.bay.captain import get_captain  # lazy import
         
         task_ids = self.tasks.keys()
         alive_tasks = get_captain(section=DockerConst.Section.DEPL).list_cont_or_pod_ids()

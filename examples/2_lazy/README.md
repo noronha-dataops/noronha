@@ -25,7 +25,7 @@ lightweight_store:
 In the last cell of the [training notebook](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/notebooks/train.ipynb),
 add the flag `lightweight=True` when calling the model publisher:
 
-<pre>```
+<pre>
 Publisher()(
     <b>lightweight=True,</b>
     details=dict(
@@ -33,7 +33,7 @@ Publisher()(
         metrics=metrics
     )
 )
-```</pre>
+</pre>
 
 #### 3) The inference notebook
 
@@ -43,7 +43,7 @@ by providing it with two simple functions: one for making predictions and one fo
 
 Copy it to your project's [notebooks folder](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/notebooks/):
 
-`cp lazy_predict.ipynb ../1_iris/notebooks/`
+```cp lazy_predict.ipynb ../1_iris/notebooks/```
 
 #### 4) Build
 
@@ -89,7 +89,7 @@ Also, the chosen Docker tag is `lazy`, the same we just built in the previous st
 
 Test your API with direct calls to the service:
 
-<pre>```
+<pre>
 <b># inference with model version "experiment-v1"</b>
 curl -X POST \
 --data '[1,2,3,4]' \
@@ -101,11 +101,11 @@ curl -X POST \
 --data '[1,2,3,4]' \
 http://127.0.0.1:30051/predict?model_version=higher-gamma \
 && echo
-```</pre>
+</pre>
 
 Test your API with a call that goes through the model router:
 
-<pre>```
+<pre>
 <b># inference with model version "experiment-v1"</b>
 curl -X POST \
 -H 'Content-Type: application/JSON' \
@@ -117,4 +117,4 @@ curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '[1,2,3,4]' \
 "http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=higher-gamma</b>"
-```</pre>
+</pre>

@@ -74,7 +74,7 @@ def _list(_filter, expand, **kwargs):
     help="Flag: compress all model files to a single tar.gz archive"
 )
 @click.option('--skip-upload', default=False, is_flag=True, help="Flag: don't upload any files, just record metadata")
-@click.option('--2_lazy', '--lw', '2_lazy', default=False, is_flag=True, help="Flag: use 2_lazy storage")
+@click.option('--lightweight', '--lw', 'lightweight', default=False, is_flag=True, help="Flag: use lightweight storage")
 def new(details, path=None, **kwargs):
     
     """Record a new model version in the framework"""

@@ -419,7 +419,7 @@ class LWWarehouse(Warehouse, ABC):
     def _raise_not_found(self, hierarchy: StoreHierarchy):
         
         raise NhaStorageError(
-            "Nothing found in 2_lazy storage with key '{key}' (Table={table})"
+            "Nothing found in lightweight storage with key '{key}' (Table={table})"
             .format(
                 table=hierarchy.join_as_table_name(self.section),
                 key=hierarchy.child
@@ -580,7 +580,7 @@ def get_warehouse(lightweight=False, **kwargs) -> Warehouse:
     except KeyError:
         raise ResolutionError(
             "Could not resolve {}file manager by reference '{}'. Options are: {}"
-            .format('2_lazy ' if lightweight else '', wh_type, list(cls_lookup.keys()))
+            .format('lightweight ' if lightweight else '', wh_type, list(cls_lookup.keys()))
         )
     else:
         return warehouse_cls(**kwargs)

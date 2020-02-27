@@ -6,6 +6,7 @@ Configuring Noronha
 *******************
 
 .. _configuration-files:
+
 Configuration Files
 ===================
 Noronha's default configuration file is packaged together with its Python libraries, under the `resources directory <https://gitlab.eva.bot/asseteva/noronha-dataops/tree/master/noronha/resources>`_. It's a YAML file in which the top keys organize properties according to the subjects they refer to.

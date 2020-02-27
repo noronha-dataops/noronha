@@ -48,7 +48,7 @@ class BuildVersion(SmartDoc):
     @classmethod
     def pre_delete(cls, _, document, **__):
         
-        from noronha.bay.shipyard import ImageSpec  # 2_lazy import to avoid cyclic dependency
+        from noronha.bay.shipyard import ImageSpec  # lazy import to avoid cyclic dependency
         
         ImageSpec.from_bvers(document).untag()
         document.clean()

@@ -27,7 +27,7 @@ Reference for the model publisher, which can be found in the `publish module <ht
 .. autoclass:: noronha.tools.publish.Publisher
 
 Serving
-======
+=======
 Reference for the inference servers, which can be found in the `serving module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/serving.py>`_.
 
 .. autoclass:: noronha.tools.serving.OnlinePredict

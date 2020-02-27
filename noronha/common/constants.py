@@ -86,7 +86,7 @@ class DBConst(object):
     MAX_DESC_LEN = 512
     MAX_REPO_LEN = 512
     MAX_EXPAND_DEPTH = 4
-    MAX_MB_LW_FILE = 10  # max megabytes for a model or dataset file to be considered 2_lazy
+    MAX_MB_LW_FILE = 10  # max megabytes for a model or dataset file to be considered lightweight
 
 
 class IslandConst(object):

@@ -39,7 +39,7 @@ class Model(SmartDoc):
     def _assert_lightweight(self, title: str, file_schema: List[FileDoc]):
         
         assert len(file_schema) > 0, NhaValidationError(
-            "{} for model {} cannot be stored in 2_lazy mode has no strict file schema"
+            "{} for model {} cannot be stored in lightweight mode has no strict file schema"
             .format(title, self.name)
         )
         

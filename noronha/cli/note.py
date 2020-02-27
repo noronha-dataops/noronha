@@ -36,7 +36,7 @@ from noronha.common.parser import kv_list_to_dict
 @click.option(
     '--dataset', '--ds', 'datasets',  multiple=True, help=
     """Reference to a dataset to be mounted on the IDE's container. """
-    """Syntax: <model_name>:<dataset_name>. Example: 1_iris-clf:1_iris-data-v0"""
+    """Syntax: <model_name>:<dataset_name>. Example: iris-clf:iris-data-v0"""
 )
 @click.option(
     '--movers', '--mv', 'movers',  multiple=True, help=

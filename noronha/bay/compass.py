@@ -113,7 +113,7 @@ class DockerCompass(Compass):
     
     def get_api(self):
         
-        import docker  # 2_lazy import
+        import docker  # lazy import
         api = docker.APIClient(self.daemon_address)
         
         try:  # dry run
@@ -269,7 +269,7 @@ class KubeCompass(CaptainCompass):
     
     def get_node(self):
         
-        from conu import K8sBackend  # 2_lazy import
+        from conu import K8sBackend  # lazy import
         
         for node in K8sBackend(logging_level=logging.ERROR).core_api.list_node().items:
             for node_addr in node.status.addresses:

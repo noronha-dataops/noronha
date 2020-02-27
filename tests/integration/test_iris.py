@@ -27,7 +27,7 @@ os.chdir(TEST_CASE)
 
 # define a model
 ModelAPI().new(
-    name='1_iris-clf',
+    name='iris-clf',
     desc='Iris flower classifier',
     model_files=[
         dict(
@@ -48,8 +48,8 @@ ModelAPI().new(
 
 # record a dataset
 DatasetAPI().new(
-    model='1_iris-clf',
-    name='1_iris-data-v0',
+    model='iris-clf',
+    name='iris-data-v0',
     details=dict(
         extraction_data='2019-04-01'
     ),
@@ -60,7 +60,7 @@ DatasetAPI().new(
 proj = ProjectAPI().new(
     name='botanics',
     desc='An experiment in the field of botanics',
-    models=['1_iris-clf']
+    models=['iris-clf']
 )
 
 # instantiating project depending api's in current working directory
@@ -83,7 +83,7 @@ train_api.new(
         gamme=0.001,
         kernel='poly'
     ),
-    datasets=['1_iris-clf:1_iris-data-v0']
+    datasets=['iris-clf:iris-data-v0']
 )
 
 # check out which model versions have been produced so far
@@ -94,7 +94,7 @@ depl_api.new(
     name='homolog',
     notebook='notebooks/predict',
     port=30050,
-    movers=['1_iris-clf:experiment-v1'],
+    movers=['iris-clf:experiment-v1'],
     tasks=1
 )
 
@@ -130,7 +130,7 @@ depl_api.new(
     name='homolog',
     notebook='notebooks/predict',
     port=30050,
-    movers=['1_iris-clf:experiment-v1'],
+    movers=['iris-clf:experiment-v1'],
     tasks=2
 )
 
