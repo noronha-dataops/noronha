@@ -148,22 +148,23 @@ class OnlinePredict(ModelServer):
     the project and the deployment that is running. Then, the predictor instance works as
     a function for starting the endpoint and listening for prediction requests.
     
-    :param predict_func: Any function that receives request's body (str), applies the predictive model and returns the prediction's result.
+    :param predict_func: Any function that receives a request's body (str), applies the predictive model and returns the prediction's result.
     :param enrich: If True, instead of returning the raw response of the prediction function the endpoint is going to return a JSON object with the prediction result and other metatada such as the prediction's datetime and the model versions used in this deployment.
     
     :Example:
     
     .. parsed-literal::
-        model = pickle.load(open('clf.pkl', 'rb'))
+        clf = pickle.load(open('clf.pkl', 'rb'))
         
-        def func(x):
-            return model.predict(x)
+        def pred(x):
+            data = json.loads(x)
+            return clf.predict(data)
         
-        predict = OnlinePredict(
-            predict_method=func
+        server = OnlinePredict(
+            predict_func=pred
         )
         
-        predict()
+        server()
     """
     
     def __init__(self, predict_func, enrich=True):
@@ -184,6 +185,40 @@ class OnlinePredict(ModelServer):
 
 
 class LazyModelServer(ModelServer):
+    
+    """Same as the OnlinePredict utility, but performs lazy model loading.
+    
+    When the server receives a request, the URL argument "model_version" is used
+    to identify which model version is going to be employed by the prediction function.
+    If that specific version is not loaded yet, then the load function is used to load it.
+    If the version's files are not present in the container, then they will
+    be deployed on demand with the aid of the "require_movers" shortcut.
+
+    :param predict_func: A function that receives a request's body (str), a loaded model (object) and a model's metadata (dict), in this exact order. The function should apply the predictive model and return the prediction's result.
+    :param load_model_func: A function that receives a path to a directory containing the model version's files. The function should load the model files and return an object (e.g.: a ready-to-use predictor).
+    :param model_name: Name of the parent model. All model versions that are going to be served should be children to this model.
+    :param max_models: Maximum number of coexisting model versions loaded in memory. If this number is reached, least used versions are going to be purged for memory optimization.
+
+    :Example:
+
+    .. parsed-literal::
+        
+        def load(path):
+            clf_file = open(path + 'clf.pkl', 'rb')
+            return pickle.load(clf_file)
+
+        def pred(x, clf, meta):
+            data = json.loads(x)
+            return clf.predict(data)
+
+        server = LazyModelServer(
+            predict_func=pred,
+            load_model_func=load,
+            model_name='iris-clf'
+        )
+
+        server()
+    """
     
     def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100):
         
