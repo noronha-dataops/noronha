@@ -1,5 +1,5 @@
 
-# Example: Iris
+# Example 1: Iris
 
 This example demonstrates the end-to-end workflow of a Machine
 Learning project that works with tabular data.

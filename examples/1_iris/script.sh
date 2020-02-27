@@ -7,7 +7,7 @@ flags="--debug --pretty --skip-questions"
 nha ${flags} model new \
 --name iris-clf \
 --desc "Iris flower classifier" \
---model-file '{"name": "clf.pkl", "required": true, "desc": "Classifier saved as pickle"}' \
+--model-file '{"name": "clf.pkl", "required": true, "desc": "Classifier saved as pickle", "max_mb": 1}' \
 --data-file '{"name": "measures.csv"}' \
 --data-file '{"name": "species.csv"}'
 

@@ -88,7 +88,7 @@ def _list(_filter, expand, **kwargs):
 @click.option(
     '--movers', '--mv', 'movers',  multiple=True, help=
     """Reference to a model version to be mounted on each deployment container. """
-    """Syntax: <model_name>:<version_name>. Example: iris-clf:experiment-v1"""
+    """Syntax: <model_name>:<version_name>. Example: 1_iris-clf:experiment-v1"""
 )
 @click.option(
     '--resource-profile', '--rp', 'resource_profile', help=

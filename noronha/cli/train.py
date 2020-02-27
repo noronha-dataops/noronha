@@ -85,7 +85,7 @@ def _list(_filter, expand, **kwargs):
 @click.option(
     '--dataset', '--ds', 'datasets',  multiple=True, help=
     """Reference to a dataset to be mounted on the training container. """
-    """Syntax: <model_name>:<dataset_name>. Example: iris-clf:iris-data-v0"""
+    """Syntax: <model_name>:<dataset_name>. Example: 1_iris-clf:1_iris-data-v0"""
 )
 @click.option(
     '--pretrained', 'movers',  multiple=True, help=
