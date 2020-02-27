@@ -372,9 +372,10 @@ class SwarmCaptain(Captain):
         
         repo, tag = DockerConst.MULE_IMG.split(':')
         image = self.docker_backend.ImageClass(repo, tag=tag)
+        name = self.mule_name(mule_alias)
         
         kwargs = dict(
-            name=self.mule_name(mule_alias),
+            additional_opts=self.conu_name(name),
             command=DockerConst.MULE_CMD,
             volumes=[(cargo.name, DockerConst.STG_MOUNT, 'rw')]
         )
@@ -711,7 +712,7 @@ class KubeCaptain(Captain):
                 namespace=self.namespace
             )
         except (ConuException, K8sApiException) as e:
-            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, what, name)
+            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, 'pod', name)
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def find_depl(self, name):
@@ -776,7 +777,7 @@ class KubeCaptain(Captain):
                 key=lambda i: i.metadata.name == self.namespace
             ) is not None, ConfigurationError("Namespace '{}' does not exist".format(self.namespace))
         except (ConuException, K8sApiException) as e:
-            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, what, name)
+            msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, 'namespace', self.namespace)
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def assert_vol(self, cargo: Cargo):
