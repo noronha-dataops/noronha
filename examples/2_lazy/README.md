@@ -43,12 +43,14 @@ by providing it with two simple functions: one for making predictions and one fo
 
 Copy it to your project's [notebooks folder](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/notebooks/):
 
-```cp lazy_predict.ipynb ../1_iris/notebooks/```
+```
+cp lazy_predict.ipynb ../1_iris/notebooks/
+```
 
 #### 4) Build
 
 Now that the project's code has been modified, let's use Noronha's [build command](https://noronha-dataops.readthedocs.io/en/latest/reference/cli.html#build-command)
-to repackage it into a new Docker image that is going to be used later when creating containers.
+to repackage it into a new Docker image that is going to be used later when creating containers:
 
 ```
 nha -d proj build \
@@ -59,7 +61,7 @@ nha -d proj build \
 
 #### 5) Train
 
-Run a new training so that we have more than one model version in the database.
+Run a new training so that we have more than one model version in the database:
 
 ```
 nha -d train new \
@@ -72,7 +74,7 @@ nha -d train new \
 #### 6) Deploy
 
 Create a deployment that uses the newly built Docker image to create containers
-without replication and execute the new inference notebook. 
+without replication and execute the new inference notebook: 
 
 ```
 nha ${flags} depl new \
@@ -93,13 +95,13 @@ Test your API with direct calls to the service:
 <b># inference with model version "experiment-v1"</b>
 curl -X POST \
 --data '[1,2,3,4]' \
-http://127.0.0.1:30051/predict?model_version=experiment-v1 \
+http://127.0.0.1:30051/predict?<b>model_version=experiment-v1</b> \
 && echo
 
 <b># inference with model version "higher-gamma"</b>
 curl -X POST \
 --data '[1,2,3,4]' \
-http://127.0.0.1:30051/predict?model_version=higher-gamma \
+http://127.0.0.1:30051/predict?<b>model_version=higher-gamma</b> \
 && echo
 </pre>
 
@@ -110,11 +112,13 @@ Test your API with a call that goes through the model router:
 curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '[1,2,3,4]' \
-"http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=experiment-v1</b>"
+"http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=experiment-v1</b>" \
+&& echo
 
 <b># inference with model version "higher-gamma"</b>
 curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '[1,2,3,4]' \
-"http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=higher-gamma</b>"
+"http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=higher-gamma</b>" \
+&& echo
 </pre>
