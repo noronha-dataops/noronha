@@ -50,7 +50,7 @@ def _resolve_path(doc_cls, dyr: str, model: str = None, obj_name: str = None, is
     )
 
 
-def data_path(file_name: str = '', model: str = None, dataset: str = None):
+def data_path(file_name: str = '', model: str = None, dataset: str = None) -> str:
     
     """Shortcut for addressing the dataset's directory.
     
@@ -81,12 +81,11 @@ def data_path(file_name: str = '', model: str = None, dataset: str = None):
     return os.path.join(path, file_name)
 
 
-def model_path(file_name: str = '', model: str = None, version: str = None):
+def model_path(file_name: str = '', model: str = None, version: str = None) -> str:
     
     """Shortcut for addressing the deployed model directory
     
-    When Noronha starts a container for deployment or IDE usage,
-    all required model versions are mounted and organized inside a volume.
+    When Noronha starts a container, all required model versions are mounted and organized inside a volume.
     This function provides a standard way of resolving the path to the directory
     or files that compose one of this model versions.
     
@@ -129,7 +128,7 @@ def _resolve_metadata(doc_cls, ignore: bool = False, **kwargs):
         return doc_cls.load(path)
 
 
-def dataset_meta(model: str = None, dataset: str = None, ignore: bool = False):
+def dataset_meta(model: str = None, dataset: str = None, ignore: bool = False) -> Dataset:
     
     """Shortcut for loading the dataset's metadata
     
@@ -142,7 +141,7 @@ def dataset_meta(model: str = None, dataset: str = None, ignore: bool = False):
            If you haven't mounted multiple datasets, this parameter may be left out.
     :param ignore: If it fails, return an empty document and do not raise exceptions.
     
-    :returns: A Dataset document.
+    :returns: A **Dataset** document.
     
     :raise ResolutionError: If the requested dataset is not present,
            or the given reference matched zero ore multiple datasets.
@@ -156,7 +155,7 @@ def dataset_meta(model: str = None, dataset: str = None, ignore: bool = False):
     )
 
 
-def movers_meta(model: str = None, version: str = None, ignore: bool = False):
+def movers_meta(model: str = None, version: str = None, ignore: bool = False) -> ModelVersion:
     
     """Shortcut for loading the model versions's metadata
     
@@ -170,7 +169,7 @@ def movers_meta(model: str = None, version: str = None, ignore: bool = False):
            If you haven't mounted multiple model versions, this parameter may be left out.
     :param ignore: If it fails, return an empty document and do not raise exceptions.
     
-    :returns: A ModelVersion document.
+    :returns: A **ModelVersion** document.
     
     :raise ResolutionError: If the requested model version is not present,
            or the given reference matched zero ore multiple model versions.
@@ -195,37 +194,49 @@ def _require_asset(doc_cls, barrel_cls, obj_name: str, tgt_path: str, model: str
     return dyr
 
 
-def require_dataset(name: str, model: str = None):
-    
-    """short description
+def require_dataset(dataset: str, model: str = None) -> str:
 
-    long description
+    """Utility for deploying a dataset on demand
 
-    :param name: etc
-    :param model: etc
+    If a certain dataset was not requested when the container was created,
+    this function can request it from inside the running container.
+    Both the dataset's files and metadata will be placed in their respective directories
+    and become available through the shortcuts **data_path** and **dataset_meta**.
     
-    :raise ResolutionError: etc
+    :param dataset: Name of the dataset.
+    :param model: Name of the model to which the dataset belongs.
+           If your project only uses one model, this parameter may be left out.
+    
+    :returns: Path to the directory where the dataset files were deployed.
+    
+    :raise NotFound: If the given reference didn't match an existing dataset.
     """
     
     return _require_asset(
         doc_cls=Dataset,
         barrel_cls=DatasetBarrel,
-        obj_name=name,
+        obj_name=dataset,
         tgt_path=OnBoard.LOCAL_DATA_DIR,
         model=model
     )
 
 
-def require_movers(version: str, model: str = None):
+def require_movers(version: str, model: str = None) -> str:
     
-    """short description
+    """Utility for deploying a model version on demand
+
+    If a certain model version was not requested when the container was created,
+    this function can request it from inside the running container.
+    Both the model's files and metadata will be placed in their respective directories
+    and become available through the shortcuts **model_path** and **movers_meta**.
     
-    long description
+    :param version: Name of the model version.
+    :param model: Name of the model to which the version belongs.
+           If your project only uses one model, this parameter may be left out.
     
-    :param version: etc
-    :param model: etc
+    :returns: Path to the directory where the model files were deployed.
     
-    :raise ResolutionError: etc
+    :raise NotFound: If the given reference didn't match an existing model version.
     """
     
     return _require_asset(
