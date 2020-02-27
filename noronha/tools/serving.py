@@ -12,7 +12,7 @@ from noronha.common.errors import NhaDataError, PrettyError, MisusageError, Reso
 from noronha.common.logging import LOG
 from noronha.common.parser import assert_json, assert_str, StructCleaner
 from noronha.db.depl import Deployment
-from noronha.tools.shortcuts import require_movers, model_path
+from noronha.tools.shortcuts import require_movers, model_path, movers_meta
 from noronha.tools.utils import load_proc_monitor, HistoryQueue
 
 
@@ -214,7 +214,10 @@ class LazyModelServer(ModelServer):
         except ResolutionError:
             path = require_movers(model=self._model_name, version=version)
         
-        self._loaded_models[version] = self._load_model_func(path)
+        self._loaded_models[version] = tuple([
+            self._load_model_func(path),  # loaded model object, respective to the model version
+            movers_meta(model=self._model_name, version=version)  # metadata related to the model version
+        ])
     
     def fetch_model(self, version):
         
@@ -226,8 +229,8 @@ class LazyModelServer(ModelServer):
         
     def make_result(self, body, args):
         
-        model = self.fetch_model(args['model_version'])
-        return self._predict_func(body, model)
+        model_args = self.fetch_model(args['model_version'])  # tuple([model_obj, movers_meta])
+        return self._predict_func(body, *model_args)
     
     def make_metadata(self, body, args):
         
