@@ -221,10 +221,13 @@ Reference for commands under the subject *ds*.
 
 .. parsed-literal::
 
-    -n, --name       Name of the dataset (defaults to a random name)
-    -m, --model      The model to which this dataset belongs (further info: nha model --help)
-    -d, --details    JSON with any details related to the dataset
-    -p, --path       Path to the directory that contains the dataset files (default: current working directory)
+    -n, --name      Name of the dataset (defaults to a random name)
+    -m, --model     The model to which this dataset belongs (further info: nha model --help)
+    -d, --details   JSON with any details related to the dataset
+    -p, --path      Path to the directory that contains the dataset files (default: current working directory)
+    -c, --compress  Flag: compress all dataset files to a single tar.gz archive
+    --skip-upload   Flag: don't upload any files, just record metadata
+    --lightweight   Flag: use lightweight storage
 
 - **update:** update a dataset's details or files
 
@@ -327,6 +330,13 @@ Reference for commands under the subject *movers*.
     --train          Name of the training that produced this model version
     --proj           To be used along with 'train': name of the project to
                      which this training belongs
+    --pretrained     Reference to another model version that was used as a pre-trained asset for training this one.
+                     Syntax: <model_name>:<model_version>
+                     Example: word2vec:en-us-v1
+    -c, --compress   Flag: compress all model files to a single tar.gz archive
+    --skip-upload    Flag: don't upload any files, just record metadata
+    --lightweight    Flag: use lightweight storage
+
 
 - **update:** update a model version's details or files
 
@@ -374,13 +384,13 @@ Reference for commands under the subject *depl*.
     --proj                Name of the project responsible for this deployment (default: current working project)
     --notebook, --nb      Relative path, inside the project's directory
                           structure, to the notebook that will be executed
-    -p, --params          JSON with parameters to be injected in the notebook
+    --params              JSON with parameters to be injected in the notebook
     -t, --tag             Each deployment task runs on top of a Docker image
                           that belongs to the project. You may specify the
                           image's Docker tag or let it default to "latest"
     -n, --n-tasks         Number of tasks (containers) for deployment
                           replication (default: 1)
-    -p, --port            Host port to be routed to each container's inference
+    --port                Host port to be routed to each container's inference
                           service
     -e, --env-var         Environment variable in the form KEY=VALUE
     -m, --mount           A host path or docker volume to mount on each deployment container.
@@ -402,6 +412,7 @@ disposable environment that is much like the environment your code is going to f
 
 .. parsed-literal::
 
+    --proj TEXT           Name of the project you'd like to work with.
     -t, --tag             The IDE runs on top of a Docker image that belongs to the current working project.
                           You may specify the image's Docker tag or let it default to "latest"
     -p, --port            Host port that will be routed to the notebook's user interface (default: 30088)

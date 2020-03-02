@@ -81,6 +81,9 @@ Represents a dataset that is managed by the framework. Also referred to as *ds* 
         **model**: the model to which this dataset belongs
         stored: if true, the dataset files are stored in Noronha's file manager
         details: dictionary with arbitrary details about the dataset
+        compressed: if true, all dataset files are compressed into a single tar.gz file
+        lightweight: if true, the dataset files are stored in a :ref:`lightweight file storage <lightweight-store>`
+    
     }
 
 Training
@@ -120,6 +123,9 @@ Represents a persistent model that was generated during a training. Also referre
         *train*: the training execution that generated this version
         *ds*: the dataset that was used for training the model
         details: dictionary with arbitrary details about the version
+        *pretrained*: reference to another model version that was used as a pre-trained asset in order to train this one
+        compressed: if true, all model files are compressed into a single tar.gz file
+        lightweight: if true, the model files are stored in a :ref:`lightweight file storage <lightweight-store>`
     }
 
 Deployment
