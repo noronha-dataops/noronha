@@ -8,4 +8,4 @@ RUN rm -f /var/lib/dpkg/lock \
  && rm -f /var/opt/jfrog/artifactory/.lock
 
 # tomcat configuration
-RUN sed -i 's/Connector/Connector connectionTimeout="120000"/' /opt/jfrog/artifactory/tomcat/conf/server.xml
+RUN sed -i 's/Connector/Connector connectionTimeout="120000"/' /opt/jfrog/artifactory/app/artifactory/tomcat/conf/server.xml
