@@ -32,4 +32,6 @@ Reference for the inference servers, which can be found in the `serving module <
 
 .. autoclass:: noronha.tools.serving.OnlinePredict
 
+.. _lazy-model-server:
+
 .. autoclass:: noronha.tools.serving.LazyModelServer

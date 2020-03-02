@@ -661,3 +661,4 @@ class CassWarehouseCompass(LWWarehouseCompass):
     file_manager_type = WarehouseConst.Types.CASS
     
     ORIGINAL_PORT = 9042
+    DEFAULT_PORT = 9042

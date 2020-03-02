@@ -68,7 +68,7 @@ The following properties are found under the key *mongo* and they refer to how N
 
 File Manager
 ============
-The following properties are found under the key *file_manager* and they refer to how Noronha uses its file manager.
+The following properties are found under the key *file_store* and they refer to how Noronha uses its file manager.
 
 - **port:** As explained in the :ref:`island conventions <island-conventions>` (default: 30023).
 
@@ -79,6 +79,28 @@ The following properties are found under the key *file_manager* and they refer t
 - **type:** Reference to the file manager that Noronha should use (either *artif*, for Artifactory, or *nexus*, for Nexus) (default: artif).
 
 - **repository:** Name of an existing repository that Noronha should use to store its model files, datasets and output notebooks. For Artifactory, the default is *example-repo-local*. For Nexus there is no default value, since the first repository needs to be created manually through the plugin's user interface.
+
+.. _lightweight-store:
+
+Lightweight Store
+=================
+The following properties are found under the key *lightweight_store* and they refer to how Noronha uses its lightweight file storage.
+
+This is a storage alternative to be used along with the standard file manager, so that small datasets and model versions can be persisted and restored faster.
+This feature is specially useful when your prediction notebook uses a :ref:`LazyModelServer <lazy-model-server>`.
+
+Note that in order to use this feature you should have already configured an external `Cassandra Database <http://cassandra.apache.org>`_.
+An easy way to experiment with it in a sandbox environment is to use a `dockerized Cassandra <https://hub.docker.com/_/cassandra/>`_.
+
+- **enabled:** (boolean) Set to *true* if you're going to use this feature (default: false).
+
+- **native:** As explained in the :ref:`island conventions <island-conventions>`. Currently, the only supported value is *false*.
+
+- **type:** The type of database. Currently, the only supported value is *cass*.
+
+- **port:** The database's communication port (default: 9042).
+
+- **hosts:** List of hostnames or IP's to connect with your database.
 
 Project
 =======

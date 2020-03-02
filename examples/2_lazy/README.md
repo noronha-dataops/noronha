@@ -4,7 +4,7 @@
 This tutorial shows how to adapt the previous [iris example](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/)
 so that multiple model versions can be dynamically loaded and served from a single deployment.
 
-Optionally, this serving architecture can also be integrated with Noronha's [lightweight storage](LINK TO DOCS TOPIC EXPLAINING LIGHTWEIGHT STORAGE)
+Optionally, this serving architecture can also be integrated with Noronha's [lightweight storage](https://noronha-dataops.readthedocs.io/en/latest/use_guide/configuration.html#lightweight-store)
 in order to accelerate the loading of model files.
 
 #### 1) (Optional) Configuring the lightweight store
