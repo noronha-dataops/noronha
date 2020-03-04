@@ -819,7 +819,7 @@ class KubeCaptain(Captain):
             metadata={'name': name},
             spec=dict(
                 selector={'app': name},
-                type='LoadBalancer',
+                type='LoadBalancer' if self.compass.get_use_lb() else 'NodePort',
                 ports=port_defs
             )
         )

@@ -212,11 +212,20 @@ class CaptainCompass(Compass):
     def get_node(self) -> str:
         
         pass
+    
+    @abstractmethod
+    def get_use_lb(self):
+        
+        pass
 
 
 class SwarmCompass(CaptainCompass):
     
     DEFAULT_TIMEOUT = 20
+    
+    def get_use_lb(self):
+        
+        raise NotImplementedError("Deployments by container manager 'swarm' are automatically load balanced")
     
     def get_namespace(self):
         
@@ -240,9 +249,11 @@ class KubeCompass(CaptainCompass):
     KEY_NAMESPACE = 'namespace'
     KEY_STG_CLS = 'storage_class'
     KEY_NFS = 'nfs'
+    KEY_USE_LB = 'use_load_balancer'
     DEFAULT_NAMESPACE = 'default'
     DEFAULT_STG_CLS = 'standard'
     DEFAULT_TIMEOUT = 60
+    DEFAULT_USE_LB = False
     
     def get_namespace(self):
         
@@ -257,6 +268,10 @@ class KubeCompass(CaptainCompass):
         assert isinstance(stg_cls, str) and len(stg_cls) > 0,\
             ConfigurationError("Container manager 'kube' requires an existing storage class to be configured")
         return stg_cls
+    
+    def get_use_lb(self):
+        
+        return self.conf.get(self.KEY_USE_LB, self.DEFAULT_USE_LB)
     
     def get_nfs_server(self):
         
