@@ -166,7 +166,7 @@ class ArtifWarehouse(FileStoreWarehouse):
         work = None
         
         try:
-            if path_from is None:
+            if content is not None:
                 work = Workpath.get_tmp()
                 file_name = os.path.basename(path_to)
                 work.deploy_text_file(name=file_name, content=content)

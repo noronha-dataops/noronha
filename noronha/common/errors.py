@@ -25,13 +25,15 @@ class PrettyError(Exception):
     @classmethod
     def parse_exc(cls, exc: Exception = None):
         
+        cause = cls.parse_cause(exc)
+        
         dyct = StructCleaner()(dict(
             Error=exc.__class__.__name__,
             Message=str(exc),
-            cause=cls.parse_cause(exc)
+            cause=cause
         ))
         
-        if dyct.get('cause', {}).get('Message') == dyct.get('Message'):
+        if isinstance(cause, dict) and cause.get('Message') == dyct.get('Message'):
             _ = dyct.pop('Message', None)
         
         return dyct
