@@ -38,7 +38,7 @@ class PrettyDoc(BaseDocument):
     _fields_ordered = []
     meta = DOC_META
     
-    def get(self, key: (str, list), _obj=None, default=None):
+    def get(self, key: (str, list), default=None, _obj=None,):
         
         if _obj is None:
             _obj = self
@@ -57,7 +57,7 @@ class PrettyDoc(BaseDocument):
         if len(key) == 1:
             return val
         else:
-            return self.get(key[1:], val, default)
+            return self.get(key=key[1:], _obj=val, default=default)
     
     def as_dict(self, depth=0, pretty=False):
         
