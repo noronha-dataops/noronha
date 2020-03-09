@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-"""Documents related to MoVers (short for Model Versions)"""
+"""TODO: {{module description}}
+"""
 
 from mongoengine import CASCADE
 from mongoengine.fields import StringField, DictField, ReferenceField, EmbeddedDocumentField, BooleanField

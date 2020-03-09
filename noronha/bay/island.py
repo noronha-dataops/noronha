@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""TODO: {{module description}}
+"""
+
 import os
 from typing import Type
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-"""Module for defining database objects (i.e.: ORM)"""
+"""TODO: {{module description}}
+"""
 
 import os
 import random_name

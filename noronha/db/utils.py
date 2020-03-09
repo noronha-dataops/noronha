@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""TODO: {{module description}}
+"""
+
 from datetime import datetime
 from mongoengine import EmbeddedDocument
 from mongoengine.fields import StringField, BooleanField, FloatField, DateTimeField, IntField

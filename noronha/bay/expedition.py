@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""TODO: {{module description}}
+"""
+
 from abc import ABC, abstractmethod
 from typing import List
 

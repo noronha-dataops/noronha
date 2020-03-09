@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""TODO: {{module description}}
+"""
+
 import json
 import keyring
 

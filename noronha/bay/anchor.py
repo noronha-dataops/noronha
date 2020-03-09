@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""TODO: {{module description}}
+"""
+
 import git
 import os
 from abc import ABC

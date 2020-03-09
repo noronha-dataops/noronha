@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""TODO: {{module description}}
+"""
+
 from mongoengine import Document
 from mongoengine.fields import *
 

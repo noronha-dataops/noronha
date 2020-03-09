@@ -6,9 +6,12 @@ Developer Guide
    :caption: Contents:
    
    intro.rst
+   module_rel.rst
+   module_ref.rst
+
+.. TODO:
    testing.rst
    documenting.rst
-   architecture.rst
    toolkit.rst
    metadata.rst
    commands.rst
