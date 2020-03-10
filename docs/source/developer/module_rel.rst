@@ -20,3 +20,8 @@ Publishing a model version
 ==========================
 
 .. image:: module_rel_movers.png
+
+Launching the IDE
+=================
+
+.. image:: module_rel_ide.png
