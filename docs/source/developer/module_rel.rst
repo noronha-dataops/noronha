@@ -7,16 +7,16 @@ As Noronha performs a task - such as publishing a model or running a training - 
 interact in order to produce the expected result. This section explains the relationships that occur between those
 modules when performing the most common tasks. 
 
-Metadata management
-===================
+The following caption illustrates the conventions used for representing those relationshipts in the each of the topics bellow:
 
-.. TODO: explanation
+.. image:: module_rel_caption.png
 
-.. TODO: diagram
+Creating a project
+==================
 
-File upload
-===========
+.. image:: module_rel_proj.png
 
-.. TODO: explanation
+Publishing a model version
+==========================
 
-.. TODO: diagram
+.. image:: module_rel_movers.png
