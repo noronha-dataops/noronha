@@ -11,7 +11,7 @@ class FrameworkConst(object):
     
     FW_NAME = 'noronha-dataops'
     FW_VERSION = '1.4.4'  # framework version
-    FW_TAG = 'develop'  # framework tag
+    FW_TAG = 'latest'  # framework tag
 
 
 class Perspective(object):
