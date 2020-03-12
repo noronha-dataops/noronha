@@ -78,7 +78,7 @@ without replication and execute the new inference notebook:
 
 ```
 nha ${flags} depl new \
---name homolog \
+--name dev \
 --tag lazy \
 --nb notebooks/lazy_predict \
 --port 30051
@@ -112,13 +112,13 @@ Test your API with a call that goes through the model router:
 curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '[1,2,3,4]' \
-"http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=experiment-v1</b>" \
+"http://127.0.0.1:30080/predict?project=botanics&deploy=dev&<b>model_version=experiment-v1</b>" \
 && echo
 
 <b># inference with model version "higher-gamma"</b>
 curl -X POST \
 -H 'Content-Type: application/JSON' \
 --data '[1,2,3,4]' \
-"http://127.0.0.1:30080/predict?project=botanics&<b>deploy=lazy&model_version=higher-gamma</b>" \
+"http://127.0.0.1:30080/predict?project=botanics&deploy=dev&<b>model_version=higher-gamma</b>" \
 && echo
 </pre>
