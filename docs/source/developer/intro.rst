@@ -10,6 +10,8 @@ Before you begin
 ================
 When contributing to Noronha, it is assumed that you are comfortable with the following technologies:
 
+- Supervised Machine Learning
+- DevOps pipelines
 - Object oriented Python 3
 - Docker (engine and Swarm)
 - Kubernetes
