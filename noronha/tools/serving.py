@@ -248,9 +248,11 @@ class LazyModelServer(ModelServer):
             path = model_path(model=self._model_name, version=version)
         except ResolutionError:
             path = require_movers(model=self._model_name, version=version)
+
+        meta = movers_meta(model=self._model_name, version=version)  # metadata related to the model version
         
         self._loaded_models[version] = tuple([
-            self._load_model_func(path),  # loaded model object, respective to the model version
+            self._load_model_func(path, meta),  # loaded model object, respective to the model version
             movers_meta(model=self._model_name, version=version)  # metadata related to the model version
         ])
     
