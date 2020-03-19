@@ -48,7 +48,7 @@ class Deployment(SmartDoc):
         task_ids = self.tasks.keys()
         alive_tasks = get_captain(section=DockerConst.Section.DEPL).list_cont_or_pod_ids()
         
-        for task_id in task_ids:
+        for task_id in list(task_ids):
             if self.tasks[task_id]['state'] in Task.State.END_STATES or task_id not in alive_tasks:
                 self.tasks.pop(task_id)
     
