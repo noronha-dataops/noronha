@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import traceback
 
 from noronha.api.main import NoronhaAPI
 from noronha.bay.expedition import ShortExpedition
@@ -115,6 +116,7 @@ class TrainingExp(ShortExpedition):
             
             if self.captain.interrupted or not completed:
                 self.LOG.warn('Failing training due to an interruption')
+                traceback.print_exc()
                 self.train.reload()
                 self.train.task.state = Task.State.FAILED
                 self.train.save()
