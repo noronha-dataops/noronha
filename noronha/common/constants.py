@@ -82,7 +82,7 @@ class DBConst(object):
     
     """Constants related to the database"""
     
-    MAX_NAME_LEN = 32
+    MAX_NAME_LEN = 64
     MAX_DESC_LEN = 512
     MAX_REPO_LEN = 512
     MAX_EXPAND_DEPTH = 4
