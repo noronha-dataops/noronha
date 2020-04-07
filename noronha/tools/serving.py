@@ -10,7 +10,7 @@ from werkzeug.serving import run_simple
 
 from noronha.bay.compass import LWWarehouseCompass
 from noronha.common.conf import LazyConf
-from noronha.common.constants import DateFmt, OnlineConst, Task
+from noronha.common.constants import Config, DateFmt, OnlineConst, Task
 from noronha.common.errors import NhaDataError, PrettyError, MisusageError, ResolutionError
 from noronha.common.logging import LOG
 from noronha.common.parser import assert_json, assert_str, StructCleaner
