@@ -636,6 +636,8 @@ class LWWarehouseCompass(WarehouseCompass):
     KEY_HOST = 'hosts'
     KEY_REPLICATION = 'replication_factor'
     DEFAULT_REPLICATION = 1
+    KEY_TIME_TO_LEAVE = 'time_to_leave'
+    DEFAULT_TIME_TO_LEAVE = 600
     
     def get_store(self):
         
@@ -668,6 +670,11 @@ class LWWarehouseCompass(WarehouseCompass):
             return 1
         else:
             return self.conf.get(self.KEY_REPLICATION, self.DEFAULT_REPLICATION)
+
+    @property
+    def time_to_leave(self):
+
+        return int(self.conf.get(self.KEY_TIME_TO_LEAVE, self.DEFAULT_TIME_TO_LEAVE))
 
 
 class CassWarehouseCompass(LWWarehouseCompass):

@@ -33,6 +33,7 @@ lightweight_store:
   port: 30042
   type: cass
   keyspace: nha_db
+  time_to_leave: 600
 
 docker:
   daemon_address: unix:/var/run/docker.sock
