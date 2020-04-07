@@ -9,6 +9,7 @@ from flask import Flask, request
 from werkzeug.serving import run_simple
 
 from noronha.bay.compass import LWWarehouseCompass
+from noronha.common.conf import LazyConf
 from noronha.common.constants import DateFmt, OnlineConst, Task
 from noronha.common.errors import NhaDataError, PrettyError, MisusageError, ResolutionError
 from noronha.common.logging import LOG
@@ -222,6 +223,9 @@ class LazyModelServer(ModelServer):
 
         server()
     """
+
+    conf = LazyConf(namespace=Config.Namespace.LW_WAREHOUSE)
+    compass_cls = LWWarehouseCompass
     
     def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100):
         
@@ -232,7 +236,7 @@ class LazyModelServer(ModelServer):
         self._max_models = max_models
         self._loaded_models = {}
         self._model_usage = HistoryQueue(max_size=max_models)
-        self.time_to_leave = LWWarehouseCompass.time_to_leave
+        self.compass = self.compass_cls()
     
     def purge_least_used_model(self):
         
@@ -290,7 +294,7 @@ class LazyModelServer(ModelServer):
     def enforce_time_to_leave(self, version):
 
         try:
-            if float(time.time() - self._loaded_models[version][2]) > float(self.time_to_leave):
+            if float(time.time() - self._loaded_models[version][2]) > float(self.compass.time_to_leave):
                 self.purge_mover(version)
         except KeyError:  # ignores if model version is not in memory
             pass
@@ -298,7 +302,7 @@ class LazyModelServer(ModelServer):
         try:
             path = model_path(model=self._model_name, version=version)
             helper = FsHelper(path)
-            if float(time.time() - helper.get_modify_time()) > float(self.time_to_leave):
+            if float(time.time() - helper.get_modify_time()) > float(self.compass.time_to_leave):
                 helper.delete_path()
         except ResolutionError:  # ignores if model version was never loaded
             pass
