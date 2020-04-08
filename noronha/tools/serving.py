@@ -245,7 +245,10 @@ class LazyModelServer(ModelServer):
 
     def purge_mover(self, version):
 
-        _ = self._loaded_models.pop(version)
+        try:
+            _ = self._loaded_models.pop(version)
+        except KeyError:  # ignores if model version was never loaded
+            pass
     
     def enforce_model_limit(self):
         
@@ -265,8 +268,7 @@ class LazyModelServer(ModelServer):
         
         self._loaded_models[version] = tuple([
             self._load_model_func(path, meta),  # loaded model object, respective to the model version
-            movers_meta(model=self._model_name, version=version),  # metadata related to the model version
-            time.time()
+            movers_meta(model=self._model_name, version=version)  # metadata related to the model version
         ])
     
     def fetch_model(self, version):
@@ -294,12 +296,7 @@ class LazyModelServer(ModelServer):
     def enforce_time_to_leave(self, version):
 
         try:
-            if float(time.time() - self._loaded_models[version][2]) > float(self.compass.time_to_leave):
-                self.purge_mover(version)
-        except KeyError:  # ignores if model version is not in memory
-            pass
-
-        try:
+            self.purge_mover(version)
             path = model_path(model=self._model_name, version=version)
             helper = FsHelper(path)
             if float(time.time() - helper.get_modify_time()) > float(self.compass.time_to_leave):
