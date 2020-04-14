@@ -237,11 +237,10 @@ class LazyModelServer(ModelServer):
         self._loaded_models = {}
         self._model_usage = HistoryQueue(max_size=max_models)
         self.compass = self.compass_cls()
-    
-    def purge_least_used_model(self):
-        
-        least_used = self._model_usage.get()
-        _ = self._loaded_models.pop(least_used)
+
+        @self._service.route('/update', methods=['POST'])
+        def update():
+            return self._update_route()
 
     def purge_mover(self, version):
 
@@ -253,7 +252,8 @@ class LazyModelServer(ModelServer):
     def enforce_model_limit(self):
         
         while len(self._loaded_models) >= self._max_models:
-            self.purge_least_used_model()
+            least_used = self._model_usage.get()
+            self.purge_mover(least_used)
     
     def load_model(self, version):
         
@@ -272,15 +272,13 @@ class LazyModelServer(ModelServer):
         ])
     
     def fetch_model(self, version):
-
-        self.enforce_time_to_leave(version)
         
         if version not in self._loaded_models:
             self.load_model(version)
         
         self._model_usage.put(version)
         return self._loaded_models[version]
-        
+
     def make_result(self, body, args):
         
         model_args = self.fetch_model(args['model_version'])  # tuple([model_obj, movers_meta])
@@ -296,10 +294,23 @@ class LazyModelServer(ModelServer):
     def enforce_time_to_leave(self, version):
 
         try:
-            self.purge_mover(version)
             path = model_path(model=self._model_name, version=version)
             helper = FsHelper(path)
             if float(time.time() - helper.get_modify_time()) > float(self.compass.time_to_leave):
+                self.purge_mover(version)
                 helper.delete_path()
         except ResolutionError:  # ignores if model version was never loaded
             pass
+
+    def _update_route(self):
+
+        kwargs = self.make_request_kwargs()
+
+        if 'model_version' not in kwargs['args']:
+            response = 'Expected model_version argument\nGot: {}'.format(kwargs['args'].to_dict(flat=False))
+            code = OnlineConst.ReturnCode.BAD_REQUEST
+        else:
+            self.enforce_time_to_leave(kwargs['args']['model_version'])
+            response, code = 'OK', 200
+
+        return response, code

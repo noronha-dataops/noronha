@@ -64,6 +64,26 @@ app.post('/predict', (req, cli_res) => {
 });
 
 
+app.post('/update', (req, cli_res) => {
+
+    var serv_host = getServiceHost(req.query, cli_res);
+
+    request.post({
+        url:     `http:\/\/${serv_host}:${serv_port}${req.url}`,
+        body:    JSON.stringify(req.body)
+    }, (err, res, body) => {
+
+        if (err) {
+            routerError(serv_host, err, cli_res);
+        } else {
+            cli_res.status(res.statusCode).send(body);
+        }
+
+    });
+
+});
+
+
 app.get('/', (req, cli_res) => {
 
     cli_res.status(200).send('OK')
