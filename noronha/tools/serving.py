@@ -311,6 +311,7 @@ class LazyModelServer(ModelServer):
             code = OnlineConst.ReturnCode.BAD_REQUEST
         else:
             self.enforce_time_to_leave(kwargs['args']['model_version'])
+            self.fetch_model(kwargs['args']['model_version'])
             response, code = 'OK', 200
 
         return response, code
