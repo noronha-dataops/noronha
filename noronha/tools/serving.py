@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import json
-import warnings
+import multiprocessing
 import time
+import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
 from flask import Flask, request
@@ -59,7 +60,7 @@ class ModelServer(ABC, BaseApplication):
             bind='{}:{}'.format(OnlineConst.BINDING_HOST, OnlineConst.PORT),
             workers=1,
             worker_class='gthread',
-            threads=2,
+            threads=self.get_threads(),
         )
 
         @self._service.route('/predict', methods=['POST'])
@@ -71,7 +72,11 @@ class ModelServer(ABC, BaseApplication):
             return self._health.status
 
         super(ModelServer, self).__init__()
-    
+
+    @staticmethod
+    def get_threads():
+        return int(4 * multiprocessing.cpu_count())
+
     def load_config(self):
         for k, v in self.config.items():
             self.cfg.set(k, v)
