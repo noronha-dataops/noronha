@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from flask import Flask, request
-from werkzeug.serving import run_simple
+from gunicorn.app.base import BaseApplication
 
 from noronha.bay.compass import LWWarehouseCompass
 from noronha.common.conf import LazyConf
@@ -44,7 +44,7 @@ class HealthCheck(object):
         self._status = status
 
 
-class ModelServer(ABC):
+class ModelServer(ABC, BaseApplication):
     
     def __init__(self, predict_func, enrich=True):
 
@@ -55,6 +55,12 @@ class ModelServer(ABC):
         self._enrich = enrich
         self._cleaner = StructCleaner(depth=1)
         self.proc_mon = load_proc_monitor(catch_task=True)
+        self.config = dict(
+            bind='{}:{}'.format(OnlineConst.BINDING_HOST, OnlineConst.PORT),
+            workers=1,
+            worker_class='gthread',
+            threads=2,
+        )
 
         @self._service.route('/predict', methods=['POST'])
         def predict():
@@ -63,7 +69,17 @@ class ModelServer(ABC):
         @self._service.route('/health', methods=['GET'])
         def health():
             return self._health.status
+
+        super(ModelServer, self).__init__()
     
+    def load_config(self):
+        for k, v in self.config.items():
+            self.cfg.set(k, v)
+
+    def load(self):
+        LOG.info("\nANTES DO LOAD")
+        return self._service
+
     def make_request_kwargs(self):
         
         body = request.get_data()
@@ -132,12 +148,8 @@ class ModelServer(ABC):
             if self.proc_mon is not None:
                 self.proc_mon.set_state(Task.State.FINISHED)
 
-            run_simple(
-                hostname=OnlineConst.BINDING_HOST,
-                port=OnlineConst.PORT,
-                use_debugger=debug,
-                application=self._service
-            )
+            LOG.info("\nANTES DO RUN")
+            self.run()
         except (Exception, KeyboardInterrupt) as e:
             self.proc_mon.set_state(Task.State.FAILED)
             raise e
@@ -170,7 +182,7 @@ class OnlinePredict(ModelServer):
         
         server()
     """
-    
+
     def __init__(self, predict_func, enrich=True):
         
         super().__init__(predict_func=predict_func, enrich=enrich)
