@@ -14,7 +14,7 @@ from noronha.common.conf import LazyConf
 from noronha.common.constants import Config, DateFmt, OnlineConst, Task
 from noronha.common.errors import NhaDataError, PrettyError, MisusageError, ResolutionError
 from noronha.common.logging import LOG
-from noronha.common.parser import assert_json, assert_str, StructCleaner
+from noronha.common.parser import assert_json, assert_str, StructCleaner, join_dicts
 from noronha.common.utils import FsHelper
 from noronha.db.depl import Deployment
 from noronha.tools.shortcuts import require_movers, model_path, movers_meta
@@ -47,7 +47,7 @@ class HealthCheck(object):
 
 class ModelServer(ABC, BaseApplication):
     
-    def __init__(self, predict_func, enrich=True):
+    def __init__(self, predict_func, enrich=True, extra_confs=None):
 
         assert callable(predict_func)
         self._service = Flask(__name__)
@@ -56,12 +56,13 @@ class ModelServer(ABC, BaseApplication):
         self._enrich = enrich
         self._cleaner = StructCleaner(depth=1)
         self.proc_mon = load_proc_monitor(catch_task=True)
-        self.config = dict(
+        self.config = join_dicts(dict(
             bind='{}:{}'.format(OnlineConst.BINDING_HOST, OnlineConst.PORT),
+
             workers=1,
             worker_class='gthread',
             threads=self.get_threads(),
-        )
+        ), extra_confs)
 
         @self._service.route('/predict', methods=['POST'])
         def predict():
@@ -71,7 +72,7 @@ class ModelServer(ABC, BaseApplication):
         def health():
             return self._health.status
 
-        super(ModelServer, self).__init__()
+        super().__init__()
 
     @staticmethod
     def get_threads():
@@ -82,7 +83,6 @@ class ModelServer(ABC, BaseApplication):
             self.cfg.set(k, v)
 
     def load(self):
-        LOG.info("\nANTES DO LOAD")
         return self._service
 
     def make_request_kwargs(self):
@@ -153,7 +153,6 @@ class ModelServer(ABC, BaseApplication):
             if self.proc_mon is not None:
                 self.proc_mon.set_state(Task.State.FINISHED)
 
-            LOG.info("\nANTES DO RUN")
             self.run()
         except (Exception, KeyboardInterrupt) as e:
             self.proc_mon.set_state(Task.State.FAILED)
@@ -188,14 +187,18 @@ class OnlinePredict(ModelServer):
         server()
     """
 
-    def __init__(self, predict_func, enrich=True):
-        
-        super().__init__(predict_func=predict_func, enrich=enrich)
+    def __init__(self, predict_func, load_model_func, enrich=True):
+
+        assert callable(load_model_func)
+        extra_confs = dict(post_worker_init=self.load_static_model)
+        super().__init__(predict_func=predict_func, enrich=enrich, extra_confs=extra_confs)
         self.movers = Deployment.load(ignore=True).movers
-    
+        self._loaded_models = {}
+        self._load_model_func = load_model_func
+
     def make_result(self, body, args):
         
-        return self._predict_func(body)
+        return self._predict_func(body, self._loaded_models)
     
     def make_metadata(self, body, args):
         
@@ -203,6 +206,9 @@ class OnlinePredict(ModelServer):
             'datetime': datetime.now().strftime(DateFmt.READABLE),
             'model_version': sorted([mv.show() for mv in self.movers])
         })
+
+    def load_static_model(self, worker):
+        self._loaded_models = self._load_model_func()
 
 
 class LazyModelServer(ModelServer):
