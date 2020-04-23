@@ -49,7 +49,7 @@ class ModelServer(ABC, BaseApplication):
     
     def __init__(self, predict_func, enrich=True, extra_confs=None):
 
-        assert callable(predict_func)
+        assert callable(predict_func), MisusageError("predict_func must be callable")
         self._service = Flask(__name__)
         self._predict_func = predict_func
         self._health = HealthCheck()
@@ -58,7 +58,6 @@ class ModelServer(ABC, BaseApplication):
         self.proc_mon = load_proc_monitor(catch_task=True)
         self.config = join_dicts(dict(
             bind='{}:{}'.format(OnlineConst.BINDING_HOST, OnlineConst.PORT),
-
             workers=1,
             worker_class='gthread',
             threads=self.get_threads(),
@@ -187,14 +186,18 @@ class OnlinePredict(ModelServer):
         server()
     """
 
-    def __init__(self, predict_func, load_model_func, enrich=True):
+    def __init__(self, predict_func, pre_load_model_func=None, enrich=True):
 
-        assert callable(load_model_func)
-        extra_confs = dict(post_worker_init=self.load_static_model)
+        if pre_load_model_func:
+            assert callable(pre_load_model_func), MisusageError("load_model_func must be callable")
+            extra_confs = dict(post_worker_init=self.load_static_model, timeout=300)
+        else:
+            extra_confs = None
+
         super().__init__(predict_func=predict_func, enrich=enrich, extra_confs=extra_confs)
         self.movers = Deployment.load(ignore=True).movers
         self._loaded_models = {}
-        self._load_model_func = load_model_func
+        self._load_model_func = pre_load_model_func
 
     def make_result(self, body, args):
         
@@ -252,7 +255,7 @@ class LazyModelServer(ModelServer):
     
     def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100):
         
-        assert callable(load_model_func)
+        assert callable(load_model_func), MisusageError("load_model_func must be callable")
         super().__init__(predict_func=predict_func, enrich=False)
         self._load_model_func = load_model_func
         self._model_name = model_name  # TODO: if not provided, resolve by shortcut model_meta
@@ -265,7 +268,7 @@ class LazyModelServer(ModelServer):
         def update():
             return self._update_route()
 
-    def purge_mover(self, version):
+    def delete_mover(self, version):
 
         try:
             _ = self._loaded_models.pop(version)
@@ -276,7 +279,7 @@ class LazyModelServer(ModelServer):
         
         while len(self._loaded_models) >= self._max_models:
             least_used = self._model_usage.get()
-            self.purge_mover(least_used)
+            self.delete_mover(least_used)
     
     def load_model(self, version):
         
@@ -314,14 +317,13 @@ class LazyModelServer(ModelServer):
             .format(self.__class__.__name__)
         )
 
-    def enforce_time_to_leave(self, version):
+    def delete_model(self, version):
 
         try:
             path = model_path(model=self._model_name, version=version)
             helper = FsHelper(path)
-            if float(time.time() - helper.get_modify_time()) > float(self.compass.time_to_leave):
-                self.purge_mover(version)
-                helper.delete_path()
+            self.delete_mover(version)
+            helper.delete_path()
         except ResolutionError:  # ignores if model version was never loaded
             pass
 
@@ -329,12 +331,12 @@ class LazyModelServer(ModelServer):
 
         kwargs = self.make_request_kwargs()
 
-        if 'model_version' not in kwargs['args']:
-            response = 'Expected model_version argument\nGot: {}'.format(kwargs['args'].to_dict(flat=False))
-            code = OnlineConst.ReturnCode.BAD_REQUEST
-        else:
-            self.enforce_time_to_leave(kwargs['args']['model_version'])
+        if 'model_version' in kwargs['args']:
+            self.delete_model(kwargs['args']['model_version'])
             self.fetch_model(kwargs['args']['model_version'])
             response, code = 'OK', 200
+        else:
+            response = 'Expected model_version argument\nGot: {}'.format(kwargs['args'].to_dict(flat=False))
+            code = OnlineConst.ReturnCode.BAD_REQUEST
 
         return response, code
