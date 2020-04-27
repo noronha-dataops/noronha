@@ -245,6 +245,7 @@ class Config(object):
         FS_WAREHOUSE = 'file_store'
         LW_WAREHOUSE = 'lightweight_store'
         ONLINE = 'predict.online'
+        WEB_SERVER = 'web_server'
 
 
 class Package(object):
@@ -334,3 +335,10 @@ class DockerConst(object):
         DEPL = 'nha-depl'
         PROJ = 'nha-proj'
         ALL = [ISLE, IDE, TRAIN, DEPL, PROJ]
+
+
+class WebServerConst(object):
+
+    class Servers(object):
+
+        GUNICORN = 'gunicorn'

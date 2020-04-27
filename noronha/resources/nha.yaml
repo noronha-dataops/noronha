@@ -41,3 +41,9 @@ docker:
 
 container_manager:
   type: swarm
+
+web_server:
+  type: gunicorn
+  threaded: true
+  high_cpu: true
+

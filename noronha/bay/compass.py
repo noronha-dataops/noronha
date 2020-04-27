@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.common.utils import is_it_open_sea
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding, WebServerConst
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
 from noronha.common.parser import resolve_log_level
@@ -684,3 +684,47 @@ class CassWarehouseCompass(LWWarehouseCompass):
     
     ORIGINAL_PORT = 9042
     DEFAULT_PORT = 9042
+
+
+class WebServerCompass(Compass):
+
+    conf = WebServerConf
+
+    KEY_HOST = 'host'
+    KEY_PORT = 'port'
+    KEY_TIPE = 'type'
+    KEY_THREADED = 'threaded'
+    DEFAULT_HOST = '0.0.0.0'
+    DEFAULT_PORT = 8080
+    DEFAULT_THREADED = True
+
+    @property
+    def tipe(self):
+        return self.conf[self.KEY_TIPE]
+
+    @property
+    def threaded(self):
+        return self.conf.get(self.KEY_THREADED, self.DEFAULT_THREADED)
+
+    @property
+    def host(self):
+        return self.conf.get(self.KEY_HOST, self.DEFAULT_THREADED)
+
+    @property
+    def port(self):
+        return self.conf.get(self.KEY_PORT, self.DEFAULT_PORT)
+
+
+class GunicornServerCompass(WebServerCompass):
+
+    KEY_WORKER_TYPE = 'worker_type'
+
+    @property
+    def worker_type(self):
+        return self.conf[self.KEY_WORKER_TYPE]
+
+
+def get_server_compass():
+    return {
+        WebServerConst.Servers.GUNICORN: GunicornServerCompass
+    }.get(WebServerCompass().tipe)()
