@@ -4,6 +4,11 @@ BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TMP_DIR="/tmp"
 NORONHA_INST_FOLDER="/usr/share/noronha-dataops"
 NORONHA_BRANCH="develop"
+NORONHA_VENV="/usr/share/noronha-venv"
+
+python3 -m venv ${NORONHA_VENV}
+chmod 777 -R ${NORONHA_VENV}
+source ${NORONHA_VENV}
 
 pip3 install --upgrade requests
 pip3 install six==1.10.0
@@ -47,5 +52,7 @@ pip3 install ${NORONHA_INST_FOLDER}
 chown -R ${EXEC_USER} /home/${EXEC_USER}/anaconda
 
 docker build -f "${NORONHA_INST_FOLDER}/Dockerfile" -t "noronha.everis.ai/noronha:${NORONHA_BRANCH}" ${NORONHA_INST_FOLDER}
+
+echo "export NORONHA_VENV=${NORONHA_VENV}" >> /etc/bash.bashrc
 
 echo "You must reboot this machine to the changes take effect"
