@@ -1,0 +1,81 @@
+#!/bin/sh
+
+BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TMP_DIR="/tmp"
+NORONHA_INST_FOLDER="/usr/share/noronha-dataops"
+NORONHA_BRANCH="develop"
+NHA_VENV="/usr/share/noronha-venv"
+ANACONDA_HOME="/usr/share/anaconda"
+ANACONDA_GROUP="anacondagrp"
+PIP_HOME="${NHA_VENV}/bin"
+
+# Get user ID
+if [ "${SUDO_USER}" = "" ]; then
+    EXEC_USER="${USER}"
+else
+    EXEC_USER="${SUDO_USER}"
+fi
+echo "Configuring Noronha for user ${EXEC_USER}"
+
+# Install Anaconda
+ANACONDA_FILE="${TMP_DIR}/Anaconda3-2020.02-Linux-x86_64.sh"
+if [ -f "${ANACONDA_FILE}" ]; then
+    echo "${ANACONDA_FILE} exist. Not Downloading it"
+else 
+    curl https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh --output ${ANACONDA_FILE}
+fi
+sh ${ANACONDA_FILE} -b -p ${ANACONDA_HOME}
+
+# Add conda commands to PATH
+echo "ANACONDA_HOME=${ANACONDA_HOME}" >> /etc/bash.bashrc
+echo 'export PATH=${ANACONDA_HOME}/bin:${PATH}' >> /etc/bash.bashrc
+
+# Anaconda Group
+groupadd ${ANACONDA_GROUP}
+chgrp -R ${ANACONDA_GROUP} ${ANACONDA_HOME}
+chmod 775 -R ${ANACONDA_HOME}
+adduser ${EXEC_USER} ${ANACONDA_GROUP}
+chown -R ${EXEC_USER} /home/${EXEC_USER}/.conda
+
+
+# Create Virtual Env
+rm -rf "${NHA_VENV}"
+${ANACONDA_HOME}/bin/conda create --prefix="${NHA_VENV}" python="3.7" -y
+chgrp -R ${ANACONDA_GROUP} ${NHA_VENV}
+source ${ANACONDA_HOME}/bin/activate ${NHA_VENV}
+
+# Install dependencies
+${PIP_HOME}/pip install --upgrade requests
+${PIP_HOME}/pip install six==1.10.0
+${PIP_HOME}/pip install --upgrade setuptools
+# pip install setuptools>=40.3.0
+
+
+# DOCKER_INST_FILE=${TMP_DIR}/install_docker.sh
+# if [ -f "${DOCKER_INST_FILE}" ]; then
+#     echo "${DOCKER_INST_FILE} exist. Not Downloading it"
+# else 
+#     curl -fsSL https://get.docker.com -o ${DOCKER_INST_FILE}
+# fi
+# sh ${DOCKER_INST_FILE}
+
+# /usr/sbin/groupadd docker
+
+# Create Docker group and init swarm mode
+/usr/sbin/usermod -aG docker ${EXEC_USER}
+docker swarm init
+
+# Install Noronha 
+${PIP_HOME}/pip install ${NORONHA_INST_FOLDER}
+
+
+# Change ownership of anaconda folder
+chown -R ${EXEC_USER} /home/${EXEC_USER}/anaconda
+
+# Build Noronha Image
+docker build -f "${NORONHA_INST_FOLDER}/Dockerfile" -t "noronha.everis.ai/noronha:${NORONHA_BRANCH}" ${NORONHA_INST_FOLDER}
+
+# Add NHA_VENV to all users
+echo "export NHA_VENV=${NHA_VENV}" >> /etc/bash.bashrc
+
+echo "You must reboot this machine to the changes take effect"
