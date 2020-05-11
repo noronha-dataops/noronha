@@ -1,17 +1,17 @@
-import multiprocessing
 import warnings
 from abc import ABC, abstractmethod
 from gunicorn.app.base import BaseApplication
 from werkzeug.serving import run_simple
 
-from noronha.bay.compass import WebServerCompass, GunicornServerCompass
-from noronha.common.conf import WebServerConf
-from noronha.common.constants import Config, DateFmt, OnlineConst, Task
+from noronha.bay.compass import WebServerCompass, GunicornCompass
+from noronha.common.constants import Task
+from noronha.common.errors import ResolutionError
 from noronha.common.logging import LOG
-from noronha.tools.utils import load_proc_monitor, HistoryQueue
+from noronha.common.parser import join_dicts
+from noronha.tools.utils import load_proc_monitor
 
 
-class SimpleServer(ABC):
+class Server(ABC):
 
     proc_mon = load_proc_monitor(catch_task=True)
 
@@ -36,11 +36,11 @@ class SimpleServer(ABC):
             raise e
 
 
-class WerkzeugServer(SimpleServer):
+class SimpleServer(Server):
 
     compass = WebServerCompass()
 
-    def __init__(self, app):
+    def __init__(self, app, model_conf=None):
         self.app = app
 
     def run_server(self):
@@ -49,32 +49,25 @@ class WerkzeugServer(SimpleServer):
             port=self.compass.port,
             use_debugger=True,
             application=self.app,
-            threaded=True
+            threaded=self.compass.threads['enabled']
         )
 
 
-class GunicornServer(BaseApplication, SimpleServer):
+class GunicornServer(BaseApplication, Server):
 
-    compass = GunicornServerCompass()
+    compass = GunicornCompass()
 
-    def __init__(self, app):
+    def __init__(self, app, model_conf=None):
         self.app = app
+        self.model_conf = model_conf
         super().__init__()
 
-    @staticmethod
-    def get_threads():
-        return int(2 * multiprocessing.cpu_count())
-
     def get_config(self):
-        return dict(
-            bind='{}:{}'.format(self.compass.host, self.compass.port),
-            workers=1,
-            worker_class='gthread',
-            threads=self.get_threads()
-        )
+
+        return join_dicts(self.compass.get_extra_conf(), self.model_conf, allow_overwrite=True)
 
     def load_config(self):
-        for k, v in self.get_config():
+        for k, v in self.get_config().items():
             self.cfg.set(k, v)
 
     def run_server(self):
@@ -82,3 +75,23 @@ class GunicornServer(BaseApplication, SimpleServer):
 
     def load(self):
         return self.app
+
+
+def build_server(app, server_conf) -> Server:
+
+    server_compass = WebServerCompass
+    server_type = server_compass().tipe.strip().lower()
+
+    cls_lookup = {
+        'simple': SimpleServer,
+        'gunicorn': GunicornServer,
+    }
+
+    try:
+        server_cls = cls_lookup[server_type]
+    except KeyError:
+        raise ResolutionError(
+            "Could not resolve server by reference '{}'. Options are: {}".format(server_type, list(cls_lookup.keys()))
+        )
+    else:
+        return server_cls(app, server_conf)
