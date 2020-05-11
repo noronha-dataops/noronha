@@ -636,24 +636,34 @@ class KubeCaptain(Captain):
                 return False
             else:
                 raise e
-    
+
+    @patient
     def rm_pod(self, name: str, ignore=True):
         
         try:
             self.k8s_backend.core_api.delete_namespaced_pod(
                 name=name, namespace=self.namespace, grace_period_seconds=0)
+        except (ConuException, K8sApiException) as e:
+            msg = "Waiting up to {} seconds to kill Pod '{}'".format(self.timeout, name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
         except Exception as e:
+            self.LOG.info("Could not patiently delete Pod: {}".format(name))
             if ignore:
                 self.LOG.debug(repr(e))
             else:
                 raise e
-    
+
+    @patient
     def rm_depl(self, name: str, ignore=True):
         
         try:
             self.k8s_backend.apps_api.delete_namespaced_deployment(
                 name=name, namespace=self.namespace, grace_period_seconds=0)
+        except (ConuException, K8sApiException) as e:
+            msg = "Waiting up to {} seconds to kill Deployment '{}'".format(self.timeout, name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
         except Exception as e:
+            self.LOG.info("Could not patiently delete Deployment: {}".format(name))
             if ignore:
                 self.LOG.debug(repr(e))
             else:
@@ -665,6 +675,7 @@ class KubeCaptain(Captain):
             self.k8s_backend.core_api.delete_namespaced_service(
                 name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
+            self.LOG.debug("Could not delete service: {}".format(name))
             if ignore:
                 self.LOG.debug(repr(e))
             else:

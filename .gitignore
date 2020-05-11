@@ -6,3 +6,5 @@
 **/*.bat
 docs/build
 *.deb
+examples/**/**
+build_nha*
