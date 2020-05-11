@@ -5,3 +5,5 @@
 **/*.pyc
 **/*.bat
 docs/build
+build_nha*
+examples/**/**
