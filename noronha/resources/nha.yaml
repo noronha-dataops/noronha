@@ -33,7 +33,6 @@ lightweight_store:
   port: 30042
   type: cass
   keyspace: nha_db
-  time_to_leave: 600
 
 docker:
   daemon_address: unix:/var/run/docker.sock
@@ -41,3 +40,15 @@ docker:
 
 container_manager:
   type: swarm
+
+web_server:
+  type: simple
+  enable_debug: true
+  threads:
+    enabled: false
+    high_cpu: false
+  extra_conf:
+    processes: 1
+
+web_app:
+  type: flask

@@ -13,11 +13,15 @@ from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.pod import Pod
 from conu.backend.k8s.pod import PodPhase
 from conu.exceptions import ConuException
+from conu.utils import run_cmd
 from datetime import datetime
 from docker.errors import APIError as DockerAPIError
 from docker.types import ServiceMode, TaskTemplate, ContainerSpec, Resources, Healthcheck
 from kaptan import Kaptan
-from kubernetes.client.rest import  ApiException as K8sApiException
+from kubernetes import utils as k8s_utils
+from kubernetes import client as k8s_client
+from kubernetes import config as k8s_config
+from kubernetes.client.rest import ApiException as K8sApiException
 from kubernetes.stream import stream
 import random_name
 from subprocess import Popen, PIPE
@@ -503,6 +507,8 @@ class KubeCaptain(Captain):
         self.stg_cls = self.compass.get_stg_cls(section)
         self.mule = None
         self.assert_namespace()
+        self.api_client = k8s_client.ApiClient()
+        k8s_config.load_kube_config()
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
@@ -586,7 +592,7 @@ class KubeCaptain(Captain):
                 )
             )
         ))
-        
+
         if self.find_depl(name) is None:
             self.LOG.info("Creating deployment '{}'".format(name))
             self.LOG.debug(template)
@@ -599,8 +605,10 @@ class KubeCaptain(Captain):
             depl = self.find_depl(name)
         
         self.handle_svc(name, port_defs)
+        self.handle_autoscaler(name)
+
         return depl
-    
+
     def dispose_run(self, name: str):
         
         self.rm_pod(name)
@@ -744,6 +752,50 @@ class KubeCaptain(Captain):
             method=self.k8s_backend.core_api.list_namespaced_service,
             name=name
         )
+
+    def find_autoscaler(self, name):
+
+        api_response = k8s_client.AutoscalingV1Api(self.api_client). \
+            list_namespaced_horizontal_pod_autoscaler(namespace=self.namespace).to_dict()
+
+        for i in api_response['items']:
+            if i == name:
+                return True
+
+        return False
+
+    def handle_autoscaler(self, name):
+
+        if self.resources and self.resources.get('auto_scale', False):
+
+            template = dict(
+                apiVersion='autoscaling/v1',
+                kind='HorizontalPodAutoscaler',
+                metadata=dict(
+                    name=name,
+                    namespace=self.namespace),
+                spec=dict(
+                    minReplicas=self.resources.get('minReplicas', 1),
+                    maxReplicas=self.resources.get('maxReplicas', 10),
+                    targetCPUUtilizationPercentage=self.resources.get('targetCPUUtilizationPercentage', 50),
+                    scaleTargetRef=dict(
+                        apiVersion='apps/v1',
+                        name=name,
+                        kind='Deployment')
+                )
+            )
+
+            try:
+                if not self.find_autoscaler(name):
+                    k8s_utils.create_from_dict(self.api_client, template)
+                else:
+                    self.LOG.debug('Updating autoscaler: {}'.format(name))
+                    k8s_client.AutoscalingV1Api(self.api_client). \
+                        delete_namespaced_horizontal_pod_autoscaler(name=name, namespace=self.namespace)
+                    k8s_utils.create_from_dict(self.api_client, template)
+            except Exception as e:
+                self.LOG.debug("Failed to create autoscaler: {}".format(name))
+                self.LOG.debug(repr(e))
     
     def make_name_available(self, name):
         

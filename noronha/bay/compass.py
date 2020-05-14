@@ -9,13 +9,14 @@ to decide how certain configuration parameters should be used (e.g.: Artifactory
 """
 
 import logging
+import multiprocessing
 import socket
 from abc import ABC, abstractmethod
 
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.common.utils import is_it_open_sea
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding, WebServerConst
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
 from noronha.common.parser import resolve_log_level
@@ -671,11 +672,6 @@ class LWWarehouseCompass(WarehouseCompass):
         else:
             return self.conf.get(self.KEY_REPLICATION, self.DEFAULT_REPLICATION)
 
-    @property
-    def time_to_leave(self):
-
-        return int(self.conf.get(self.KEY_TIME_TO_LEAVE, self.DEFAULT_TIME_TO_LEAVE))
-
 
 class CassWarehouseCompass(LWWarehouseCompass):
     
@@ -684,3 +680,111 @@ class CassWarehouseCompass(LWWarehouseCompass):
     
     ORIGINAL_PORT = 9042
     DEFAULT_PORT = 9042
+
+
+class WebAppCompass(Compass):
+
+    conf = WebAppConf
+
+    KEY_TIPE = 'type'
+
+    @property
+    def tipe(self):
+        return self.conf[self.KEY_TIPE]
+
+
+class WebServerCompass(Compass):
+
+    conf = WebServerConf
+
+    KEY_TIPE = 'type'
+    KEY_HOST = 'host'
+    KEY_PORT = 'port'
+    KEY_ENABLE_DEBUG = 'enable_debug'
+    KEY_THREADS = 'threads'
+    KEY_ENABLED = 'enabled'
+    KEY_HIGH_CPU = 'high_cpu'
+    KEY_NUMBER = 'number'
+    KEY_EXTRA_CONF = 'extra_conf'
+    KEY_PROCESSES = 'processes'
+    DEFAULT_HOST = '0.0.0.0'
+    DEFAULT_PORT = 8080
+    DEFAULT_ENABLE_DEBUG = False
+    DEFAULT_THREADS = {
+        KEY_ENABLED: True,
+        KEY_HIGH_CPU: True
+    }
+    DEFAULT_PROCESSES = 1
+
+    @property
+    def tipe(self):
+
+        return self.conf[self.KEY_TIPE]
+
+    @property
+    def host(self):
+
+        return self.conf.get(self.KEY_HOST, self.DEFAULT_HOST)
+
+    @property
+    def port(self):
+
+        return self.conf.get(self.KEY_PORT, self.DEFAULT_PORT)
+
+    @property
+    def enable_debug(self):
+
+        return self.conf.get(self.KEY_ENABLE_DEBUG, self.DEFAULT_ENABLE_DEBUG)
+
+    @property
+    def threads(self):
+
+        threads = self.conf.get(self.KEY_THREADS, {})
+        return join_dicts(self.DEFAULT_THREADS, threads, allow_overwrite=True)
+
+    def get_threads(self):
+        if self.threads[self.KEY_HIGH_CPU]:
+            return int(4 * multiprocessing.cpu_count())
+        else:
+            return int(2 * multiprocessing.cpu_count())
+
+
+class GunicornCompass(WebServerCompass):
+
+    KEY_WRK_CLASS = 'worker_class'
+    DEFAULT_SYNC_WRK = 'sync'
+    DEFAULT_THREAD_WRK = 'gthread'
+    DEFAULT_MULTI_WRK = 'eventlet'
+
+    def get_extra_conf(self):
+
+        extra_conf = self.conf.get(self.KEY_EXTRA_CONF, {})
+
+        prcs = extra_conf.get(self.KEY_PROCESSES, self.DEFAULT_PROCESSES)
+        prcs = prcs if prcs > 0 else self.DEFAULT_PROCESSES
+
+        if self.threads[self.KEY_ENABLED] and not self.threads.get(self.KEY_NUMBER, None):
+            threads = dict(threads=self.get_threads())
+        else:
+            threads = self.threads.get(self.KEY_NUMBER, None)
+
+        if prcs == 1 and self.threads[self.KEY_ENABLED]:
+            worker = self.DEFAULT_THREAD_WRK
+        elif prcs > 1:
+            worker = extra_conf.get(self.KEY_WRK_CLASS, self.DEFAULT_MULTI_WRK)
+        else:
+            worker = self.DEFAULT_SYNC_WRK
+
+        conf = dict(
+            bind='{}:{}'.format(self.host, self.port),
+            workers=int(prcs),
+            worker_class=worker)
+
+        return join_dicts(conf, threads)
+
+
+def get_server_compass():
+    return {
+        WebServerConst.Servers.SIMPLE: WebServerCompass,
+        WebServerConst.Servers.GUNICORN: GunicornCompass
+    }.get(WebServerCompass().tipe)()
