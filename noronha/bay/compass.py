@@ -178,7 +178,7 @@ class CaptainCompass(Compass):
             else:
                 raise ConfigurationError("Resource profile '{}' not found".format(ref_to_profile))
         
-        assert isinstance(prof, dict) and set(prof) == keys,\
+        assert isinstance(prof, dict) and keys.issubset(set(prof)),\
             ConfigurationError("Resource profile must be a mapping with the keys {}".format(keys))
         
         for key in keys:
