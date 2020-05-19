@@ -17,6 +17,7 @@ class Server(ABC):
 
     @abstractmethod
     def run_server(self):
+
         pass
 
     def __call__(self):
@@ -41,15 +42,26 @@ class SimpleServer(Server):
     compass = WebServerCompass()
 
     def __init__(self, app, model_conf=None):
+
         self.app = app
+        self.model_conf = model_conf or {}
+
+    def enable_threads(self):
+
+        return self.model_conf.get('threaded', self.compass.threads['enabled'])
+
+    def enable_debug(self):
+
+        return self.model_conf.get('use_debugger', self.compass.enable_debug)
 
     def run_server(self):
+
         run_simple(
             hostname=self.compass.host,
             port=self.compass.port,
-            use_debugger=True,
+            use_debugger=self.enable_debug(),
             application=self.app,
-            threaded=self.compass.threads['enabled']
+            threaded=self.enable_threads()
         )
 
 
@@ -58,6 +70,7 @@ class GunicornServer(BaseApplication, Server):
     compass = GunicornCompass()
 
     def __init__(self, app, model_conf=None):
+
         self.app = app
         self.model_conf = model_conf
         super().__init__()
@@ -67,20 +80,23 @@ class GunicornServer(BaseApplication, Server):
         return join_dicts(self.compass.get_extra_conf(), self.model_conf, allow_overwrite=True)
 
     def load_config(self):
+
         for k, v in self.get_config().items():
             self.cfg.set(k, v)
 
     def run_server(self):
+
         self.run()
 
     def load(self):
+
         return self.app
 
 
-def build_server(app, server_conf) -> Server:
+def build_server(app, server_conf, server_type) -> Server:
 
     server_compass = WebServerCompass
-    server_type = server_compass().tipe.strip().lower()
+    server_name = server_type or server_compass().tipe.strip().lower()
 
     cls_lookup = {
         'simple': SimpleServer,
@@ -88,10 +104,10 @@ def build_server(app, server_conf) -> Server:
     }
 
     try:
-        server_cls = cls_lookup[server_type]
+        server_cls = cls_lookup[server_name]
     except KeyError:
         raise ResolutionError(
-            "Could not resolve server by reference '{}'. Options are: {}".format(server_type, list(cls_lookup.keys()))
+            "Could not resolve server by reference '{}'. Options are: {}".format(server_name, list(cls_lookup.keys()))
         )
     else:
         return server_cls(app, server_conf)

@@ -43,7 +43,7 @@ container_manager:
 
 web_server:
   type: simple
-  enable_debug: true
+  enable_debug: false
   threads:
     enabled: false
     high_cpu: false

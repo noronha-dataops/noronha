@@ -756,6 +756,11 @@ class GunicornCompass(WebServerCompass):
     DEFAULT_THREAD_WRK = 'gthread'
     DEFAULT_MULTI_WRK = 'eventlet'
 
+    @property
+    def log_level(self):
+
+        return 'debug' if self.enable_debug else 'info'
+
     def get_extra_conf(self):
 
         extra_conf = self.conf.get(self.KEY_EXTRA_CONF, {})
@@ -778,7 +783,8 @@ class GunicornCompass(WebServerCompass):
         conf = dict(
             bind='{}:{}'.format(self.host, self.port),
             workers=int(prcs),
-            worker_class=worker)
+            worker_class=worker,
+            loglevel=self.log_level)
 
         return join_dicts(conf, threads)
 

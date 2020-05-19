@@ -46,7 +46,7 @@ class HealthCheck(object):
 
 class ModelServer(ABC):
 
-    def __init__(self, predict_func, enrich=True, server_conf=None):
+    def __init__(self, predict_func, enrich=True, server_conf=None, server_type=None):
 
         if server_conf:
             assert type(server_conf) is dict, MisusageError("Server conf should be dict, but is: {}".format(type(server_conf)))
@@ -56,7 +56,7 @@ class ModelServer(ABC):
         self._health = HealthCheck()
         self._cleaner = StructCleaner(depth=1)
         self.application = build_app(__name__, self.get_routes())
-        self.server = build_server(app=self.application.get_app(), server_conf=server_conf)
+        self.server = build_server(app=self.application.get_app(), server_conf=server_conf, server_type=server_type)
 
     @abstractmethod
     def make_result(self, body, args):
@@ -161,10 +161,10 @@ class OnlinePredict(ModelServer):
         server()
     """
 
-    def __init__(self, predict_func, enrich=True, server_conf=None):
+    def __init__(self, predict_func, enrich=True, server_conf=None, server_type=None):
 
         self.movers = Deployment.load(ignore=True).movers
-        super().__init__(predict_func=predict_func, enrich=enrich, server_conf=server_conf)
+        super().__init__(predict_func=predict_func, enrich=enrich, server_conf=server_conf, server_type=server_type)
 
     def get_routes(self):
 
@@ -218,10 +218,11 @@ class LazyModelServer(ModelServer):
             server()
         """
 
-    def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100, server_conf=None):
+    def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100, server_conf=None,
+                 server_type=None):
 
         assert callable(load_model_func), MisusageError("Expected load_model_func to be callable")
-        super().__init__(predict_func=predict_func, enrich=False, server_conf=server_conf)
+        super().__init__(predict_func=predict_func, enrich=False, server_conf=server_conf, server_type=server_type)
         self._load_model_func = load_model_func
         self._model_name = model_name or movers_meta().model.name
         self._max_models = max_models
