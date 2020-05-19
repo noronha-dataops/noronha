@@ -15,7 +15,7 @@ if os.environ.get('include_tests'):
 
 setup(
     name='noronha-dataops',
-    version='1.4.4',
+    version='1.5.0',
     url='https://github.com/gvargasc/noronha-dataops',
     author='Gustavo Vargas Castilhos',
     author_email='gvargasc@everis.com',
