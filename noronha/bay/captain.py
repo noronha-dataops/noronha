@@ -553,7 +553,7 @@ class KubeCaptain(Captain):
         return pod
     
     def deploy(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, tasks: int = 1,
-               allow_probe=False):
+               allow_probe=False, delay_readiness: int = 0):
         
         [self.load_vol(v, name) for v in cargos]
         vol_refs, vol_defs = self.kube_vols(cargos)
@@ -569,7 +569,8 @@ class KubeCaptain(Captain):
             volumeMounts=vol_refs + mount_refs,
             env=self.kube_env_vars(env_vars),
             ports=port_refs,
-            livenessProbe=self.kube_healthcheck(allow_probe)
+            livenessProbe=self.kube_healthcheck(allow_probe),
+            readinessProbe=self.kube_readiness(delay_readiness)
         )
         
         template = self.cleaner(dict(
@@ -1130,6 +1131,18 @@ class KubeCaptain(Captain):
                 timeoutSeconds=self.healthcheck['timeout'],
                 failureThreshold=self.healthcheck['retries'],
                 initialDelaySeconds=self.healthcheck['start_period']
+            )
+        else:
+            return None
+
+    def kube_readiness(self, delay_readiness=0):
+
+        if isinstance(delay_readiness, int) and delay_readiness > 0:
+            return dict(
+                exec=dict(command=["curl", "-f", "http://localhost:8080/health"]),
+                initialDelaySeconds=delay_readiness,
+                periodSeconds=30,
+                failureThreshold=5
             )
         else:
             return None
