@@ -1123,7 +1123,7 @@ class KubeCaptain(Captain):
             )
 
         if self.resources.get('enable_gpu', False):
-            res = join_dicts(res, {"nvidia.com/gpu": 1})
+            res['limits'] = join_dicts(res['limits'], {"nvidia.com/gpu": 1})
         
         return res
     
