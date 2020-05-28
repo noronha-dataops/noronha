@@ -460,22 +460,36 @@ class SwarmCaptain(Captain):
         if self.resources is None:
             return None
         else:
-            return Resources(
-                cpu_limit=self.resources['limits']['cpu'] * self._CPU_RATE,
-                mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                cpu_reservation=self.resources['requests']['cpu'] * self._CPU_RATE,
-                mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE
-            )
+            if self.resources.get('enable_gpu', False):
+                return Resources(
+                    cpu_limit=self.resources['limits']['cpu'] * self._CPU_RATE,
+                    mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
+                    cpu_reservation=self.resources['requests']['cpu'] * self._CPU_RATE,
+                    mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE,
+                    generic_resources={'gpu': 1}
+                )
+            else:
+                return Resources(
+                    cpu_limit=self.resources['limits']['cpu'] * self._CPU_RATE,
+                    mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
+                    cpu_reservation=self.resources['requests']['cpu'] * self._CPU_RATE,
+                    mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE
+                )
     
     def conu_resources(self):
         
         if self.resources is None:
             return []
         else:
-            return [
+            res = [
                 '--cpus', str(self.resources['limits']['cpu']),
                 '--memory-reservation', '{}m'.format(self.resources['requests']['memory'])
             ]
+
+            if self.resources.get('enable_gpu', False):
+                res = res + ['--gpus', 'all']
+
+            return res
     
     def swarm_healthcheck(self, allow_probe=False):
         
