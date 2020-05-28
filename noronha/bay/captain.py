@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""TODO: {{module description}}
-"""
+"""Module used to orchestrate container deployment"""
 
 import logging
 import os
@@ -13,7 +12,6 @@ from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.pod import Pod
 from conu.backend.k8s.pod import PodPhase
 from conu.exceptions import ConuException
-from conu.utils import run_cmd
 from datetime import datetime
 from docker.errors import APIError as DockerAPIError
 from docker.types import ServiceMode, TaskTemplate, ContainerSpec, Resources, Healthcheck
@@ -36,7 +34,7 @@ from noronha.common.conf import CaptainConf
 from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst
 from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
 from noronha.common.logging import Logged
-from noronha.common.parser import dict_to_kv_list, assert_str, StructCleaner
+from noronha.common.parser import dict_to_kv_list, assert_str, StructCleaner, join_dicts
 
 
 class Captain(ABC, Configured, Patient, Logged):
@@ -1109,6 +1107,9 @@ class KubeCaptain(Captain):
                 cpu=self.resources[key]['cpu'],
                 memory=self.kube_memory(self.resources[key]['memory'])
             )
+
+        if self.resources.get('enable_gpu', False):
+            res = join_dicts(res, {"nvidia.com/gpu": 1})
         
         return res
     
