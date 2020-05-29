@@ -23,7 +23,7 @@ setup(
     long_description=__doc__,
     zip_safe=False,
     platforms=['Unix'],
-    license='LGPLv3',
+    license='Apache-2.0',
     install_requires=open('./requirements/{}_reqs.txt'.format(
         'on_board' if os.environ.get('AM_I_ON_BOARD') else 'off_board'
     )).read().split('\n'),
@@ -54,7 +54,7 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
+        'License :: OSI Approved :: Apache License 2.0 (Apache-2.0)',
         'Operating System :: Unix',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
