@@ -3,7 +3,7 @@
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TMP_DIR="/tmp"
 NORONHA_INST_FOLDER="/usr/share/noronha-dataops"
-NORONHA_BRANCH="master"
+NORONHA_BRANCH="latest"
 NHA_VENV="/usr/share/noronha-venv"
 ANACONDA_HOME="/usr/share/anaconda"
 ANACONDA_GROUP="anacondagrp"
