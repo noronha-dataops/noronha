@@ -10,7 +10,7 @@ import re
 class FrameworkConst(object):
     
     FW_NAME = 'noronha-dataops'
-    FW_VERSION = '1.5.0'  # framework version
+    FW_VERSION = '1.5.1'  # framework version
     FW_TAG = 'develop'  # framework tag
 
 
