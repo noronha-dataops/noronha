@@ -518,8 +518,8 @@ class KubeCaptain(Captain):
         self.stg_cls = self.compass.get_stg_cls(section)
         self.mule = None
         self.assert_namespace()
-        self.api_client = k8s_client.ApiClient()
         k8s_config.load_kube_config()
+        self.api_client = k8s_client.ApiClient()
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
@@ -623,14 +623,20 @@ class KubeCaptain(Captain):
         return depl
 
     def dispose_run(self, name: str):
-        
+
         self.rm_pod(name)
         self.rm_svc(name)
+        self.api_client.rest_client.pool_manager.clear()
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            k8s_backend.core_api.api_client.rest_client.pool_manager.clear()
     
     def dispose_deploy(self, name: str):
         
         self.rm_depl(name)
         self.rm_svc(name)
+        self.api_client.rest_client.pool_manager.clear()
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            k8s_backend.core_api.api_client.rest_client.pool_manager.clear()
     
     def rm_vol(self, cargo: Cargo, ignore=False):
         
