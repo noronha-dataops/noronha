@@ -7,6 +7,7 @@ from noronha.bay.cargo import MetaCargo
 from noronha.common.constants import EnvVar, OnBoard, Paths, DockerConst
 from noronha.common.errors import ResolutionError
 from noronha.db.ds import Dataset
+from noronha.db.train import Training
 from noronha.db.movers import ModelVersion
 from noronha.db.proj import Project
 
@@ -67,7 +68,7 @@ def data_path(file_name: str = '', model: str = None, dataset: str = None) -> st
     :returns: A string containing the requested path.
     
     :raise ResolutionError: If the requested dataset is not present,
-           or the given reference matched zero ore multiple datasets.
+           or the given reference matched zero or multiple datasets.
     """
     
     path = _resolve_path(
@@ -99,7 +100,7 @@ def model_path(file_name: str = '', model: str = None, version: str = None) -> s
     :returns: A string containing the requested path.
     
     :raise ResolutionError: If the requested model version is not present,
-           or the given reference matched zero ore multiple model versions.
+           or the given reference matched zero or multiple model versions.
     """
     
     path = _resolve_path(
@@ -144,7 +145,7 @@ def dataset_meta(model: str = None, dataset: str = None, ignore: bool = False) -
     :returns: A **Dataset** document.
     
     :raise ResolutionError: If the requested dataset is not present,
-           or the given reference matched zero ore multiple datasets.
+           or the given reference matched zero or multiple datasets.
     """
     
     return _resolve_metadata(
@@ -172,7 +173,7 @@ def movers_meta(model: str = None, version: str = None, ignore: bool = False) ->
     :returns: A **ModelVersion** document.
     
     :raise ResolutionError: If the requested model version is not present,
-           or the given reference matched zero ore multiple model versions.
+           or the given reference matched zero or multiple model versions.
     """
     
     return _resolve_metadata(
@@ -181,6 +182,20 @@ def movers_meta(model: str = None, version: str = None, ignore: bool = False) ->
         obj_name=version,
         ignore=ignore
     )
+
+
+def train_meta() -> Training:
+    """Shortcut to load training metadata
+
+    When Noronha starts a training container, metadata is mounted and organized inside a volume.
+    This function provides a standard way of loading this metadata.
+
+    :returns: A **Training** document.
+
+    :raise ResolutionError: If the requested training is not present
+    """
+
+    return Training.load(OnBoard.META_DIR)
 
 
 def _require_asset(doc_cls, barrel_cls, obj_name: str, tgt_path: str, model: str = None):
