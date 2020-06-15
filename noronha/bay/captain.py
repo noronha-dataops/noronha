@@ -518,8 +518,8 @@ class KubeCaptain(Captain):
         self.stg_cls = self.compass.get_stg_cls(section)
         self.mule = None
         self.assert_namespace()
-        self.api_client = k8s_client.ApiClient()
         k8s_config.load_kube_config()
+        self.api_client = k8s_client.ApiClient()
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
