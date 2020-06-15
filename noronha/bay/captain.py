@@ -514,13 +514,12 @@ class KubeCaptain(Captain):
         super().__init__(section, **kwargs)
         self.secret = self.docker_compass.secret
         self.namespace = self.compass.get_namespace()
-        self.k8s_backend = K8sBackend(logging_level=logging.ERROR)
         self.nfs = self.compass.get_nfs_server()
         self.stg_cls = self.compass.get_stg_cls(section)
         self.mule = None
         self.assert_namespace()
-        self.api_client = k8s_client.ApiClient()
         k8s_config.load_kube_config()
+        self.api_client = k8s_client.ApiClient()
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
@@ -614,7 +613,8 @@ class KubeCaptain(Captain):
         else:
             self.LOG.info("Updating deployment '{}'".format(name))
             self.LOG.debug(template)
-            self.k8s_backend.apps_api.replace_namespaced_deployment(name, self.namespace, template)
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                k8s_backend.apps_api.replace_namespaced_deployment(name, self.namespace, template)
             depl = self.find_depl(name)
         
         self.handle_svc(name, port_defs)
@@ -637,7 +637,8 @@ class KubeCaptain(Captain):
         if isinstance(cargo, MappedCargo):
             return False
         elif isinstance(cargo, EmptyCargo):  # PVC
-            self.k8s_backend.core_api.delete_namespaced_persistent_volume_claim(cargo.name, self.namespace)
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                k8s_backend.core_api.delete_namespaced_persistent_volume_claim(cargo.name, self.namespace)
             return True
         
         if self.mule is None:
@@ -662,8 +663,9 @@ class KubeCaptain(Captain):
     def rm_pod(self, name: str, ignore=True):
         
         try:
-            self.k8s_backend.core_api.delete_namespaced_pod(
-                name=name, namespace=self.namespace, grace_period_seconds=0)
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                k8s_backend.core_api.delete_namespaced_pod(
+                    name=name, namespace=self.namespace, grace_period_seconds=0)
         except (ConuException, K8sApiException) as e:
             msg = "Waiting up to {} seconds to kill Pod '{}'".format(self.timeout, name)
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
@@ -678,8 +680,9 @@ class KubeCaptain(Captain):
     def rm_depl(self, name: str, ignore=True):
         
         try:
-            self.k8s_backend.apps_api.delete_namespaced_deployment(
-                name=name, namespace=self.namespace, grace_period_seconds=0)
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                k8s_backend.apps_api.delete_namespaced_deployment(
+                    name=name, namespace=self.namespace, grace_period_seconds=0)
         except (ConuException, K8sApiException) as e:
             msg = "Waiting up to {} seconds to kill Deployment '{}'".format(self.timeout, name)
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
@@ -693,8 +696,9 @@ class KubeCaptain(Captain):
     def rm_svc(self, name: str, ignore=True):
         
         try:
-            self.k8s_backend.core_api.delete_namespaced_service(
-                name=name, namespace=self.namespace, grace_period_seconds=0)
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                k8s_backend.core_api.delete_namespaced_service(
+                    name=name, namespace=self.namespace, grace_period_seconds=0)
         except Exception as e:
             self.LOG.debug("Could not delete service: {}".format(name))
             if ignore:
@@ -708,11 +712,12 @@ class KubeCaptain(Captain):
             self.rm_pod(self.mule.name)
     
     def list_cont_or_pod_ids(self):
+
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            lyst = [pod.metadata.name for pod in
+                    k8s_backend.core_api.list_namespaced_pod(namespace=self.namespace).items]
         
-        return [
-            pod.metadata.name for pod in
-            self.k8s_backend.core_api.list_namespaced_pod(namespace=self.namespace).items
-        ]
+        return lyst
     
     @patient
     def _find_sth(self, what, name, method, **kwargs):
@@ -729,42 +734,54 @@ class KubeCaptain(Captain):
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def find_vol(self, cargo: Cargo):
+
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            result = self._find_sth(
+                what='persistent volume claims',
+                method=k8s_backend.core_api.list_namespaced_persistent_volume_claim,
+                name=cargo.name
+            )
         
-        return self._find_sth(
-            what='persistent volume claims',
-            method=self.k8s_backend.core_api.list_namespaced_persistent_volume_claim,
-            name=cargo.name
-        )
+        return result
     
     @patient
     def find_pod(self, name):
         
         try:
-            return super()._find_sth(
-                what='pods',
-                method=self.k8s_backend.list_pods,
-                name=name,
-                namespace=self.namespace
-            )
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                result = super()._find_sth(
+                    what='pods',
+                    method=k8s_backend.list_pods,
+                    name=name,
+                    namespace=self.namespace
+                )
+
+            return result
         except (ConuException, K8sApiException) as e:
             msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, 'pod', name)
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
     
     def find_depl(self, name):
+
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            result = self._find_sth(
+                what='deployments',
+                method=k8s_backend.apps_api.list_namespaced_deployment,
+                name=name
+            )
         
-        return self._find_sth(
-            what='deployments',
-            method=self.k8s_backend.apps_api.list_namespaced_deployment,
-            name=name
-        )
+        return result
     
     def find_svc(self, name):
+
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            result = self._find_sth(
+                what='services',
+                method=k8s_backend.core_api.list_namespaced_service,
+                name=name
+            )
         
-        return self._find_sth(
-            what='services',
-            method=self.k8s_backend.core_api.list_namespaced_service,
-            name=name
-        )
+        return result
 
     def find_autoscaler(self, name):
 
@@ -819,13 +836,14 @@ class KubeCaptain(Captain):
             self.rm_pod(existing.name)
     
     def watch_pod(self, pod: Pod):
-        
-        logs = self.k8s_backend.core_api.read_namespaced_pod_log(
-            name=pod.name,
-            namespace=self.namespace,
-            follow=True,
-            _preload_content=False
-        )
+
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            logs = k8s_backend.core_api.read_namespaced_pod_log(
+                name=pod.name,
+                namespace=self.namespace,
+                follow=True,
+                _preload_content=False
+            )
         
         try:
             for line in logs:
@@ -849,12 +867,13 @@ class KubeCaptain(Captain):
     def assert_namespace(self):
         
         try:
-            assert super()._find_sth(
-                what='namespaces',
-                name=self.namespace,
-                method=lambda: self.k8s_backend.core_api.list_namespace().items,
-                key=lambda i: i.metadata.name == self.namespace
-            ) is not None, ConfigurationError("Namespace '{}' does not exist".format(self.namespace))
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                assert super()._find_sth(
+                    what='namespaces',
+                    name=self.namespace,
+                    method=lambda: k8s_backend.core_api.list_namespace().items,
+                    key=lambda i: i.metadata.name == self.namespace
+                ) is not None, ConfigurationError("Namespace '{}' does not exist".format(self.namespace))
         except (ConuException, K8sApiException) as e:
             msg = "Waiting up to {} seconds to find {} '{}'".format(self.timeout, 'namespace', self.namespace)
             raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
@@ -877,7 +896,8 @@ class KubeCaptain(Captain):
         if self.find_vol(cargo) is None:
             self.LOG.info("Creating persistent volume claim '{}'".format(cargo.name))
             self.LOG.debug(template)
-            self.k8s_backend.core_api.create_namespaced_persistent_volume_claim(self.namespace, template)
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                k8s_backend.core_api.create_namespaced_persistent_volume_claim(self.namespace, template)
             return True
         else:
             return False
@@ -905,7 +925,8 @@ class KubeCaptain(Captain):
         
         self.LOG.info("Creating service '{}'".format(name))
         self.LOG.debug(svc)
-        self.k8s_backend.core_api.create_namespaced_service(self.namespace, svc)
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            k8s_backend.core_api.create_namespaced_service(self.namespace, svc)
     
     def load_vol(self, cargo: Cargo, mule_alias: str = None):
         
@@ -1003,15 +1024,18 @@ class KubeCaptain(Captain):
             return assert_str(out).strip()
     
     def _exec_in_pod(self, pod: Pod, cmd, stderr=True, stdin=False, stdout=True, tty=False):
+
+        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+            result = '\n'.join([
+                stream(
+                    k8s_backend.core_api.connect_get_namespaced_pod_exec,
+                    name=pod.name, namespace=self.namespace, command=c.strip().split(' '),
+                    stderr=stderr, stdin=stdin, stdout=stdout, tty=tty
+                )
+                for c in Regex.CMD_DELIMITER.split(cmd)
+            ])
         
-        return '\n'.join([
-            stream(
-                self.k8s_backend.core_api.connect_get_namespaced_pod_exec,
-                name=pod.name, namespace=self.namespace, command=c.strip().split(' '),
-                stderr=stderr, stdin=stdin, stdout=stdout, tty=tty
-            )
-            for c in Regex.CMD_DELIMITER.split(cmd)
-        ])
+        return result
     
     def mule_mount(self, mule_name):
         
