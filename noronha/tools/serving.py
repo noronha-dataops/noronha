@@ -123,7 +123,7 @@ class ModelServer(ABC):
             else:
                 response = assert_str(response)
 
-            return response, code
+            return self.application.make_response(code, response)
 
     def __call__(self):
 

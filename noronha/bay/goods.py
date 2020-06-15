@@ -38,6 +38,11 @@ class App(ABC):
 
         pass
 
+    @abstractmethod
+    def make_response(self, status, body):
+
+        pass
+
     def _validate_apis(self, apis):
 
         assert isinstance(apis, dict), MisusageError("Expected dict to build app routes. Got: {}".format(type(apis)))
@@ -75,6 +80,14 @@ class FlaskApp(App):
     def get_charset(self):
 
         return flask_req.mimetype_params.get('charset') or OnlineConst.DEFAULT_CHARSET
+
+    def make_response(self, status, response):
+
+        return self._app.response_class(
+            response=response,
+            status=status,
+            mimetype='application/json'
+        )
 
     def _make_routes(self):
 
