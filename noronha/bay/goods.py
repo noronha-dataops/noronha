@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from flask import Flask, jsonify
+from flask import Flask
 from flask import request as flask_req
 
 from noronha.bay.compass import WebAppCompass
@@ -83,11 +83,11 @@ class FlaskApp(App):
 
     def make_response(self, status, response):
 
-        return self._app.response_class(
-            response=jsonify(response),
-            status=status,
-            mimetype='application/json'
-        )
+        return self._app.make_response((
+            response,
+            status,
+            {'Content-Type': 'application/json', 'Charset': 'utf-8'}
+        ))
 
     def _make_routes(self):
 
