@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 BRANCH_CHANGER="${0}"
 
@@ -24,7 +24,7 @@ CONDA_HOME="${MINICONDA_HOME}"
 CONDA_GROUP="${MINICONDA_GROUP}"
 
 
-function branch_changer() {
+branch_changer() {
     BRANCH_CHANGER=${1}
     if [ "${BRANCH_CHANGER}" == "develop" ]; then
         NORONHA_BRANCH="develop"
@@ -34,22 +34,30 @@ function branch_changer() {
 }
 
 
-function os_dependencies() {
-    if [[ $(echo "${OS_NAME}" | tr a-z A-Z) =~ ^(CENTOS LINUX|CENTOS|REDHAT)$ ]]; then
-        echo "Starting installing CentOS dependencies"
-        yum update -y
-        yum install -y wget
-        echo "CentOS dependencies installed"
-    elif [[ $(echo "${OS_NAME}" | tr a-z A-Z) =~ ^(UBUNTU)$ ]]; then
-        echo "Starting installing Ubuntu dependencies"
-        apt update -y
-        apt install -y wget
-        echo "Ubuntu dependencies installed"
-    fi
-
+os_dependencies () {
+    case "$(echo "${OS_NAME}" | tr a-z A-Z)" in
+        "CENTOS LINUX"|"CENTOS"|"REDHAT")
+            echo "Starting installing CentOS dependencies"
+            yum update -y
+            yum install -y wget
+            echo "CentOS dependencies installed"
+            ;;  
+        "UBUNTU"|"DEBIAN")
+            echo "Starting installing Ubuntu dependencies"
+            apt update -y
+            apt install -y wget
+            echo "Ubuntu dependencies installed"
+            ;;
+        *)
+            echo "System not identified, trying to install through apt"
+            apt update -y
+            apt install -y wget
+            echo "Dependencies installed"      
+            ;;  
+    esac
 }
 
-function get_os_version() {
+get_os_version () {
     echo "Start getting OS version"
     if [ -f /etc/os-release ]; then
         # freedesktop.org and systemd
@@ -90,7 +98,7 @@ function get_os_version() {
 }
 
 # Get user ID
-function set_exec_user()
+set_exec_user ()
 {
     echo "Start getting exec user"
     if [ "${SUDO_USER}" = "" ]; then
@@ -102,7 +110,7 @@ function set_exec_user()
 }
 
 # Install Anaconda
-function install_anaconda()
+install_anaconda ()
 {
     echo "Start installing Anaconda"
     ANACONDA_FILE="${TMP_DIR}/Anaconda3-2020.02-Linux-x86_64.sh"
@@ -121,19 +129,27 @@ function install_anaconda()
     groupadd ${ANACONDA_GROUP}
     chgrp -R ${ANACONDA_GROUP} ${ANACONDA_HOME}
     chmod 775 -R ${ANACONDA_HOME}
-    if [[ $(echo "${OS_NAME}" | tr a-z A-Z) =~ ^(CENTOS LINUX|CENTOS|REDHAT)$ ]]; then
-        useradd -g ${ANACONDA_GROUP} ${EXEC_USER} || true
-        echo "Centos. User ${EXEC_USER} added to ${ANACONDA_GROUP}"
-    else         
-        adduser ${EXEC_USER} ${ANACONDA_GROUP} || true
-        echo "Others. User ${EXEC_USER} added to ${ANACONDA_GROUP}"
-    fi
+
+    case "$(echo "${OS_NAME}" | tr a-z A-Z)" in
+        "CENTOS LINUX"|"CENTOS"|"REDHAT")
+            useradd -g ${ANACONDA_GROUP} ${EXEC_USER} || true
+            echo "Centos. User ${EXEC_USER} added to ${ANACONDA_GROUP}"
+            ;;  
+        "UBUNTU"|"DEBIAN")
+            adduser ${EXEC_USER} ${ANACONDA_GROUP} || true
+            echo "Others. User ${EXEC_USER} added to ${ANACONDA_GROUP}"
+            ;;
+        *)
+            adduser ${EXEC_USER} ${ANACONDA_GROUP} || true
+            echo "Others. User ${EXEC_USER} added to ${ANACONDA_GROUP}"    
+            ;;  
+    esac
 
     echo "Anaconda successfully installed"
 }
 
 # Install Miniconda
-function install_miniconda()
+install_miniconda ()
 {
     echo "Starting installing Miniconda"
     MINICONDA_FILE="Miniconda3-py37_4.8.2-Linux-x86_64.sh"
@@ -152,32 +168,47 @@ function install_miniconda()
     chgrp -R ${CONDA_GROUP} ${MINICONDA_HOME}
     chmod 775 -R ${MINICONDA_HOME}
 
-    if [[ $(echo "${OS_NAME}" | tr a-z A-Z) =~ ^(CENTOS LINUX|CENTOS|REDHAT)$ ]]; then
+    case "$(echo "${OS_NAME}" | tr a-z A-Z)" in
+        "CENTOS LINUX"|"CENTOS"|"REDHAT")
+            # Add conda commands to PATH
+            PATH_SUB_FILE="/etc/bashrc"
+            sed -i "s+MINICONDA_HOME=${MINICONDA_HOME}++g" ${PATH_SUB_FILE}
+            sed -i 's+export PATH=${MINICONDA_HOME}/bin:${PATH}++g' ${PATH_SUB_FILE}  
+            echo "MINICONDA_HOME=${MINICONDA_HOME}" >> ${PATH_SUB_FILE}
+            echo "export GIT_PYTHON_REFRESH=quiet" >> ${PATH_SUB_FILE}
+            echo 'export PATH=${MINICONDA_HOME}/bin:${PATH}' >> ${PATH_SUB_FILE} 
 
-        # Add conda commands to PATH
-        PATH_SUB_FILE="/etc/bashrc"
-        sed -i "s+MINICONDA_HOME=${MINICONDA_HOME}++g" ${PATH_SUB_FILE}
-        sed -i 's+export PATH=${MINICONDA_HOME}/bin:${PATH}++g' ${PATH_SUB_FILE}  
-        echo "MINICONDA_HOME=${MINICONDA_HOME}" >> ${PATH_SUB_FILE}
-        echo "export GIT_PYTHON_REFRESH=quiet" >> ${PATH_SUB_FILE}
-        echo 'export PATH=${MINICONDA_HOME}/bin:${PATH}' >> ${PATH_SUB_FILE} 
+            usermod -a -G ${CONDA_GROUP} ${EXEC_USER}
+            #useradd -g ${CONDA_GROUP} ${EXEC_USER} || true
+            echo "Centos. User ${EXEC_USER} added to ${CONDA_GROUP}"
+            ;;  
+        "UBUNTU"|"DEBIAN")
+            # Add conda commands to PATH
+            PATH_SUB_FILE="/etc/bash.bashrc"
+            sed -i "s+MINICONDA_HOME=${MINICONDA_HOME}++g" ${PATH_SUB_FILE}
+            sed -i 's+export PATH=${MINICONDA_HOME}/bin:${PATH}++g' ${PATH_SUB_FILE}  
+            echo "MINICONDA_HOME=${MINICONDA_HOME}" >> ${PATH_SUB_FILE}
+            echo "export GIT_PYTHON_REFRESH=quiet" >> ${PATH_SUB_FILE}
+            echo 'export PATH=${MINICONDA_HOME}/bin:${PATH}' >> ${PATH_SUB_FILE} 
 
-        usermod -a -G ${CONDA_GROUP} ${EXEC_USER}
-        #useradd -g ${CONDA_GROUP} ${EXEC_USER} || true
-        echo "Centos. User ${EXEC_USER} added to ${CONDA_GROUP}"
-    else  
-        # Add conda commands to PATH
-        PATH_SUB_FILE="/etc/bash.bashrc"
-        sed -i "s+MINICONDA_HOME=${MINICONDA_HOME}++g" ${PATH_SUB_FILE}
-        sed -i 's+export PATH=${MINICONDA_HOME}/bin:${PATH}++g' ${PATH_SUB_FILE}  
-        echo "MINICONDA_HOME=${MINICONDA_HOME}" >> ${PATH_SUB_FILE}
-        echo "export GIT_PYTHON_REFRESH=quiet" >> ${PATH_SUB_FILE}
-        echo 'export PATH=${MINICONDA_HOME}/bin:${PATH}' >> ${PATH_SUB_FILE} 
+            #adduser ${EXEC_USER} ${CONDA_GROUP} || true
+            usermod -a -G ${CONDA_GROUP} ${EXEC_USER}
+            echo "Ubuntu. User ${EXEC_USER} added to ${CONDA_GROUP}"
+            ;;
+        *)
+            # Add conda commands to PATH
+            PATH_SUB_FILE="/etc/bash.bashrc"
+            sed -i "s+MINICONDA_HOME=${MINICONDA_HOME}++g" ${PATH_SUB_FILE}
+            sed -i 's+export PATH=${MINICONDA_HOME}/bin:${PATH}++g' ${PATH_SUB_FILE}  
+            echo "MINICONDA_HOME=${MINICONDA_HOME}" >> ${PATH_SUB_FILE}
+            echo "export GIT_PYTHON_REFRESH=quiet" >> ${PATH_SUB_FILE}
+            echo 'export PATH=${MINICONDA_HOME}/bin:${PATH}' >> ${PATH_SUB_FILE} 
 
-        #adduser ${EXEC_USER} ${CONDA_GROUP} || true
-        usermod -a -G ${CONDA_GROUP} ${EXEC_USER}
-        echo "Others. User ${EXEC_USER} added to ${CONDA_GROUP}"
-    fi
+            #adduser ${EXEC_USER} ${CONDA_GROUP} || true
+            usermod -a -G ${CONDA_GROUP} ${EXEC_USER}
+            echo "Others. User ${EXEC_USER} added to ${CONDA_GROUP}" 
+            ;;  
+    esac
 
     echo "Miniconda successfully installed"
 }
@@ -185,7 +216,7 @@ function install_miniconda()
 
 
 # Create Virtual Env
-function create_noronha_virtual_env()
+create_noronha_virtual_env ()
 {
     echo "Creating noronha virtual env"
     rm -rf "${NHA_VENV}"
@@ -195,7 +226,7 @@ function create_noronha_virtual_env()
     echo "Noronha virtual env successfully installed"
 }
 
-function install_docker()
+install_docker ()
 {
     echo "Starting installing docker"
     DOCKER_INST_FILE=${TMP_DIR}/install_docker.sh
@@ -207,15 +238,18 @@ function install_docker()
     fi
     sh ${DOCKER_INST_FILE}
 
-    if [[ $(echo "${OS_NAME}" | tr a-z A-Z) =~ ^(CENTOS LINUX|CENTOS|REDHAT)$ ]]; then
-        systemctl start docker
-    fi
+    case "$(echo "${OS_NAME}" | tr a-z A-Z)" in
+        "CENTOS LINUX"|"CENTOS"|"REDHAT")
+            systemctl start docker
+            systemctl enable docker
+            ;;
+    esac    
 
     echo "Docker successfully installed"
 }
 
 # Create Docker group and init swarm mode
-function activate_swarm_mode()
+activate_swarm_mode ()
 {
     echo "Starting activating swarm mode"
     /usr/sbin/usermod -aG docker ${EXEC_USER}
@@ -227,7 +261,7 @@ function activate_swarm_mode()
 
 
 # Install Noronha 
-function install_noronha()
+install_noronha ()
 {
     echo "Starting installing Noronha Dataops"
     # Install dependencies
@@ -243,18 +277,30 @@ function install_noronha()
     ${PIP_HOME}/pip install ${NORONHA_INST_FOLDER}
 
     # Build Noronha Image
-    docker build -f "${NORONHA_INST_FOLDER}/Dockerfile" -t "noronha.everis.ai/noronha:${NORONHA_BRANCH}" ${NORONHA_INST_FOLDER}
+    #docker build -f "${NORONHA_INST_FOLDER}/Dockerfile" -t "noronha.everis.ai/noronha:${NORONHA_BRANCH}" ${NORONHA_INST_FOLDER}
+    docker build -f "${NORONHA_INST_FOLDER}/Dockerfile" -t "noronha.everis.ai/noronha:develop" ${NORONHA_INST_FOLDER}
+    docker build -f "${NORONHA_INST_FOLDER}/Dockerfile" -t "noronha.everis.ai/noronha:latest" ${NORONHA_INST_FOLDER}
 
     # Add NHA_VENV to all users
-    if [[ $(echo "${OS_NAME}" | tr a-z A-Z) =~ ^(CENTOS LINUX|CENTOS|REDHAT)$ ]]; then
-        PATH_SUB_FILE="/etc/bashrc"
-        sed -i "s+export NHA_VENV=${NHA_VENV}++g" ${PATH_SUB_FILE}
-        echo "export NHA_VENV=${NHA_VENV}" >> ${PATH_SUB_FILE}
-    else
-        PATH_SUB_FILE="/etc/bash.bashrc"
-        sed -i "s+export NHA_VENV=${NHA_VENV}++g" ${PATH_SUB_FILE}
-        echo "export NHA_VENV=${NHA_VENV}" >> ${PATH_SUB_FILE}
-    fi
+
+    case "$(echo "${OS_NAME}" | tr a-z A-Z)" in
+        "CENTOS LINUX"|"CENTOS"|"REDHAT")
+            PATH_SUB_FILE="/etc/bashrc"
+            sed -i "s+export NHA_VENV=${NHA_VENV}++g" ${PATH_SUB_FILE}
+            echo "export NHA_VENV=${NHA_VENV}" >> ${PATH_SUB_FILE}
+            ;;  
+        "UBUNTU"|"DEBIAN")
+            PATH_SUB_FILE="/etc/bash.bashrc"
+            sed -i "s+export NHA_VENV=${NHA_VENV}++g" ${PATH_SUB_FILE}
+            echo "export NHA_VENV=${NHA_VENV}" >> ${PATH_SUB_FILE}
+            ;;
+        *)
+            PATH_SUB_FILE="/etc/bash.bashrc"
+            sed -i "s+export NHA_VENV=${NHA_VENV}++g" ${PATH_SUB_FILE}
+            echo "export NHA_VENV=${NHA_VENV}" >> ${PATH_SUB_FILE}
+            ;;  
+    esac    
+
     # chown -R ${EXEC_USER} /home/${EXEC_USER}/.conda
 
     echo "Anaconda successfully installed"
