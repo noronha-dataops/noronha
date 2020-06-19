@@ -7,7 +7,7 @@ from datetime import datetime
 from noronha.bay.goods import build_app
 from noronha.bay.trader import build_server
 from noronha.common.constants import DateFmt, OnlineConst
-from noronha.common.errors import NhaDataError, PrettyError, MisusageError, ResolutionError
+from noronha.common.errors import NhaDataError, PrettyError, MisusageError, ResolutionError, ServingError
 from noronha.common.logging import LOG
 from noronha.common.parser import assert_json, assert_str, StructCleaner, join_dicts
 from noronha.common.utils import FsHelper
@@ -99,7 +99,7 @@ class ModelServer(ABC):
             if isinstance(e, NhaDataError):
                 err = e.pretty()
                 code = OnlineConst.ReturnCode.BAD_REQUEST
-            elif isinstance(e, PrettyError):
+            elif isinstance(e, (PrettyError, ServingError)):
                 err = e.pretty()
                 code = OnlineConst.ReturnCode.SERVER_ERROR
                 self._health = False
@@ -219,10 +219,10 @@ class LazyModelServer(ModelServer):
         """
 
     def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100, server_conf=None,
-                 server_type=None):
+                 server_type=None, enrich=True):
 
         assert callable(load_model_func), MisusageError("Expected load_model_func to be callable")
-        super().__init__(predict_func=predict_func, enrich=False, server_conf=server_conf, server_type=server_type)
+        super().__init__(predict_func=predict_func, enrich=enrich, server_conf=server_conf, server_type=server_type)
         self._load_model_func = load_model_func
         self._model_name = model_name or movers_meta().model.name
         self._max_models = max_models
@@ -284,9 +284,9 @@ class LazyModelServer(ModelServer):
 
     def make_metadata(self, body, args):
 
-        raise MisusageError(  # TODO: implement some decent metadata at least for debugging purposes
-            "Inference metadata for {} is ambiguous".format(self.__class__.__name__)
-        )
+        return self._cleaner({
+            'datetime': datetime.now().strftime(DateFmt.READABLE)
+        })
 
     def delete_model(self, version):
 
