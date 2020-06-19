@@ -39,7 +39,7 @@ class App(ABC):
         pass
 
     @abstractmethod
-    def make_response(self, status, body):
+    def make_response(self, status, response):
 
         pass
 
