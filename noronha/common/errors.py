@@ -47,6 +47,19 @@ class PrettyError(Exception):
         return '; '.join([str(arg) for arg in self.args])
 
 
+class ServingError(PrettyError):
+
+    def pretty(self):
+
+        dyct = super().pretty()
+
+        for k, v in dyct.items():
+            dyct.pop(k)
+            dyct[k.lower()] = v
+
+        return dyct
+
+
 class DBError(PrettyError):
     
     class MultipleFound(PrettyError):
