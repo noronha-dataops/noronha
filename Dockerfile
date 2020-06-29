@@ -1,5 +1,4 @@
 FROM debian:stretch
-MAINTAINER Gustavo Vargas Castilhos <gvargasc@everis.com>
 
 # OS configuration
 RUN apt -y update \
