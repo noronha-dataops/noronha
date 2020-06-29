@@ -462,17 +462,17 @@ class SwarmCaptain(Captain):
         else:
             if self.resources.get('enable_gpu', False):
                 return Resources(
-                    cpu_limit=self.resources['limits']['cpu'] * self._CPU_RATE,
+                    cpu_limit=int(self.resources['limits']['cpu'] * self._CPU_RATE),
                     mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                    cpu_reservation=self.resources['requests']['cpu'] * self._CPU_RATE,
+                    cpu_reservation=int(self.resources['requests']['cpu'] * self._CPU_RATE),
                     mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE,
                     generic_resources={'gpu': 1}
                 )
             else:
                 return Resources(
-                    cpu_limit=self.resources['limits']['cpu'] * self._CPU_RATE,
+                    cpu_limit=int(self.resources['limits']['cpu'] * self._CPU_RATE),
                     mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                    cpu_reservation=self.resources['requests']['cpu'] * self._CPU_RATE,
+                    cpu_reservation=int(self.resources['requests']['cpu'] * self._CPU_RATE),
                     mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE
                 )
     

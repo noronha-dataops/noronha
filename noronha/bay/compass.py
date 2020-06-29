@@ -166,32 +166,52 @@ class CaptainCompass(Compass):
     def api_timeout(self):
         
         return self.conf.get(self.KEY_TIMEOUT, self.DEFAULT_TIMEOUT)
-    
+
     def get_resource_profile(self, ref_to_profile: str):
         
         prof = self.conf.get(self.KEY_PROFILES, {}).get(ref_to_profile)
-        keys = {'limits', 'requests'}
-        
+
         if prof is None:
             if ref_to_profile in DockerConst.Section.ALL:
                 return None
             else:
                 raise ConfigurationError("Resource profile '{}' not found".format(ref_to_profile))
-        
-        assert isinstance(prof, dict) and keys.issubset(set(prof)),\
-            ConfigurationError("Resource profile must be a mapping with the keys {}".format(keys))
-        
-        for key in keys:
-            for res, unit in zip(['cpu', 'memory'], ['vCores', 'MB']):
-                num = prof.get(key, {}).get(res)
-                assert num is None or isinstance(num, int), NhaDockerError(
-                    "Resource {} '{}' must be an integer ({})".format(key.rstrip('s'), res, unit))
+
+        prof = self.assert_profile(prof)
         
         return prof
-    
+
+    def assert_profile(self, profile: dict):
+
+        keys = {'limits', 'requests'}
+
+        assert isinstance(profile, dict) and keys.issubset(set(profile)), \
+            ConfigurationError("Resource profile must be a mapping containing the keys {}".format(keys))
+
+        for key in keys:
+            for res, unit in zip(['cpu', 'memory'], ['vCores', 'MB']):
+                num = profile.get(key, {}).get(res)
+
+                if res == 'memory':
+                    assert num is None or isinstance(num, int), NhaDockerError(
+                        "Resource {} '{}' must be an integer ({})".format(key.rstrip('s'), res, unit))
+                else:
+                    assert num is None or isinstance(num, (int, float, str)), NhaDockerError(
+                        "Resource {} '{}' must be integer or float or string ({})".format(key.rstrip('s'), res, unit))
+
+                    if isinstance(num, str):
+                        assert num[-1] == "m", NhaDockerError(
+                            "When string, CPU must be in milli notation. Example: 500m")
+                        num = float(num[:-1]) / 1000
+                        assert num >= 0.001, NhaDockerError(
+                            "CPU precision must be at least 0.001, but was: {}".format(num))
+                        profile.get(key, {})[res] = num
+
+        return profile
+
     @property
     def tipe(self):
-        
+
         return self.conf[self.KEY_TYPE]
     
     @abstractmethod
@@ -223,7 +243,7 @@ class CaptainCompass(Compass):
 class SwarmCompass(CaptainCompass):
     
     DEFAULT_TIMEOUT = 20
-    
+
     def get_use_lb(self):
         
         raise NotImplementedError("Deployments by container manager 'swarm' are automatically load balanced")
@@ -255,7 +275,7 @@ class KubeCompass(CaptainCompass):
     DEFAULT_STG_CLS = 'standard'
     DEFAULT_TIMEOUT = 60
     DEFAULT_USE_LB = False
-    
+
     def get_namespace(self):
         
         namespace = self.conf.get(self.KEY_NAMESPACE, self.DEFAULT_NAMESPACE)
