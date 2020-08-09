@@ -168,8 +168,8 @@ The following properties are found under the key *container_manager* and they re
         memory: 4096
         cpu: 4
 
-    # keeping compatibility with both Kubernetes and Docker Swarm,
-    # all *cpu* values are expressed in **vCores** and *memory* in **MB**.
+    # *cpu* values are expressed in **vCores** and are expected to be integer, float or string. Precion lower than 0.001 is not allowed
+    # *memory* values are expressed in **MB** and are expected to be integer.
 
 Such resource profile names may be specified when starting an IDE, training or deployment (note that when deploying with multiple replicas, the resources specification will be applied to each replica).
 
@@ -193,6 +193,35 @@ Another interesting strategy is to specify default resource profiles according t
         memory: 4096
         cpu: 4
 
+Additional configuration may be added to these profiles in order to further customize containers. Here is an example of the possible configuration that a resource profile accepts and implements:
+
+.. parsed-literal::
+
+    gpu_training:
+      enable_gpu: true
+      requests:
+        memory: 256
+        cpu: 1
+      limits:
+        memory: 512
+        cpu: 2
+
+    elastic_deploy:
+      auto_scale: true  # does not affect Docker Swarm deploy
+      minReplicas: 1
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 50
+      requests:
+        memory: 256
+        cpu: 1
+      limits:
+        memory: 512
+        cpu: 2
+
+GPU support is added through the *enable_gpu* keyword. Currently, Noronha does not support ID-specific GPU assignment or multiple GPUs per Pod.
+
+Kubernetes Horizontal Pod Autoscaling (HPA) support is added through the *auto_scale* keyword. If no additional keys are specified, the default values from the code above are used. Currently there is only support for CPU-based autoscaling.
+
 - **healthcheck:** A mapping that describes how the container manager is going to probe each container's liveness and readiness in a deployment. The values in the following example are the default ones:
 
 .. parsed-literal::
@@ -211,3 +240,33 @@ The following parameters are only used if the chosen container manager is Kubern
 - **storage_class:** An existing storage class that Noronha will use to create persistent volume claims for storing its plugins' data (default: standard).
 
 - **nfs:** A mapping with the keys *path* and *server*. The key *server* should point to your NFS server's hostname or IP, whereas *path* refers to an existing directory inside your NFS server. Noronha will create volumes under the specified directory for sharing files with its training, deployment and IDE containers.
+
+WebServer
+=========
+The following properties are found under the key *web_server* and they refer to how Noronha configures your inference service. These can be overriden when you instanciate a ModelServer in your predict notebook.
+
+- **type:** defines which server you want to use. Current supported options are: *simple* and *gunicorn*.
+- **enable_debug:** this option is used to set a debug mode for your server.
+- **threads:** dictionary with keys: *enabled* to enable multi-thread, *high_cpu* to set a higher thread count and *number* to set a specific thread count, which overrides *high_cpu*.
+
+.. parsed-literal::
+
+    threads:
+      enabled: false
+      high_cpu: false
+      number: 1
+
+- **extra_conf:** dictionary with keys that may vary depending on your server. For Gunicorn configuration options, please refer to: `Gunicorn manual <https://docs.gunicorn.org/en/stable/settings.html>`_
+
+Below is a complete example of *web_server* configuration:
+
+.. parsed-literal::
+
+    web_server:
+      type: gunicorn
+      enable_debug: false
+      threads:
+        enabled: true
+        high_cpu: true
+      extra_conf:
+        workers: 1
