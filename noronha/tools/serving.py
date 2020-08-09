@@ -46,7 +46,7 @@ class HealthCheck(object):
 
 class ModelServer(ABC):
 
-    def __init__(self, predict_func, enrich=True, server_conf=None, server_type=None):
+    def __init__(self, predict_func, enrich=True, server_conf: dict = None, server_type=None):
 
         if server_conf:
             assert type(server_conf) is dict, MisusageError("Server conf should be dict, but is: {}".format(type(server_conf)))
@@ -161,7 +161,7 @@ class OnlinePredict(ModelServer):
         server()
     """
 
-    def __init__(self, predict_func, enrich=True, server_conf=None, server_type=None):
+    def __init__(self, predict_func, enrich=True, server_conf: dict = None, server_type=None):
 
         self.movers = Deployment.load(ignore=True).movers
         super().__init__(predict_func=predict_func, enrich=enrich, server_conf=server_conf, server_type=server_type)
@@ -196,6 +196,9 @@ class LazyModelServer(ModelServer):
         :param load_model_func: A function that receives a path to a directory containing the model version's files. The function should load the model files and return an object (e.g.: a ready-to-use predictor).
         :param model_name: Name of the parent model. All model versions that are going to be served should be children to this model.
         :param max_models: Maximum number of coexisting model versions loaded in memory. If this number is reached, least used versions are going to be purged for memory optimization.
+        :param server_conf: Dictionary containing server-specific configuration. This requires deep understanding of the WebServer of your choice.
+        :param server_type: Name of the WebServer of your choice.
+        :param enrich: If True, instead of returning the raw response of the prediction function the endpoint is going to return a JSON object with the prediction result and other metatada such as the prediction's datetime of this deployment.
 
         :Example:
 
@@ -212,14 +215,16 @@ class LazyModelServer(ModelServer):
             server = LazyModelServer(
                 predict_func=pred,
                 load_model_func=load,
-                model_name='iris-clf'
+                model_name='iris-clf',
+                server_type='gunicorn'
+                server_conf=dict(timeout=300, threads=12)
             )
 
             server()
         """
 
-    def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100, server_conf=None,
-                 server_type=None, enrich=True):
+    def __init__(self, predict_func, load_model_func, model_name: str = None, max_models: int = 100,
+                 server_conf: dict = None, server_type=None, enrich=True):
 
         assert callable(load_model_func), MisusageError("Expected load_model_func to be callable")
         super().__init__(predict_func=predict_func, enrich=enrich, server_conf=server_conf, server_type=server_type)
