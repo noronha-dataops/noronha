@@ -726,7 +726,6 @@ class WebServerCompass(Compass):
     KEY_HIGH_CPU = 'high_cpu'
     KEY_NUMBER = 'number'
     KEY_EXTRA_CONF = 'extra_conf'
-    KEY_PROCESSES = 'processes'
     DEFAULT_HOST = '0.0.0.0'
     DEFAULT_PORT = 8080
     DEFAULT_ENABLE_DEBUG = False
@@ -771,10 +770,11 @@ class WebServerCompass(Compass):
 
 class GunicornCompass(WebServerCompass):
 
+    KEY_WORKERS = 'workers'
     KEY_WRK_CLASS = 'worker_class'
     DEFAULT_SYNC_WRK = 'sync'
     DEFAULT_THREAD_WRK = 'gthread'
-    DEFAULT_MULTI_WRK = 'eventlet'
+    DEFAULT_MULTI_WRK = 'gevent'
 
     @property
     def log_level(self):
@@ -785,7 +785,7 @@ class GunicornCompass(WebServerCompass):
 
         extra_conf = self.conf.get(self.KEY_EXTRA_CONF, {})
 
-        prcs = extra_conf.get(self.KEY_PROCESSES, self.DEFAULT_PROCESSES)
+        prcs = extra_conf.get(self.KEY_WORKERS, self.DEFAULT_PROCESSES)
         prcs = prcs if prcs > 0 else self.DEFAULT_PROCESSES
 
         if self.threads[self.KEY_ENABLED] and not self.threads.get(self.KEY_NUMBER, None):
