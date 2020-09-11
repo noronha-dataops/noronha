@@ -370,6 +370,16 @@ class LWWarehouse(Warehouse, ABC):
     def create_table(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], *_, **__):
         
         pass
+
+    @abstractmethod
+    def update_schema(self, hierarchy: StoreHierarchy, new_schema: List[FileSpec], old_schema: List[FileSpec]):
+
+        pass
+
+    @abstractmethod
+    def drop_table(self, hierarchy: StoreHierarchy):
+
+        pass
     
     def _keysp_depending_wrapper(self, func):
 
@@ -497,7 +507,55 @@ class CassWarehouse(LWWarehouse):
         )
         
         self.client.execute(stmt)
-    
+
+    def update_schema(self, hierarchy: StoreHierarchy, new_schema: List[FileSpec], old_schema: List[FileSpec]):
+
+        # TODO infer old_schema from table
+
+        old = {x.name: i for i, x in enumerate(old_schema)}
+        new = {x.name: i for i, x in enumerate(new_schema)}
+
+        old_ids = set(old.keys())
+        new_ids = set(new.keys())
+
+        del_names = old_ids.difference(new_ids)
+        add_names = new_ids.difference(old_ids)
+
+        for name in del_names:
+
+            self.LOG.debug("Removing file: '{}' from table: '{}'".format(
+                name,
+                hierarchy.join_as_table_name(self.section)))
+
+            stmt = "ALTER TABLE {keysp}.{table} DROP {column}".format(
+                keysp=self.keyspace,
+                table=hierarchy.join_as_table_name(self.section),
+                column=old_schema[old[name]].get_name_as_table_field())
+
+            self.client.execute(stmt)
+
+        for name in add_names:
+
+            self.LOG.debug("Adding file: '{}' to table: '{}'".format(
+                name,
+                hierarchy.join_as_table_name(self.section)))
+
+            stmt = "ALTER TABLE {keysp}.{table} ADD {field}".format(
+                keysp=self.keyspace,
+                table=hierarchy.join_as_table_name(self.section),
+                field=new_schema[new[name]].get_name_as_table_field(include_type=True))
+
+            self.client.execute(stmt)
+
+    def drop_table(self, hierarchy: StoreHierarchy):
+
+        stmt = "DROP TABLE IF EXISTS {keysp}.{table}".format(
+            keysp=self.keyspace,
+            table=hierarchy.join_as_table_name(self.section)
+        )
+
+        self.client.execute(stmt)
+
     def delete(self, hierarchy: StoreHierarchy, ignore=False):
         
         stmt = "DELETE FROM {keysp}.{table} WHERE id='{_id}'".format(
@@ -581,6 +639,26 @@ def get_warehouse(lightweight=False, **kwargs) -> Warehouse:
         raise ResolutionError(
             "Could not resolve {}file manager by reference '{}'. Options are: {}"
             .format('lightweight ' if lightweight else '', wh_type, list(cls_lookup.keys()))
+        )
+    else:
+        return warehouse_cls(**kwargs)
+
+
+def get_lw_warehouse(**kwargs) -> LWWarehouse:
+
+    wh_compass = LWWarehouseCompass
+    wh_type = wh_compass().tipe.strip().lower()
+
+    cls_lookup = {
+        'cass': CassWarehouse
+    }
+
+    try:
+        warehouse_cls = cls_lookup[wh_type]
+    except KeyError:
+        raise ResolutionError(
+            "Could not resolve lightweight file manager by reference '{}'. Options are: {}"
+                .format(wh_type, list(cls_lookup.keys()))
         )
     else:
         return warehouse_cls(**kwargs)
