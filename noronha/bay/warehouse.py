@@ -7,7 +7,8 @@ Objects handled:
 - Notebook output files (pdf) in Artifactory
 - Dataset packages
 """
-
+import traceback
+import sys
 import os
 from abc import ABC, abstractmethod
 from artifactory import ArtifactoryPath
@@ -455,6 +456,7 @@ class CassWarehouse(LWWarehouse):
     
     NO_KEYSP_EXC = InvalidRequest
     NO_TABLE_EXC = InvalidRequest
+    TABLE_NAME = 'model_file'
     
     def connect(self):
         
@@ -488,22 +490,18 @@ class CassWarehouse(LWWarehouse):
         self.client.execute(stmt)
     
     def create_table(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], *_, **__):
-        
-        fields = sorted([
-            fyle.get_name_as_table_field(include_type=True)
-            for fyle in file_schema
-        ])
-        
+
         stmt = """
             CREATE TABLE {keysp}.{table} (
-                id VARCHAR,
-                {fields},
-                PRIMARY KEY(id)   
+                id_model VARCHAR,
+                id_mover VARCHAR,
+                id_file VARCHAR,
+                file_content BLOB,
+                PRIMARY KEY(id_model, id_mover, id_file)
             )
         """.format(
             keysp=self.keyspace,
-            table=hierarchy.join_as_table_name(self.section),
-            fields=', '.join(fields)
+            table=self.TABLE_NAME
         )
         
         self.client.execute(stmt)
@@ -557,70 +555,99 @@ class CassWarehouse(LWWarehouse):
         self.client.execute(stmt)
 
     def delete(self, hierarchy: StoreHierarchy, ignore=False):
-        
-        stmt = "DELETE FROM {keysp}.{table} WHERE id='{_id}'".format(
+
+        deleted = True
+
+        ids_stmt = """
+            SELECT * FROM {keysp}.{table}
+            WHERE 
+                id_model='{_id_model}'
+            AND id_mover='{_id_mover}'
+        """.format(
             keysp=self.keyspace,
-            table=hierarchy.join_as_table_name(self.section),
-            _id=hierarchy.child
+            table=self.TABLE_NAME,
+            _id_model=hierarchy.parent,
+            _id_mover=hierarchy.child
+        )
+
+        files = [row.id_file for row in self.client.execute(ids_stmt).current_rows]
+
+        if len(files) == 0 and not ignore:
+            self._raise_not_found(hierarchy)
+        elif len(files) == 0 and ignore:
+            deleted = False
+        else:
+            self.LOG.debug("Removing files {} from Cassandra".format(", ".join(files)))
+        
+        stmt = """
+            DELETE FROM {keysp}.{table}
+            WHERE
+                id_model='{_id_model}'
+            AND id_mover='{_id_mover}'
+            AND id_file IN ('{_id_file}')
+        """.format(
+            keysp=self.keyspace,
+            table=self.TABLE_NAME,
+            _id_model=hierarchy.parent,
+            _id_mover=hierarchy.child,
+            _id_file="','".join(files) if len(files) > 1 else files[0]
         )
         
         self.client.execute(stmt)
+
+        return deleted
 
     @table_dependent
     def store_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec]):
         
         fields = []
         values = []
+        stmt = "BEGIN BATCH "
         
         for file_spec in file_schema:
-            fields.append(file_spec.get_name_as_table_field())
+
+            fields.append(file_spec.name)
             values.append(memoryview(file_spec.get_bytes()))
 
-        self.LOG.info("Storing as blobs: {}".format(fields))
-        
-        stmt = """
-            INSERT INTO {keysp}.{table}
-            (id, {fields})
-            VALUES ('{_id}', {values})
-        """.format(
-            keysp=self.keyspace,
-            table=hierarchy.join_as_table_name(self.section),
-            _id=hierarchy.child,
-            fields=', '.join(fields),
-            values=', '.join(['%s']*len(fields))
-        )
-        
+            stmt += """
+                INSERT INTO {keysp}.{table} (id_model, id_mover, id_file, file_content) 
+                VALUES ('{_id_model}', '{_id_mover}', '{_id_file}', %s); 
+            """.format(
+                keysp=self.keyspace,
+                table=self.TABLE_NAME,
+                _id_model=hierarchy.parent,
+                _id_mover=hierarchy.child,
+                _id_file=file_spec.name
+            )
+        stmt += " APPLY BATCH;"
+        self.LOG.debug("Storing as blobs: {}".format(fields))
         self.client.execute(stmt, values)
     
     @table_dependent
     def deploy_files(self, hierarchy: StoreHierarchy, file_schema: List[FileSpec], path_to: str):
-        
+
         stmt = """
             SELECT * FROM {keysp}.{table}
-            WHERE id='{_id}'
+            WHERE 
+                id_model='{_id_model}'
+            AND id_mover='{_id_mover}'
         """.format(
             keysp=self.keyspace,
-            table=hierarchy.join_as_table_name(self.section),
-            _id=hierarchy.child
+            table=self.TABLE_NAME,
+            _id_model=hierarchy.parent,
+            _id_mover=hierarchy.child
         )
-        
-        row = self.client.execute(stmt).one()
-        
-        if row is None:
+
+        rows = self.client.execute(stmt).current_rows
+
+        if len(rows) == 0:
             self._raise_not_found(hierarchy)
-        
-        for file_spec in file_schema:
-            self.LOG.info('Deploying file: {}'.format(file_spec.name))
-            bites = getattr(row, file_spec.get_name_as_table_field())
-            
-            if bites is None:
-                if file_spec.required:
-                    raise NhaStorageError("Missing required file: {}".format(file_spec.name))
-                else:
-                    self.LOG.info('Ignoring absent file: {}'.format(file_spec.name))
-            else:
-                write_path = os.path.join(path_to, file_spec.name)
-                open(write_path, 'wb').write(bites)
+
+        for row in rows:
+            self.LOG.debug('Deploying file: {}'.format(row.id_file))
+            write_path = os.path.join(path_to, row.id_file)
+            bites = row.file_content
+            open(write_path, 'wb').write(bites)
 
 
 def get_warehouse(lightweight=False, **kwargs) -> Warehouse:
