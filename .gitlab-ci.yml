@@ -9,6 +9,7 @@ cache:
 
 pages:
   script:
+  - pip install .
   - pip install -U sphinx sphinx-rtd-theme
   - sphinx-build -b html docs/source/ public
   artifacts:
