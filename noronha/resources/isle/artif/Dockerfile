@@ -1,5 +1,4 @@
 FROM docker.bintray.io/jfrog/artifactory-oss:7.2.1
-MAINTAINER Gustavo Castilhos <gvargasc@everis.com>
 
 # basic OS configuration
 USER root

@@ -1,5 +1,4 @@
 FROM sonatype/nexus3
-MAINTAINER Gustavo Castilhos <gvargasc@everis.com>
 
 # basic OS configuration
 USER root
