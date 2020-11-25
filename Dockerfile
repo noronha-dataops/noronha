@@ -28,7 +28,7 @@ RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
  && echo ". ${CONDA_HOME}/etc/profile.d/conda.sh" >> ~/.bashrc
 
 # creating virtual environment
-RUN conda create -y --name ${CONDA_VENV} python=3.6.5
+RUN conda create -y --name ${CONDA_VENV} python=3.7.9
 
 # DEV: installing requirements on advance to avoid reinstalling each time the framework's code is changed
 ADD requirements ./requirements
