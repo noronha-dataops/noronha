@@ -25,30 +25,34 @@ router:
 file_store:
   native: true
   port: 30023
-  type: artif
+  type: artif  # (artif, nexus)
 
 lightweight_store:
   enabled: false
-  native: true
-  port: 30042
+  native: false
   type: cass
+  hosts: ['cassandra']
+  port: 30042
   keyspace: nha_db
+  replication_factor: 3
 
 docker:
   daemon_address: unix:/var/run/docker.sock
   target_registry: null
+  registry_secret: null
 
 container_manager:
   type: swarm
+  resource_profiles:
+    nha-gpu:
+      enable_gpu: false
+      requests:
+        memory: 512
+        cpu: 1
+      limits:
+        memory: 2048
+        cpu: 1
 
 web_server:
   type: simple
   enable_debug: false
-  threads:
-    enabled: false
-    high_cpu: false
-  extra_conf:
-    processes: 1
-
-web_app:
-  type: flask
