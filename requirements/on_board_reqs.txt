@@ -19,3 +19,4 @@ keyring
 keyring_jeepney
 cassandra-driver==3.21.0
 gunicorn
+nbconvert==5.6.1
