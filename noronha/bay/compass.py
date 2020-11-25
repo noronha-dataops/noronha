@@ -713,18 +713,19 @@ class WebAppCompass(Compass):
 
     conf = WebAppConf
 
-    KEY_TIPE = 'type'
+    KEY_TYPE = 'type'
+    DEFAULT_TYPE = 'flask'
 
     @property
     def tipe(self):
-        return self.conf[self.KEY_TIPE]
+        return self.conf.get(self.KEY_TYPE, self.DEFAULT_TYPE)
 
 
 class WebServerCompass(Compass):
 
     conf = WebServerConf
 
-    KEY_TIPE = 'type'
+    KEY_TYPE = 'type'
     KEY_HOST = 'host'
     KEY_PORT = 'port'
     KEY_ENABLE_DEBUG = 'enable_debug'
@@ -733,19 +734,20 @@ class WebServerCompass(Compass):
     KEY_HIGH_CPU = 'high_cpu'
     KEY_NUMBER = 'number'
     KEY_EXTRA_CONF = 'extra_conf'
+    DEFAULT_TYPE = 'simple'
     DEFAULT_HOST = '0.0.0.0'
     DEFAULT_PORT = 8080
     DEFAULT_ENABLE_DEBUG = False
     DEFAULT_THREADS = {
-        KEY_ENABLED: True,
-        KEY_HIGH_CPU: True
+        KEY_ENABLED: False,
+        KEY_HIGH_CPU: False
     }
     DEFAULT_PROCESSES = 1
 
     @property
     def tipe(self):
 
-        return self.conf[self.KEY_TIPE]
+        return self.conf.get(self.KEY_TYPE, self.DEFAULT_TYPE)
 
     @property
     def host(self):
