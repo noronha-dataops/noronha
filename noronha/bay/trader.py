@@ -13,7 +13,7 @@ from noronha.tools.utils import load_proc_monitor
 
 class Server(ABC):
 
-    proc_mon = load_proc_monitor(catch_task=True)
+    proc_mon = None
 
     @abstractmethod
     def run_server(self):
@@ -45,6 +45,7 @@ class SimpleServer(Server):
 
         self.app = app
         self.model_conf = model_conf or {}
+        self.proc_mon = load_proc_monitor(catch_task=True)
 
     def enable_threads(self):
 
@@ -73,6 +74,7 @@ class GunicornServer(BaseApplication, Server):
 
         self.app = app
         self.model_conf = model_conf
+        self.proc_mon = load_proc_monitor(catch_task=True)
         super().__init__()
 
     def get_config(self):

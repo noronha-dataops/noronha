@@ -350,6 +350,8 @@ class LWWarehouse(Warehouse, ABC):
     NO_KEYSP_EXC: Type[Exception] = None
     NO_TABLE_EXC: Type[Exception] = None
 
+    TABLE_NAME = 'model_file'
+
     def __init__(self, **kwargs):
         
         super().__init__(**kwargs)
@@ -420,9 +422,8 @@ class LWWarehouse(Warehouse, ABC):
     def _raise_not_found(self, hierarchy: StoreHierarchy):
         
         raise NhaStorageError(
-            "Nothing found in lightweight storage with key '{key}' (Table={table})"
+            "Nothing found in lightweight storage with key '{key}'"
             .format(
-                table=hierarchy.join_as_table_name(self.section),
                 key=hierarchy.child
             )
         )
@@ -446,7 +447,6 @@ class CassWarehouse(LWWarehouse):
     
     NO_KEYSP_EXC = InvalidRequest
     NO_TABLE_EXC = InvalidRequest
-    TABLE_NAME = 'model_file'
     
     def connect(self):
         
