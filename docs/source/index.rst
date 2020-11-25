@@ -15,3 +15,4 @@ DataOps framework for Machine Learning projects.
    guide/index.rst
    reference/index.rst
    developer/index.rst
+   prod/index.rst
