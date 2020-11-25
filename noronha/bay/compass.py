@@ -549,6 +549,7 @@ class MongoCompass(IslandCompass):
     DEFAULT_HOST = 'localhost'
     DEFAULT_CONCERN = {'w': 1, 'j': True, 'wtimeout': 5}
     DEFAULT_MAX_MB = 1*1024  # 1 GB
+    KEY_MAX_IDLE_TIME = 'max_idle_time_ms'
     
     @property
     def db_name(self):
@@ -564,7 +565,8 @@ class MongoCompass(IslandCompass):
             host=self.host,
             port=self.port,
             username=self.user,
-            password=self.pswd
+            password=self.pswd,
+            maxIdleTimeMS=self.max_idle_time
         )
     
     @property
@@ -574,6 +576,11 @@ class MongoCompass(IslandCompass):
             return self.DEFAULT_CONCERN
         else:
             return self.conf.get(self.KEY_CONCERN, self.DEFAULT_CONCERN)
+
+    @property
+    def max_idle_time(self):
+
+        return self.conf.get(self.KEY_MAX_IDLE_TIME, None)
 
 
 class WarehouseCompass(IslandCompass):
