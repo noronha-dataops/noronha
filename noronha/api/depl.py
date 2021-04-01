@@ -73,18 +73,25 @@ class DeploymentAPI(NoronhaAPI):
             notebook=assert_extension(notebook, Extension.IPYNB),
             details=join_dicts(details or {}, dict(params=params or {}), allow_overwrite=False),
             replicas=kwargs.get('tasks'),
+            host_port=port,
             _duplicate_filter=dict(name=name, proj=self.proj)
         )
         
         # TODO: check consistensy of project, docker tag and git version between depl.bvers and movers.bvers
-        DeploymentExp(
+        exp = DeploymentExp(
             depl,
             port,
             tag,
             resource_profile=kwargs.pop('resource_profile', None),
             log=self.LOG
-        ).launch(**kwargs)
-        
+        )
+        exp.launch(**kwargs)
+
+        if port is None:
+            node_port = exp.captain.get_node_port(exp.make_name())
+            depl.reload()
+            depl.update(host_port=node_port)
+
         self.reset_logger()
         return depl
 

@@ -33,6 +33,7 @@ class Deployment(SmartDoc):
     tasks = DictField(EmbeddedDocumentField(DeplTask, default=DeplTask()), default={})
     details = DictField(default={})
     replicas = IntField(default=1)
+    host_port = IntField(default=None)
     
     def clean(self):
         

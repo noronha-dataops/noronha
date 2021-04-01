@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.common.utils import is_it_open_sea
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding, WebServerConst
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding, WebServerConst, OnlineConst
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
 from noronha.common.parser import resolve_log_level
@@ -823,3 +823,114 @@ def get_server_compass():
         WebServerConst.Servers.SIMPLE: WebServerCompass,
         WebServerConst.Servers.GUNICORN: GunicornCompass
     }.get(WebServerCompass().tipe)()
+
+
+class DeploymentCompass:
+
+    def __init__(self, depl=None):
+
+        from noronha.db.depl import Deployment  # avoid circular import
+
+        self.LOCALHOST = 'localhost'
+        self.ORIGINAL_PORT = OnlineConst.PORT
+        self.captain_compass = get_captain_compass()
+        self.on_board = am_i_on_board()
+        self.open_sea = is_it_open_sea()
+        self.depl = depl if depl else Deployment.load()
+
+    @property
+    def service_name(self):
+
+        return '{}-{}-{}'.format(DockerConst.Section.DEPL, self.depl.proj.name, self.depl.name)
+
+    @property
+    def host(self):
+
+        if self.captain_compass.tipe == DockerConst.Managers.SWARM:
+            if self.open_sea:
+                return self.service_name
+            elif self.on_board:
+                return find_bridge_ip()
+            else:
+                return self.LOCALHOST
+        elif self.captain_compass.tipe == DockerConst.Managers.KUBE:
+            if self.on_board or self.open_sea:
+                return self.service_name
+            else:
+                return self.captain_compass.get_node()
+
+    @property
+    def port(self):
+
+        if self.captain_compass.tipe == DockerConst.Managers.SWARM:
+            if self.open_sea:
+                return self.ORIGINAL_PORT
+            else:
+                return self.depl.host_port
+        elif self.captain_compass.tipe == DockerConst.Managers.KUBE:
+            if self.on_board or self.open_sea:
+                return self.ORIGINAL_PORT
+            else:
+                return self.depl.host_port
+
+    def get_endpoints(self) -> list:
+
+        endpoints = []
+
+        if self.captain_compass.tipe == DockerConst.Managers.KUBE:
+            endpoints = self._get_kube_endpoints()
+        elif self.captain_compass.tipe == DockerConst.Managers.SWARM:
+            endpoints = self._get_swarm_endpoints()
+
+        return ['http://{}:{}'.format(endpoint, self.port) for endpoint in endpoints]
+
+    def _get_kube_endpoints(self):
+
+        if self.on_board or self.open_sea:
+
+            from conu import K8sBackend  # lazy import
+
+            endpoints = []
+
+            for svc in K8sBackend(logging_level=logging.ERROR).core_api.list_namespaced_endpoints(
+                    self.captain_compass.get_namespace()).items:
+
+                dyct = svc.to_dict()
+
+                if dyct.get('metadata', {}).get('name', '') == self.service_name:
+
+                    for address in dyct['subsets'][0]['addresses']:
+                        endpoints += [address['ip']]
+        else:
+            endpoints = [self.host] if self.port is not None else []
+
+        return endpoints
+
+    def _get_swarm_endpoints(self):
+
+        if self.open_sea:
+
+            from conu import DockerBackend  # lazy import
+
+            endpoints = []
+
+            for cont in DockerBackend(logging_level=logging.ERROR).list_containers():
+
+                details = cont.inspect()
+                svc = details.get('Config', {}).get('Labels', {}).get('com.docker.swarm.service.name', '')
+
+                if svc == self.service_name:
+                    address = details.get('NetworkSettings', {}) \
+                                     .get('Networks', {}) \
+                                     .get(DockerConst.NETWORK, {}) \
+                                     .get('IPAddress', None)
+
+                    endpoints += [address] if address else []
+
+        elif self.port is not None:
+            endpoints = [self.host]
+        else:
+            # TODO use router address
+            endpoints = []
+
+        return endpoints

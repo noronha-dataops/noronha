@@ -104,6 +104,10 @@ class Captain(ABC, Configured, Patient, Logged):
             return items[0]
         else:
             raise NotImplementedError("Multiple {} with name '{}'".format(what, name))
+
+    def get_node_port(self, svc_name: str):
+
+        pass
     
     @abstractmethod
     def list_cont_or_pod_ids(self):
@@ -1185,6 +1189,13 @@ class KubeCaptain(Captain):
             )
         else:
             return None
+
+    def get_node_port(self, svc_name: str):
+
+        svc = self.find_svc(svc_name)
+        svc = svc[0].to_dict() if len(svc) > 0 else {}
+        ports = svc.get('spec', {}).get('ports', [])
+        return ports[0]['node_port'] if len(ports) == 1 else None
 
 
 def get_captain(section: str = DockerConst.Section.IDE, **kwargs):
