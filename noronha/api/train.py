@@ -4,11 +4,14 @@ import json
 import traceback
 
 from noronha.api.main import NoronhaAPI
+from noronha.bay.compass import DeploymentCompass
 from noronha.bay.expedition import ShortExpedition
-from noronha.common.annotations import validate, projected
+from noronha.common.annotations import validate, projected, retry_when_none
 from noronha.common.constants import DockerConst, Extension, OnBoard, Task
+from noronha.common.errors import DBError
 from noronha.common.parser import assert_extension, join_dicts
 from noronha.db.bvers import BuildVersion
+from noronha.db.depl import Deployment
 from noronha.db.ds import Dataset
 from noronha.db.movers import ModelVersion
 from noronha.db.train import Training
@@ -57,7 +60,7 @@ class TrainingAPI(NoronhaAPI):
     )
     def new(self, name: str = None, tag=DockerConst.LATEST, notebook: str = None, params: dict = None,
             details: dict = None, datasets: list = None, movers: list = None, _replace: bool = None,
-            **kwargs):
+            target_deploy: str = None, **kwargs):
         
         self.set_logger(name)
         bv = BuildVersion.find_one_or_none(tag=tag, proj=self.proj)
@@ -82,17 +85,68 @@ class TrainingAPI(NoronhaAPI):
             _duplicate_filter=dict(name=name, proj=self.proj)
         )
         
-        TrainingExp(
+        exp = TrainingExp(
             train=train,
             tag=tag,
             datasets=datasets,
             movers=movers,
             resource_profile=kwargs.pop('resource_profile', None),
             log=self.LOG
-        ).launch(**kwargs)
-        
+        )
+        exp.launch(**kwargs)
+
+        train.reload()
+
+        if target_deploy is not None:
+
+            self.LOG.info("Deploy '{}' was provided, attempting to update recently trained model"
+                          .format(target_deploy))
+            updated = False
+
+            try:
+                depl = Deployment.find_one(name=target_deploy, proj=self.proj.name)
+                depl_compass = DeploymentCompass(depl)
+                endpoints = depl_compass.get_endpoints()
+
+                if len(endpoints) == 0:
+                    self.LOG.warn("Could not determine service port, skipping model update")
+
+                status = "failed"
+                for url in endpoints:
+                    url += '/update'
+                    response = self._update_mover(url, train.mover.name)
+
+                    if response:
+                        updated = True
+                        status = "succeeded"
+                    else:
+                        updated = False
+                        status = "failed"
+                        break
+
+                self.LOG.info("Update {}".format(train.mover.model.name, train.mover.name, status))
+
+            except DBError.NotFound:
+                self.LOG.error("Could not find deploy named: {} in project: {}. Skipping model update"
+                               .format(target_deploy, self.proj.name))
+
+            train.update(deploy_update=updated)
+
         self.reset_logger()
         return train.reload()
+
+    @retry_when_none(10)
+    def _update_mover(self, url: str, mover: str):
+
+        import requests
+
+        r = requests.post(url, params={'model_version': mover})
+
+        if r.status_code != 200:
+            self.LOG.debug("Model version '{}' update failed, retrying...".format(mover))
+            return False
+        else:
+            return True
 
 
 class TrainingExp(ShortExpedition):

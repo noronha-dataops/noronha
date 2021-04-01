@@ -97,6 +97,11 @@ def _list(_filter, expand, **kwargs):
     """Name of a resource profile to be applied for each container. """
     """This profile should be configured in your nha.yaml file"""
 )
+@click.option(
+    '--target-deploy', '--td', 'target_deploy', help=
+    """Name of deployment to be updated with the model that is generated in this training. """
+    """This option only works when using LazyModelServing in your deployment"""
+)
 def new(params, env_vars, mounts, **kwargs):
     
     """Execute a new training"""

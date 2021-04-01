@@ -50,6 +50,29 @@ def validate(**kwargs):
     ]))
 
 
+def retry_when_none(limit: int):
+
+    def decorator(func):
+
+        def wrapper(*args, **kwargs):
+
+            attempt = 1
+
+            while attempt <= limit:
+
+                response = func(*args, **kwargs)
+
+                if response:
+                    return response
+                else:
+                    attempt += 1
+                    time.sleep(attempt/2)
+
+        return wrapper
+
+    return decorator
+
+
 class Configured(object):
     
     """A class that contains a static cofiguration in the form of a dictionary
