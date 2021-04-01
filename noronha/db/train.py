@@ -46,3 +46,6 @@ class Training(SmartDoc):
     notebook = StringField(required=True)
     task = EmbeddedDocumentField(TrainTask, default=TrainTask())
     details = DictField(default={})
+    mover = ReferenceField('ModelVersion', default=None)
+    ds = ReferenceField('Dataset', default=None)
+    deploy_update = BooleanField(default=False)

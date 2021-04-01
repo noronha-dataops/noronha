@@ -38,7 +38,7 @@ class Publisher(object):
     :param pretrained_with: Reference to the pre-trained model asset to be linked (syntax: <model_name>:<version_name>).
            May be left out if only one pre-trained asset was included in the training container
            or if *uses_pretrained* wasn't set to True.
-    
+
     :returns: A :ref:`ModelVersion <model-version-doc>` instance.
     
     :raise ResolutionError:
@@ -93,7 +93,7 @@ class Publisher(object):
     def _infer_dataset(self, model_name: str, uses_dataset: bool = True, dataset_name: str = None):
         
         if uses_dataset:
-            return dataset_meta(model=model_name, dataset=dataset_name).name
+            return dataset_meta(model=model_name, dataset=dataset_name)
         else:
             return None
     
@@ -102,7 +102,7 @@ class Publisher(object):
         if uses_pretrained:
             model_name, version_name = (pretrained_with or ':').split(':')
             mv = movers_meta(model=model_name or None, version=version_name or None)
-            return mv.show()
+            return '{}:{}'.format(mv.model.name, mv.name)
         else:
             return None
     
@@ -113,11 +113,12 @@ class Publisher(object):
                  lightweight: bool = False):
         
         model_name = self._infer_parent_model(model_name)
-        
+        ds = self._infer_dataset(model_name, uses_dataset, dataset_name)
+
         mv = self.mv_api.new(
             name=version_name or self.train.name,
             model=model_name,
-            ds=self._infer_dataset(model_name, uses_dataset, dataset_name),
+            ds=ds.name if ds else None,
             train=self.train.name,
             path=src_path,
             details=details or {},
@@ -125,7 +126,10 @@ class Publisher(object):
             lightweight=lightweight,
             _replace=True
         )
-        
+
+        self.train.reload()
+        self.train.update(mover=mv, ds=ds)
+
         if get_purpose() == DockerConst.Section.IDE:
             LOG.info("For testing purposes, model files will be moved to the deployed model path")
             MetaCargo(docs=[mv], section=DockerConst.Section.IDE).deploy()
