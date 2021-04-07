@@ -84,7 +84,7 @@ class TrainingAPI(NoronhaAPI):
             details=join_dicts(details or {}, dict(params=params or {}), allow_overwrite=False),
             _duplicate_filter=dict(name=name, proj=self.proj)
         )
-        
+
         exp = TrainingExp(
             train=train,
             tag=tag,
@@ -94,8 +94,6 @@ class TrainingAPI(NoronhaAPI):
             log=self.LOG
         )
         exp.launch(**kwargs)
-
-        train.reload()
 
         if target_deploy is not None:
 
@@ -107,6 +105,7 @@ class TrainingAPI(NoronhaAPI):
                 depl = Deployment.find_one(name=target_deploy, proj=self.proj.name)
                 depl_compass = DeploymentCompass(depl)
                 endpoints = depl_compass.get_endpoints()
+                train.reload()
 
                 if len(endpoints) == 0:
                     self.LOG.warn("Could not determine service port, skipping model update")
@@ -124,7 +123,7 @@ class TrainingAPI(NoronhaAPI):
                         status = "failed"
                         break
 
-                self.LOG.info("Update {}".format(train.mover.model.name, train.mover.name, status))
+                self.LOG.info("Update model version {}:{} {}".format(train.mover.model.name, train.mover.name, status))
 
             except DBError.NotFound:
                 self.LOG.error("Could not find deploy named: {} in project: {}. Skipping model update"

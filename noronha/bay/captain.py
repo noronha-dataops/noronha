@@ -1193,7 +1193,7 @@ class KubeCaptain(Captain):
     def get_node_port(self, svc_name: str):
 
         svc = self.find_svc(svc_name)
-        svc = svc[0].to_dict() if len(svc) > 0 else {}
+        svc = svc.to_dict() if svc is not None else {}
         ports = svc.get('spec', {}).get('ports', [])
         return ports[0]['node_port'] if len(ports) == 1 else None
 
