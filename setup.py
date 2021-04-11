@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+
+# Copyright Noronha Development Team
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Noronha is a framework that helps you adopt
 DataOps practices in Machine Learning projects
@@ -16,9 +31,9 @@ if os.environ.get('include_tests'):
 setup(
     name='noronha-dataops',
     version='1.5.5',
-    url='https://github.com/gvargasc/noronha-dataops',
-    author='Guilherme Alves Lima, Gustavo Vargas Castilhos',
-    author_email='galvesli@everis.com',
+    url='https://github.com/noronha-dataops/noronha',
+    author='Noronha Development Team',
+    author_email='noronha.mlops@everis.com',
     description='DataOps for Machine Learning',
     long_description=__doc__,
     zip_safe=False,
