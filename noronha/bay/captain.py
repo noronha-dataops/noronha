@@ -797,20 +797,27 @@ class KubeCaptain(Captain):
         
         return result
 
-    def find_autoscaler(self, name):
+    def find_autoscaler(self, name: str):
 
         api_response = k8s_client.AutoscalingV1Api(self.api_client). \
             list_namespaced_horizontal_pod_autoscaler(namespace=self.namespace).to_dict()
 
-        for i in api_response['items']:
-            if i == name:
-                return True
+        for i in api_response.get('items', []):
+            if i.get('metadata', {}).get('name', '') == name:
+                return i
 
-        return False
+        return None
 
-    def handle_autoscaler(self, name):
+    def handle_autoscaler(self, name: str):
 
         if self.resources and self.resources.get('auto_scale', False):
+
+            if self.find_autoscaler(name):
+                self.LOG.debug('Removing old autoscaler: {}'.format(name))
+                k8s_client.AutoscalingV1Api(self.api_client). \
+                    delete_namespaced_horizontal_pod_autoscaler(name=name, namespace=self.namespace)
+
+            self.LOG.info("Creating horizontal Pod autoscaler")
 
             template = dict(
                 apiVersion='autoscaling/v1',
@@ -830,13 +837,8 @@ class KubeCaptain(Captain):
             )
 
             try:
-                if not self.find_autoscaler(name):
-                    k8s_utils.create_from_dict(self.api_client, template)
-                else:
-                    self.LOG.debug('Updating autoscaler: {}'.format(name))
-                    k8s_client.AutoscalingV1Api(self.api_client). \
-                        delete_namespaced_horizontal_pod_autoscaler(name=name, namespace=self.namespace)
-                    k8s_utils.create_from_dict(self.api_client, template)
+                k8s_utils.create_from_dict(self.api_client, template)
+                self.LOG.debug(template)
             except Exception as e:
                 self.LOG.debug("Failed to create autoscaler: {}".format(name))
                 self.LOG.debug(repr(e))
