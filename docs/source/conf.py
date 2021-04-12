@@ -22,8 +22,8 @@ except:
 # -- Project information -----------------------------------------------------
 
 project = 'Noronha'
-copyright = '2019, everis'
-author = 'everis'
+copyright = '2021, Noronha Development Team'
+author = 'Noronha Development Team'
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
