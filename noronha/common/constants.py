@@ -25,7 +25,7 @@ class FrameworkConst(object):
     
     FW_NAME = 'noronha-dataops'
     FW_VERSION = '1.5.5'  # framework version
-    FW_TAG = 'develop'  # framework tag
+    FW_TAG = 'latest'  # framework tag
 
 
 class Perspective(object):
@@ -320,7 +320,7 @@ class DockerConst(object):
     """Docker-related nomenclature standards"""
     
     LATEST = 'latest'
-    NHA_BASE_IMG = 'noronha.everis.ai/noronha:{}'.format(FrameworkConst.FW_TAG)
+    NHA_BASE_IMG = 'noronhadataops/noronha:{}'.format(FrameworkConst.FW_TAG)
     LOCAL_REGISTRY = 'noronha'
     NETWORK = 'nha-net'
     HANG_CMD = ['tail', '-F', Paths.DEVNULL]

@@ -45,7 +45,7 @@ You can easily install Noronha by activating your Conda environment and running 
 
 .. parsed-literal::
 
-    pip install git+https://gitlab.eva.bot/asseteva/noronha-dataops
+    pip install noronha-dataops
    
     nha get-me-started
 
@@ -67,7 +67,7 @@ This is what the Dockerfile may look like:
 .. parsed-literal::
 
     # default public base image for working inside Noronha
-    FROM noronha.everis.ai/noronha:develop
+    FROM noronhadataops/noronha:latest
 
     # project dependencies installation
     ADD requirements.txt .
@@ -90,4 +90,4 @@ Then, run the Jupyter Notebook interface inside your project's image for editing
 
     nha note --edit --tag develop
 
-For fully-working project templates and end-to-end tutorials, see the `examples directory <https://gitlab.eva.bot/asseteva/noronha-dataops/tree/master/examples>`_.
+For fully-working project templates and end-to-end tutorials, see the `examples directory <https://github.com/noronha-dataops/noronha/tree/master/examples>`_.

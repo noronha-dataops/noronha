@@ -6,7 +6,7 @@ This section describes the usage of Noronha's toolkit, which is packed with the 
 
 Shortcuts
 =========
-Reference for functions inside the `shortcuts module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/shortcuts.py>`_.
+Reference for functions inside the `shortcuts module <https://github.com/noronha-dataops/noronha/tree/master/noronha/tools/shortcuts.py>`_.
 
 .. autofunction:: noronha.tools.shortcuts.data_path
 
@@ -24,13 +24,13 @@ Reference for functions inside the `shortcuts module <https://gitlab.eva.bot/ass
 
 Publish
 =======
-Reference for the model publisher, which can be found in the `publish module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/publish.py>`_.
+Reference for the model publisher, which can be found in the `publish module <https://github.com/noronha-dataops/noronha/tree/master/noronha/tools/publish.py>`_.
 
 .. autoclass:: noronha.tools.publish.Publisher
 
 Serving
 =======
-Reference for the inference servers, which can be found in the `serving module <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/tools/serving.py>`_.
+Reference for the inference servers, which can be found in the `serving module <https://github.com/noronha-dataops/noronha/tree/master/noronha/tools/serving.py>`_.
 
 .. autoclass:: noronha.tools.serving.OnlinePredict
 

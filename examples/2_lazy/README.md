@@ -1,7 +1,7 @@
 
 # Example 2: Lazy (*lightweight*) model serving
 
-This tutorial shows how to adapt the previous [iris example](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/)
+This tutorial shows how to adapt the previous [iris example](https://github.com/noronha-dataops/noronha/tree/master/examples/1_iris/)
 so that multiple model versions can be dynamically loaded and served from a single deployment.
 
 Optionally, this serving architecture can also be integrated with Noronha's [lightweight storage](https://noronha-dataops.readthedocs.io/en/latest/use_guide/configuration.html#lightweight-store)
@@ -22,7 +22,7 @@ lightweight_store:
 
 #### 2) (Optional) Using lightweight model persistence
 
-In the last cell of the [training notebook](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/notebooks/train.ipynb),
+In the last cell of the [training notebook](https://github.com/noronha-dataops/noronha/tree/master/examples/1_iris/notebooks/train.ipynb),
 add the flag `lightweight=True` when calling the model publisher:
 
 <pre>
@@ -37,11 +37,11 @@ Publisher()(
 
 #### 3) The inference notebook
 
-The [notebook](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/2_lazy/lw_predict.ipynb)
+The [notebook](https://github.com/noronha-dataops/noronha/tree/master/examples/2_lazy/lw_predict.ipynb)
 inside this example's folder employs Noronha's [LazyModelServer](https://noronha-dataops.readthedocs.io/en/latest/reference/toolkit.html#lazy-model-server)
 by providing it with two simple functions: one for making predictions and one for loading models.
 
-Copy it to your project's [notebooks folder](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/1_iris/notebooks/):
+Copy it to your project's [notebooks folder](https://github.com/noronha-dataops/noronha/tree/master/examples/1_iris/notebooks/):
 
 ```
 cp lazy_predict.ipynb ../1_iris/notebooks/

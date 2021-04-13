@@ -32,17 +32,17 @@ Before setting up this architecture you'll need:
 
 Steps for setting up this architecture:
 
-1. Place the file [local_sandbox.nha.yaml](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/jenkins/jenkins_server.nha.yaml) at ~/.nha/nha.yaml in your local machine. Edit the properties inside this file to match your envinronment's configuration.
+1. Place the file [local_sandbox.nha.yaml](https://github.com/noronha-dataops/noronha/tree/master/examples/jenkins/jenkins_server.nha.yaml) at ~/.nha/nha.yaml in your local machine. Edit the properties inside this file to match your envinronment's configuration.
 
-2. Place the file [jenkins_server.nha.yaml](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/jenkins/jenkins_server.nha.yaml) at ~/.nha/nha.yaml in your Jenkins server. Edit the properties inside this file to match your envinronment's configuration.
+2. Place the file [jenkins_server.nha.yaml](https://github.com/noronha-dataops/noronha/tree/master/examples/jenkins/jenkins_server.nha.yaml) at ~/.nha/nha.yaml in your Jenkins server. Edit the properties inside this file to match your envinronment's configuration.
 
-3. Use the file [Jenkinsfile](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/jenkins/Jenkinsfile) to create a parameterized pipeline in your Jenkins server.
+3. Use the file [Jenkinsfile](https://github.com/noronha-dataops/noronha/tree/master/examples/jenkins/Jenkinsfile) to create a parameterized pipeline in your Jenkins server.
 
 ## Usage 
 
 After setting up the architecture, follow this steps to work inside it: 
 
-* Just go on using Noronha in the local machine, like it's shown in the [iris example](https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/examples/iris).
+* Just go on using Noronha in the local machine, like it's shown in the [iris example](https://github.com/noronha-dataops/noronha/tree/master/examples/1_iris).
 
 * Don't forget to commit your project to the Git repository before building it with `nha proj build`. This way, the correct Git hash will always be associated to the build version you're testing.
 

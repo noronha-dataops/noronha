@@ -19,13 +19,13 @@ None of them are mandatory, but at least one is recommended.
 - **Git:** The project's remote Git repository (recommended for production ready projects).
 - **Docker:** The project's remote Docker repository (recommended for mock-ups, prototyping and third party image testing).
 
-For the first two kinds (local, git) the framework assumes that your project's root contains a Dockerfile that uses `noronha.everis.ai/noronha:latest <https://hub.docker.com/r/noronha.everis.ai/noronha>`_ as its base image. Everytime you build your project with Noronha from one of these two repositories, it's going create a Docker image for the project and record some metadata related to it.
+For the first two kinds (local, git) the framework assumes that your project's root contains a Dockerfile that uses `noronhadataops/noronha:latest <https://hub.docker.com/r/noronhadataops/noronha>`_ as its base image. Everytime you build your project with Noronha from one of these two repositories, it's going create a Docker image for the project and record some metadata related to it.
 
 As for the third kind of repository (Docker), the framework assumes your repository contains a pre-built image, managed by the user or a third-party. When building from this repository, Noronha is just going to pull and tag the image for usage in the project's tasks. Besides, if you try to run a project task with a Docker tag that hasn't been recorded by Noronha yet, its default behaviour is to try to find an image with that tag in the project's Docker repository.
 
 This is a common Dockerfile to be used with Noronha::
 
-    FROM noronha.everis.ai/noronha:1.0.0
+    FROM noronhadataops/noronha:latest
 
     ADD requirements.txt .
     RUN bash -c "source ${CONDA_HOME}/bin/activate ${CONDA_VENV} \
@@ -34,7 +34,7 @@ This is a common Dockerfile to be used with Noronha::
 
     ADD . ${APP_HOME}
 
-You can also find other common Dockerfile structures in the `examples section <https://gitlab.eva.bot/asseteva/noronha-dataops/tree/master/examples>`_.
+You can also find other common Dockerfile structures in the `examples section <https://github.com/noronha-dataops/noronha/tree/master/examples>`_.
 
 For the third kind of repository (docker) the framework assumes that the image is already managed by the user or a third-party, thus it's ready to use and no builds will be performed by the framework itself.
 
@@ -46,7 +46,7 @@ Why do we build projects into Docker images? That's because in Noronha every pro
 - **Train:** Model training inside a container. It's basically an execution of the training notebook. Usually, by the end of the execution a model version is produced.
 - **Deploy:** Prediction service inside a group of containers with one or more replicas. Here, the prediction notebook is used to sustain an HTTP endpoint for serving prediction requests.
 
-You can find templates for structuring your training and prediction notebooks in the `examples section <https://gitlab.eva.bot/asseteva/noronha-dataops/tree/master/examples>`_.
+You can find templates for structuring your training and prediction notebooks in the `examples section <https://github.com/noronha-dataops/noronha/tree/master/examples>`_.
 
 .. _island-concepts:
 

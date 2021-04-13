@@ -7,7 +7,7 @@ This section summarizes the roles and responsibilities of the most important mod
 
 db
 ==
-The following topics describe the modules inside the package `noronha.db <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/db>`_,
+The following topics describe the modules inside the package `noronha.db <https://github.com/noronha-dataops/noronha/tree/master/noronha/db>`_,
 which is responsible for defining the ORM's for all metadata objects managed by Noronha,
 as well as utilities for handling those objects.
 
@@ -53,7 +53,7 @@ as well as utilities for handling those objects.
 
 bay
 ===
-The following topics describe the modules inside the package `noronha.bay <https://gitlab.eva.bot/asseteva/noronha-dataops/blob/master/noronha/bay>`_,
+The following topics describe the modules inside the package `noronha.bay <https://github.com/noronha-dataops/noronha/tree/master/noronha/bay>`_,
 which provides interfaces that help Noronha interact with other systems such as container managers and file managers.
 Note that every module inside this package has a nautic/pirate-like thematic.
 
