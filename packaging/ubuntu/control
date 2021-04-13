@@ -1,9 +1,0 @@
-Package: noronha-dataops
-Version: 1.0.0
-Section: base
-Priority: optional
-Installed-Size: 2097152‬
-Architecture: amd64
-Depends: docker.io, python3-dev, python3-pip, python3-venv, curl
-Maintainer: everis <ipereira@everis.com>
-Description: This framework hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture, thus helping you benefit from DataOps practices without having to change much of your usual work behavior.
