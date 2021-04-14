@@ -84,9 +84,9 @@ Go to your browser and enter: `http://localhost:9090/`
 ### Next steps
 For fully-working project template and end-to-end tutorial, see the [iris example](https://github.com/noronha-dataops/noronha/tree/master/examples/1_iris).
 
-For more information about Noronha and advanced usage of the framework, check [readthedocs](https://noronha.readthedocs.com).
+For more information about Noronha and advanced usage of the framework, check [readthedocs](https://noronha-dataops.readthedocs.io).
 
-If you want to know how to run in Kubernetes, check this [guide](https://noronha.readthedocs.com).
+If you want to know how to run in Kubernetes, check this [guide](https://noronha-dataops.readthedocs.io/en/latest/prod/index.html).
 
 ### Report issues and request features
 If you run into any problem or feel like there is some funcionality that should be added, please consider submiting an [issue](https://github.com/noronha-dataops/noronha/issues).

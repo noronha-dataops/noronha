@@ -5,6 +5,9 @@
 
 Noronha DataOps
 ===================================
+
+.. image:: main-logo-color.png
+
 DataOps framework for Machine Learning projects.
 
 .. toctree::
