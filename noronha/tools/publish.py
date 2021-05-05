@@ -141,8 +141,9 @@ class Publisher(object):
             _replace=True
         )
 
-        self.train.reload()
-        self.train.update(mover=mv, ds=ds)
+        if self.train.name:
+            self.train.reload()
+            self.train.update(mover=mv, ds=ds)
 
         if get_purpose() == DockerConst.Section.IDE:
             LOG.info("For testing purposes, model files will be moved to the deployed model path")
