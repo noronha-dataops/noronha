@@ -13,6 +13,8 @@ assignees: ''
 
 <!-- Include a code example or the steps that led to the problem. Please try to be as specific as possible. -->
 
+### Log messages + Traceback
+
 ### Expected behavior
 
 ### Environment
