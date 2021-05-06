@@ -1,5 +1,6 @@
 # Noronha DataOps
 
+
 ![noronha logo](docs/source/main-logo-color.png)
 
 Noronha is a Python framework designed to help you orchestrate and manage ML projects life-cycle.
