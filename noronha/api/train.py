@@ -108,45 +108,47 @@ class TrainingAPI(NoronhaAPI):
             log=self.LOG
         )
         exp.launch(**kwargs)
+        train.reload()
 
-        if target_deploy is not None:
-
-            self.LOG.info("Deploy '{}' was provided, attempting to update recently trained model"
-                          .format(target_deploy))
-            updated = False
-
-            try:
-                depl = Deployment.find_one(name=target_deploy, proj=self.proj.name)
-                depl_compass = DeploymentCompass(depl)
-                endpoints = depl_compass.get_endpoints()
-                train.reload()
-
-                if len(endpoints) == 0:
-                    self.LOG.warn("Could not determine service port, skipping model update")
-
-                status = "failed"
-                for url in endpoints:
-                    url += '/update'
-                    response = self._update_mover(url, train.mover.name)
-
-                    if response:
-                        updated = True
-                        status = "succeeded"
-                    else:
-                        updated = False
-                        status = "failed"
-                        break
-
-                self.LOG.info("Update model version {}:{} {}".format(train.mover.model.name, train.mover.name, status))
-
-            except DBError.NotFound:
-                self.LOG.error("Could not find deploy named: {} in project: {}. Skipping model update"
-                               .format(target_deploy, self.proj.name))
-
-            train.update(deploy_update=updated)
+        if target_deploy is not None and train.task.state == Task.State.FINISHED:
+            self._update_deploy(target_deploy, train)
 
         self.reset_logger()
         return train.reload()
+
+    def _update_deploy(self, target_deploy: str, train: Training):
+
+        self.LOG.info("Deploy '{}' was provided, attempting to update recently trained model".format(target_deploy))
+        updated = False
+
+        try:
+            depl = Deployment.find_one(name=target_deploy, proj=self.proj.name)  # may throw DBError.NotFound
+            depl_compass = DeploymentCompass(depl)
+            endpoints = depl_compass.get_endpoints()
+
+            if len(endpoints) == 0:
+                self.LOG.warn("Could not determine service port, skipping model update")
+
+            status = "failed"
+            for url in endpoints:
+                url += '/update'
+                response = self._update_mover(url, train.mover.name)
+
+                if response:
+                    updated = True
+                    status = "succeeded"
+                else:
+                    updated = False
+                    status = "failed"
+                    break
+
+            self.LOG.info("Update model version {}:{} {}".format(train.mover.model.name, train.mover.name, status))
+
+        except DBError.NotFound:
+            self.LOG.error("Could not find deploy named: {} in project: {}. Skipping model update"
+                           .format(target_deploy, self.proj.name))
+
+        train.update(deploy_update=updated)
 
     @retry_when_none(10)
     def _update_mover(self, url: str, mover: str):
