@@ -125,24 +125,35 @@ class Publisher(object):
                  uses_dataset: bool = True, dataset_name: str = None,
                  uses_pretrained: bool = False, pretrained_with: str = None,
                  lightweight: bool = False):
-        
+
+        version_name = version_name or self.train.name
         model_name = self._infer_parent_model(model_name)
         ds = self._infer_dataset(model_name, uses_dataset, dataset_name)
+        mv = None
+        err = None
+        
+        try:
+            mv = self.mv_api.new(
+                name=version_name,
+                model=model_name,
+                ds=ds.name if ds else None,
+                train=self.train.name,
+                path=src_path,
+                details=details or {},
+                pretrained=self._infer_pretrained(uses_pretrained, pretrained_with),
+                lightweight=lightweight,
+                _replace=True
+            )
+        except Exception as e:
+            LOG.warn("Model version {}:{} publish failed".format(model_name, version_name))
+            err = e
 
-        mv = self.mv_api.new(
-            name=version_name or self.train.name,
-            model=model_name,
-            ds=ds.name if ds else None,
-            train=self.train.name,
-            path=src_path,
-            details=details or {},
-            pretrained=self._infer_pretrained(uses_pretrained, pretrained_with),
-            lightweight=lightweight,
-            _replace=True
-        )
+        if self.train.name:
+            self.train.reload()
+            self.train.update(mover=mv, ds=ds)
 
-        self.train.reload()
-        self.train.update(mover=mv, ds=ds)
+        if err:
+            raise err
 
         if get_purpose() == DockerConst.Section.IDE:
             LOG.info("For testing purposes, model files will be moved to the deployed model path")
