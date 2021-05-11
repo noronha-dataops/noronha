@@ -131,7 +131,7 @@ class Publisher(object):
         ds = self._infer_dataset(model_name, uses_dataset, dataset_name)
         mv = None
         err = None
-        
+
         try:
             mv = self.mv_api.new(
                 name=version_name,
@@ -149,7 +149,6 @@ class Publisher(object):
             err = e
 
         if self.train.name:
-            self.train.reload()
             self.train.update(mover=mv, ds=ds)
 
         if err:
