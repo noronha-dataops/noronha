@@ -6,12 +6,12 @@ Introduction
 
 What's this?
 ============
-Noronnha is a framework that hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture.
+Noronha is a framework that hosts Machine Learning projects inside a portable, ready-to-use DataOps architecture.
 The goal here is to help Data Scientists benefit from DataOps practices without having to change much of their usual work behavior.
 
 Overview
 ========
-The following steps and the diagram bellow describe together the basic training and deploying workflow
+The following steps and the diagram below describe together the basic training and deploying workflow
 of a Machine Learning project inside Noronha:
 
     #. Noronha's base image is used as a starting point to provide the tools a project needs to run inside the framework.
