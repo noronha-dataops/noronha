@@ -862,7 +862,8 @@ class KubeCaptain(Captain):
                 name=pod.name,
                 namespace=self.namespace,
                 follow=True,
-                _preload_content=False
+                _preload_content=False,
+                container=pod.name
             )
         
         try:
@@ -1044,11 +1045,12 @@ class KubeCaptain(Captain):
     def copy_to(self, src: str, dest: str, pod: Pod):
         
         out, err = Popen(
-            'kubectl cp --namespace={namespace} {src} {pod}:{dest}'.format(
+            'kubectl cp --namespace={namespace} {src} {pod}:{dest} --container={cont}'.format(
                 src=src,
                 dest=dest,
                 pod=pod.name,
-                namespace=self.namespace
+                namespace=self.namespace,
+                cont=pod.name
             ).split(' '),
             stdout=PIPE, stderr=PIPE
         ).communicate()
@@ -1065,7 +1067,7 @@ class KubeCaptain(Captain):
                 stream(
                     k8s_backend.core_api.connect_get_namespaced_pod_exec,
                     name=pod.name, namespace=self.namespace, command=c.strip().split(' '),
-                    stderr=stderr, stdin=stdin, stdout=stdout, tty=tty
+                    stderr=stderr, stdin=stdin, stdout=stdout, tty=tty, container=pod.name
                 )
                 for c in Regex.CMD_DELIMITER.split(cmd)
             ])
