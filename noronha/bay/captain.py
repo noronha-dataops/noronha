@@ -45,7 +45,7 @@ from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured, Patient, patient
 from noronha.common.conf import CaptainConf
-from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst
+from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst, KubeConst
 from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
 from noronha.common.logging import Logged
 from noronha.common.parser import dict_to_kv_list, assert_str, StructCleaner, join_dicts
@@ -923,22 +923,37 @@ class KubeCaptain(Captain):
             return False
     
     def handle_svc(self, name, port_defs):
-        
-        if self.find_svc(name) is not None:
-            self.LOG.info("Removing old version of service '{}'".format(name))
-            self.rm_svc(name)
-        
+
         if len(port_defs) == 0:
             self.LOG.info('Skipping service creation')
             return
+
+        svc_type = self.resources.get(self.compass.KEY_SVC_TYPE, KubeConst.NODE_PORT)
+        current_svc = self.find_svc(name)
         
+        if current_svc is not None:  # check if there were any changes to the service and then delete
+
+            current_spec = current_svc.to_dict()['spec']
+            current_type = current_spec['type'].lower()
+            current_port = current_spec['ports'][0].get('node_port') if len(current_spec['ports']) == 1 else None
+
+            if current_type != svc_type.lower() or port_defs.get("nodePort", current_port) != current_port:
+
+                self.LOG.info("Removing old version of service '{}'".format(name))
+                self.rm_svc(name)
+                time.sleep(15) if current_type == KubeConst.LOAD_BALANCER.lower() else None  # LB rm is not immediate
+
+        if svc_type == KubeConst.CLUSTER_IP and port_defs.get("nodePort"):
+            self.LOG.info("Ignoring port definition, prioritizing service type: {}".format(KubeConst.CLUSTER_IP))
+            _ = port_defs.pop('nodePort', None)
+
         svc = dict(
             apiVersion='v1',
             kind='Service',
             metadata={'name': name},
             spec=dict(
                 selector={'app': name},
-                type='LoadBalancer' if self.compass.get_use_lb() else 'NodePort',
+                type=svc_type,
                 ports=port_defs
             )
         )
@@ -1211,7 +1226,7 @@ class KubeCaptain(Captain):
         svc = self.find_svc(svc_name)
         svc = svc.to_dict() if svc is not None else {}
         ports = svc.get('spec', {}).get('ports', [])
-        return ports[0]['node_port'] if len(ports) == 1 else None
+        return ports[0].get('node_port') if len(ports) == 1 else None
 
 
 def get_captain(section: str = DockerConst.Section.IDE, **kwargs):

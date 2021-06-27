@@ -30,7 +30,7 @@ from abc import ABC, abstractmethod
 from noronha.common.annotations import Configured
 from noronha.bay.tchest import TreasureChest
 from noronha.common.utils import is_it_open_sea
-from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding, WebServerConst, OnlineConst
+from noronha.common.constants import LoggerConst, DockerConst, WarehouseConst, Perspective, Encoding, WebServerConst, OnlineConst, KubeConst
 from noronha.common.conf import *
 from noronha.common.errors import ResolutionError, ConfigurationError, NhaDockerError
 from noronha.common.parser import resolve_log_level
@@ -161,6 +161,8 @@ class CaptainCompass(Compass):
     KEY_PROFILES = 'resource_profiles'
     KEY_TIMEOUT = 'api_timeout'
     KEY_HEALTH = 'healthcheck'
+    KEYS_RESOURCES = ['limits', 'requests']
+    KEY_SVC_TYPE = 'service_type'
     DEFAULT_TIMEOUT = None
     DEFAULT_HEALTHCHECK = {
         'enabled': False,
@@ -191,15 +193,24 @@ class CaptainCompass(Compass):
             else:
                 raise ConfigurationError("Resource profile '{}' not found".format(ref_to_profile))
 
-        prof = self.assert_profile(prof)
+        self.assert_profile(prof)
         
         return prof
 
     def assert_profile(self, profile: dict):
 
-        keys = {'limits', 'requests'}
+        assert isinstance(profile, dict), \
+            ConfigurationError("Resource profile must be a dictionary, but is: {}".format(type(profile)))
 
-        assert isinstance(profile, dict) and keys.issubset(set(profile)), \
+        if profile.get(self.KEYS_RESOURCES[0], None) or profile.get(self.KEYS_RESOURCES[1], None):
+
+            self.assert_resources(profile)
+
+    def assert_resources(self, profile: dict):
+
+        keys = set(self.KEYS_RESOURCES)
+
+        assert keys.issubset(set(profile)), \
             ConfigurationError("Resource profile must be a mapping containing the keys {}".format(keys))
 
         for key in keys:
@@ -220,8 +231,6 @@ class CaptainCompass(Compass):
                         assert num >= 0.001, NhaDockerError(
                             "CPU precision must be at least 0.001, but was: {}".format(num))
                         profile.get(key, {})[res] = num
-
-        return profile
 
     @property
     def tipe(self):
@@ -247,20 +256,11 @@ class CaptainCompass(Compass):
     def get_node(self) -> str:
         
         pass
-    
-    @abstractmethod
-    def get_use_lb(self):
-        
-        pass
 
 
 class SwarmCompass(CaptainCompass):
     
     DEFAULT_TIMEOUT = 20
-
-    def get_use_lb(self):
-        
-        raise NotImplementedError("Deployments by container manager 'swarm' are automatically load balanced")
     
     def get_namespace(self):
         
@@ -284,11 +284,9 @@ class KubeCompass(CaptainCompass):
     KEY_NAMESPACE = 'namespace'
     KEY_STG_CLS = 'storage_class'
     KEY_NFS = 'nfs'
-    KEY_USE_LB = 'use_load_balancer'
     DEFAULT_NAMESPACE = 'default'
     DEFAULT_STG_CLS = 'standard'
     DEFAULT_TIMEOUT = 60
-    DEFAULT_USE_LB = False
 
     def get_namespace(self):
         
@@ -303,10 +301,6 @@ class KubeCompass(CaptainCompass):
         assert isinstance(stg_cls, str) and len(stg_cls) > 0,\
             ConfigurationError("Container manager 'kube' requires an existing storage class to be configured")
         return stg_cls
-    
-    def get_use_lb(self):
-        
-        return self.conf.get(self.KEY_USE_LB, self.DEFAULT_USE_LB)
     
     def get_nfs_server(self):
         
@@ -326,6 +320,24 @@ class KubeCompass(CaptainCompass):
                 if node_addr.type in ['InternalIP', 'ExternalIP']:
                     if os.system("ping -c 1 -i 0.2 -W 1 {} > /dev/null".format(node_addr.address)) == 0:
                         return node_addr.address
+
+    def get_resource_profile(self, ref_to_profile: str):
+
+        prof = super().get_resource_profile(ref_to_profile)
+
+        svc_opts = {KubeConst.CLUSTER_IP.lower(): KubeConst.CLUSTER_IP,
+                    KubeConst.NODE_PORT.lower(): KubeConst.NODE_PORT,
+                    KubeConst.LOAD_BALANCER.lower(): KubeConst.LOAD_BALANCER}
+
+        prof_svc = prof.get(self.KEY_SVC_TYPE, KubeConst.NODE_PORT)
+
+        assert svc_opts.get(prof_svc.lower(), None), \
+            ConfigurationError("Resource profile {} had invalid service_type value: '{}', use one of these: {} "
+                               .format(ref_to_profile, prof_svc, ",".join(KubeConst.ALL_SVC_TYPES)))
+
+        prof[self.KEY_SVC_TYPE] = svc_opts[prof_svc.lower()]
+        
+        return prof
 
 
 def get_captain_compass():
@@ -429,7 +441,7 @@ class IslandCompass(ABC, TreasureCompass):
     DEFAULT_USER = None
     DEFAULT_PSWD = None
     DEFAULT_MAX_MB = 100*1024  # 100 GB
-    
+
     def __init__(self, perspective=None):
         
         super().__init__()

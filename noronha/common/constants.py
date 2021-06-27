@@ -352,6 +352,15 @@ class DockerConst(object):
         ALL = [ISLE, IDE, TRAIN, DEPL, PROJ]
 
 
+class KubeConst(object):
+
+    CLUSTER_IP = 'ClusterIP'
+    NODE_PORT = 'NodePort'
+    LOAD_BALANCER = 'LoadBalancer'
+
+    ALL_SVC_TYPES = [CLUSTER_IP, NODE_PORT, LOAD_BALANCER]
+
+
 class WebServerConst(object):
 
     class Servers(object):
