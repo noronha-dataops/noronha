@@ -929,7 +929,7 @@ class KubeCaptain(Captain):
             self.LOG.info('Skipping service creation')
             return
 
-        svc_type = self.resources.get(self.compass.KEY_SVC_TYPE, KubeConst.NODE_PORT)
+        svc_type = self.compass.get_svc_type(self.resources)
         current_svc = self.find_svc(name)
         
         if current_svc is not None:  # check if there were any changes to the service and then delete

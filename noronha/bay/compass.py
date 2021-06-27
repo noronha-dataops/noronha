@@ -257,6 +257,11 @@ class CaptainCompass(Compass):
         
         pass
 
+    @abstractmethod
+    def get_svc_type(self, resource_profile: dict) -> str:
+
+        pass
+
 
 class SwarmCompass(CaptainCompass):
     
@@ -277,6 +282,10 @@ class SwarmCompass(CaptainCompass):
     def get_node(self):
         
         return socket.gethostname()
+
+    def get_svc_type(self, resource_profile: dict) -> str:
+
+        raise NotImplementedError("Container manager 'swarm' does not take service_type configuration")
 
 
 class KubeCompass(CaptainCompass):
@@ -321,9 +330,9 @@ class KubeCompass(CaptainCompass):
                     if os.system("ping -c 1 -i 0.2 -W 1 {} > /dev/null".format(node_addr.address)) == 0:
                         return node_addr.address
 
-    def get_resource_profile(self, ref_to_profile: str):
+    def get_svc_type(self, resource_profile: dict):
 
-        prof = super().get_resource_profile(ref_to_profile)
+        prof = resource_profile or {}
 
         svc_opts = {KubeConst.CLUSTER_IP.lower(): KubeConst.CLUSTER_IP,
                     KubeConst.NODE_PORT.lower(): KubeConst.NODE_PORT,
@@ -332,12 +341,10 @@ class KubeCompass(CaptainCompass):
         prof_svc = prof.get(self.KEY_SVC_TYPE, KubeConst.NODE_PORT)
 
         assert svc_opts.get(prof_svc.lower(), None), \
-            ConfigurationError("Resource profile {} had invalid service_type value: '{}', use one of these: {} "
-                               .format(ref_to_profile, prof_svc, ",".join(KubeConst.ALL_SVC_TYPES)))
+            ConfigurationError("Invalid service_type value: '{}' in resource profile definition, use one of these: {} "
+                               .format(prof_svc, ",".join(KubeConst.ALL_SVC_TYPES)))
 
-        prof[self.KEY_SVC_TYPE] = svc_opts[prof_svc.lower()]
-        
-        return prof
+        return svc_opts[prof_svc.lower()]
 
 
 def get_captain_compass():
