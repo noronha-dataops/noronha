@@ -1096,7 +1096,8 @@ class KubeCaptain(Captain):
             MappedCargo(
                 name='extra-mount-{}'.format(index),
                 mount_to=mount['dest'],
-                src=mount['src']
+                src=mount['src'],
+                nfs=True  # kube directory mount always reference nfs
             )
             for index, mount in enumerate(mounts)
         ]
