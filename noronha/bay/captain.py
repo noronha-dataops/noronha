@@ -538,6 +538,7 @@ class KubeCaptain(Captain):
         self.assert_namespace()
         k8s_config.load_kube_config()
         self.api_client = k8s_client.ApiClient()
+        self.svc_type = self.compass.get_svc_type(self.resources)
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
@@ -929,24 +930,18 @@ class KubeCaptain(Captain):
             self.LOG.info('Skipping service creation')
             return
 
-        svc_type = self.compass.get_svc_type(self.resources)
         current_svc = self.find_svc(name)
-        
+
         if current_svc is not None:  # check if there were any changes to the service and then delete
 
             current_spec = current_svc.to_dict()['spec']
             current_type = current_spec['type'].lower()
-            current_port = current_spec['ports'][0].get('node_port') if len(current_spec['ports']) == 1 else None
+            current_ports = current_spec['ports']
 
-            if current_type != svc_type.lower() or port_defs.get("nodePort", current_port) != current_port:
-
+            if current_type != self.svc_type.lower() or self.check_port_change(current_ports, port_defs):
                 self.LOG.info("Removing old version of service '{}'".format(name))
                 self.rm_svc(name)
                 time.sleep(15) if current_type == KubeConst.LOAD_BALANCER.lower() else None  # LB rm is not immediate
-
-        if svc_type == KubeConst.CLUSTER_IP and port_defs.get("nodePort"):
-            self.LOG.info("Ignoring port definition, prioritizing service type: {}".format(KubeConst.CLUSTER_IP))
-            _ = port_defs.pop('nodePort', None)
 
         svc = dict(
             apiVersion='v1',
@@ -954,7 +949,7 @@ class KubeCaptain(Captain):
             metadata={'name': name},
             spec=dict(
                 selector={'app': name},
-                type=svc_type,
+                type=self.svc_type,
                 ports=port_defs
             )
         )
@@ -1153,6 +1148,11 @@ class KubeCaptain(Captain):
                 tgt = int(parts[1])
             else:
                 raise NotImplementedError()
+
+            if self.svc_type == KubeConst.CLUSTER_IP and src is not None:
+                self.LOG.warn("Ignoring port definition '{}', prioritizing service type: {}"
+                              .format(port, KubeConst.CLUSTER_IP))
+                src = None
             
             refs.append({'containerPort': tgt})
             defs.append(self.cleaner({
@@ -1230,6 +1230,21 @@ class KubeCaptain(Captain):
         svc = svc.to_dict() if svc is not None else {}
         ports = svc.get('spec', {}).get('ports', [])
         return ports[0].get('node_port') if len(ports) == 1 else None
+
+    def check_port_change(self, old_ports: List[dict], new_ports: List[dict]) -> bool:
+
+        if len(old_ports) != len(new_ports):
+            return True
+
+        old_ports = sorted(old_ports, key=lambda x: x.get('target_port'))
+        new_ports = sorted(new_ports, key=lambda x: x.get('targetPort'))
+
+        for old, new in zip(old_ports, new_ports):
+
+            if old.get('node_port') != new.get('nodePort', old.get('node_port')):  # ignore if new definition is empty
+                return True
+
+        return False
 
 
 def get_captain(section: str = DockerConst.Section.IDE, **kwargs):
