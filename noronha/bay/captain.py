@@ -942,6 +942,9 @@ class KubeCaptain(Captain):
                 self.LOG.info("Removing old version of service '{}'".format(name))
                 self.rm_svc(name)
                 time.sleep(15) if current_type == KubeConst.LOAD_BALANCER.lower() else None  # LB rm is not immediate
+            else:
+                self.LOG.info("Skipping service re-creation since no changes were made")
+                return
 
         svc = dict(
             apiVersion='v1',
