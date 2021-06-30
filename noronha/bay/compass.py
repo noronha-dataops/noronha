@@ -193,7 +193,7 @@ class CaptainCompass(Compass):
             else:
                 raise ConfigurationError("Resource profile '{}' not found".format(ref_to_profile))
 
-        self.assert_profile(prof)
+        prof = self.assert_profile(prof)
         
         return prof
 
@@ -203,17 +203,13 @@ class CaptainCompass(Compass):
             ConfigurationError("Resource profile must be a dictionary, but is: {}".format(type(profile)))
 
         if profile.get(self.KEYS_RESOURCES[0], None) or profile.get(self.KEYS_RESOURCES[1], None):
+            profile = self.assert_resources(profile)
 
-            self.assert_resources(profile)
+        return profile
 
     def assert_resources(self, profile: dict):
 
-        keys = set(self.KEYS_RESOURCES)
-
-        assert keys.issubset(set(profile)), \
-            ConfigurationError("Resource profile must be a mapping containing the keys {}".format(keys))
-
-        for key in keys:
+        for key in self.KEYS_RESOURCES:
             for res, unit in zip(['cpu', 'memory'], ['vCores', 'MB']):
                 num = profile.get(key, {}).get(res)
 
@@ -225,12 +221,17 @@ class CaptainCompass(Compass):
                         "Resource {} '{}' must be integer or float or string ({})".format(key.rstrip('s'), res, unit))
 
                     if isinstance(num, str):
+                        num = num.strip()
                         assert num[-1] == "m", NhaDockerError(
-                            "When string, CPU must be in milli notation. Example: 500m")
+                            'When string, CPU must be in milli notation. Example: "500m"')
                         num = float(num[:-1]) / 1000
-                        assert num >= 0.001, NhaDockerError(
-                            "CPU precision must be at least 0.001, but was: {}".format(num))
-                        profile.get(key, {})[res] = num
+                        assert num >= 0.001, NhaDockerError("CPU precision must be at least 0.001, but was: {}"
+                                                            .format(num))
+                        profile[key][res] = num
+                    elif isinstance(num, (int, float)):
+                        assert num >= 0.001, NhaDockerError("CPU precision must be at least 0.001, but was: {}"
+                                                            .format(num))
+        return profile
 
     @property
     def tipe(self):

@@ -477,37 +477,39 @@ class SwarmCaptain(Captain):
         
         if self.resources is None:
             return None
-        else:
-            if self.resources.get('enable_gpu', False):
-                return Resources(
-                    cpu_limit=int(self.resources['limits']['cpu'] * self._CPU_RATE),
-                    mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                    cpu_reservation=int(self.resources['requests']['cpu'] * self._CPU_RATE),
-                    mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE,
-                    generic_resources={'gpu': 1}
-                )
-            else:
-                return Resources(
-                    cpu_limit=int(self.resources['limits']['cpu'] * self._CPU_RATE),
-                    mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                    cpu_reservation=int(self.resources['requests']['cpu'] * self._CPU_RATE),
-                    mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE
-                )
-    
+
+        cpu_limit = self.resources.get('limits', {}).get('cpu')
+        mem_limit = self.resources.get('limits', {}).get('memory')
+        cpu_reservation = self.resources.get('requests', {}).get('cpu')
+        mem_reservation = self.resources.get('requests', {}).get('memory')
+
+        res = self.cleaner({
+            'cpu_limit': int(cpu_limit * self._CPU_RATE) if cpu_limit else None,
+            'mem_limit': mem_limit * self._MEM_RATE if mem_limit else None,
+            'cpu_reservation': int(cpu_reservation * self._CPU_RATE) if cpu_reservation else None,
+            'mem_reservation': mem_reservation * self._MEM_RATE if mem_reservation else None,
+            'generic_resources': {'gpu': 1} if self.resources.get('enable_gpu', False) else None
+        })
+
+        return Resources(**res)
+
     def conu_resources(self):
         
         if self.resources is None:
             return []
-        else:
-            res = [
-                '--cpus', str(self.resources['limits']['cpu']),
-                '--memory-reservation', '{}m'.format(self.resources['requests']['memory'])
-            ]
 
-            if self.resources.get('enable_gpu', False):
-                res = res + ['--gpus', 'all']
+        cpu = self.resources.get('limits', {}).get('cpu') or self.resources.get('requests', {}).get('cpu')
+        mem = self.resources.get('limits', {}).get('memory') or self.resources.get('requests', {}).get('memory')
+        res = []
 
-            return res
+        if cpu:
+            res = ['--cpus', str(cpu)]
+        if mem:
+            res = res + ['--memory-reservation', '{}m'.format(mem)]
+        if self.resources.get('enable_gpu', False):
+            res = res + ['--gpus', 'all']
+
+        return res
     
     def swarm_healthcheck(self, allow_probe=False):
         
@@ -1180,12 +1182,14 @@ class KubeCaptain(Captain):
             return None
         
         res = {}
-        
+
         for key in ['requests', 'limits']:
-            res[key] = dict(
-                cpu=self.resources[key]['cpu'],
-                memory=self.kube_memory(self.resources[key]['memory'])
-            )
+
+            if self.resources.get(key):
+                res[key] = self.cleaner(dict(
+                    cpu=self.resources[key].get('cpu'),
+                    memory=self.kube_memory(self.resources[key].get('memory'))
+                ))
 
         if self.resources.get('enable_gpu', False):
             res['limits'] = join_dicts(res['limits'], {"nvidia.com/gpu": 1})
@@ -1193,6 +1197,9 @@ class KubeCaptain(Captain):
         return res
     
     def kube_memory(self, mem):
+
+        if not mem:
+            return None
         
         if mem >= 1024:
             mem = int(mem/1024)
