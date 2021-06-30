@@ -205,11 +205,54 @@ You may do this by configuring the .nha/nha.yaml file on your home directory.
 You may share this file with other Noronha users as a template for your Noronha cluster.
 
 
-Deploy Artifactory and Mongo DB
+Deploy Artifactory, MongoDB and NodeJS
 ===============================
 
-Noronha may deploy Artifactory and Mongo DB by itself:
+Noronha may deploy Artifactory, Mongo and Node by itself:
 
 .. code-block:: shellscript
 
-    nha get-me-started
+    nha -d -p isle artif setup
+    nha -d -p isle mongo setup
+    nha -d -p isle router setup
+
+Ingress setup
+===============================
+
+In order to access your Kubernetes cluster from the internet, you may create an Ingress Controller with the following script:
+
+.. code-block:: yaml
+
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: <ingress-id>
+      namespace: <namespace-id>
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+        kubernetes.io/ingress.global-static-ip-name: <ip-name>  # name of the static ip reservation
+    spec:
+      rules:
+      - http:
+          paths:
+          - path: /predict  # this path is used by OnlinePredict and LazyModelServer when serving your model
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: nha-isle-router
+                port:
+                  number: 80
+          - path: /update  # this path is used by LazyModelServer when serving your model
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: nha-isle-router
+                port:
+                  number: 80
+          - path: /artifactory/*  # this path is only required if you want to use Artifactory through an ingress
+            pathType: Prefix
+            backend:
+              service:
+                name: nha-isle-artif
+                port:
+                  number: 8081

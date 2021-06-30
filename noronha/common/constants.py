@@ -24,7 +24,7 @@ import re
 class FrameworkConst(object):
     
     FW_NAME = 'noronha-dataops'
-    FW_VERSION = '1.6.1'  # framework version
+    FW_VERSION = '1.6.2'  # framework version
     FW_TAG = 'latest'  # framework tag
 
 
@@ -350,6 +350,15 @@ class DockerConst(object):
         DEPL = 'nha-depl'
         PROJ = 'nha-proj'
         ALL = [ISLE, IDE, TRAIN, DEPL, PROJ]
+
+
+class KubeConst(object):
+
+    CLUSTER_IP = 'ClusterIP'
+    NODE_PORT = 'NodePort'
+    LOAD_BALANCER = 'LoadBalancer'
+
+    ALL_SVC_TYPES = [CLUSTER_IP, NODE_PORT, LOAD_BALANCER]
 
 
 class WebServerConst(object):

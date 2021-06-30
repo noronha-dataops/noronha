@@ -45,7 +45,7 @@ from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
 from noronha.common.annotations import Configured, Patient, patient
 from noronha.common.conf import CaptainConf
-from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst
+from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst, KubeConst
 from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
 from noronha.common.logging import Logged
 from noronha.common.parser import dict_to_kv_list, assert_str, StructCleaner, join_dicts
@@ -477,37 +477,39 @@ class SwarmCaptain(Captain):
         
         if self.resources is None:
             return None
-        else:
-            if self.resources.get('enable_gpu', False):
-                return Resources(
-                    cpu_limit=int(self.resources['limits']['cpu'] * self._CPU_RATE),
-                    mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                    cpu_reservation=int(self.resources['requests']['cpu'] * self._CPU_RATE),
-                    mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE,
-                    generic_resources={'gpu': 1}
-                )
-            else:
-                return Resources(
-                    cpu_limit=int(self.resources['limits']['cpu'] * self._CPU_RATE),
-                    mem_limit=self.resources['limits']['memory'] * self._MEM_RATE,
-                    cpu_reservation=int(self.resources['requests']['cpu'] * self._CPU_RATE),
-                    mem_reservation=self.resources['requests']['memory'] * self._MEM_RATE
-                )
-    
+
+        cpu_limit = self.resources.get('limits', {}).get('cpu')
+        mem_limit = self.resources.get('limits', {}).get('memory')
+        cpu_reservation = self.resources.get('requests', {}).get('cpu')
+        mem_reservation = self.resources.get('requests', {}).get('memory')
+
+        res = self.cleaner({
+            'cpu_limit': int(cpu_limit * self._CPU_RATE) if cpu_limit else None,
+            'mem_limit': mem_limit * self._MEM_RATE if mem_limit else None,
+            'cpu_reservation': int(cpu_reservation * self._CPU_RATE) if cpu_reservation else None,
+            'mem_reservation': mem_reservation * self._MEM_RATE if mem_reservation else None,
+            'generic_resources': {'gpu': 1} if self.resources.get('enable_gpu', False) else None
+        })
+
+        return Resources(**res)
+
     def conu_resources(self):
         
         if self.resources is None:
             return []
-        else:
-            res = [
-                '--cpus', str(self.resources['limits']['cpu']),
-                '--memory-reservation', '{}m'.format(self.resources['requests']['memory'])
-            ]
 
-            if self.resources.get('enable_gpu', False):
-                res = res + ['--gpus', 'all']
+        cpu = self.resources.get('limits', {}).get('cpu') or self.resources.get('requests', {}).get('cpu')
+        mem = self.resources.get('limits', {}).get('memory') or self.resources.get('requests', {}).get('memory')
+        res = []
 
-            return res
+        if cpu:
+            res = ['--cpus', str(cpu)]
+        if mem:
+            res = res + ['--memory-reservation', '{}m'.format(mem)]
+        if self.resources.get('enable_gpu', False):
+            res = res + ['--gpus', 'all']
+
+        return res
     
     def swarm_healthcheck(self, allow_probe=False):
         
@@ -538,6 +540,7 @@ class KubeCaptain(Captain):
         self.assert_namespace()
         k8s_config.load_kube_config()
         self.api_client = k8s_client.ApiClient()
+        self.svc_type = self.compass.get_svc_type(self.resources)
     
     def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
         
@@ -862,7 +865,8 @@ class KubeCaptain(Captain):
                 name=pod.name,
                 namespace=self.namespace,
                 follow=True,
-                _preload_content=False
+                _preload_content=False,
+                container=pod.name
             )
         
         try:
@@ -923,22 +927,34 @@ class KubeCaptain(Captain):
             return False
     
     def handle_svc(self, name, port_defs):
-        
-        if self.find_svc(name) is not None:
-            self.LOG.info("Removing old version of service '{}'".format(name))
-            self.rm_svc(name)
-        
+
         if len(port_defs) == 0:
             self.LOG.info('Skipping service creation')
             return
-        
+
+        current_svc = self.find_svc(name)
+
+        if current_svc is not None:  # check if there were any changes to the service and then delete
+
+            current_spec = current_svc.to_dict()['spec']
+            current_type = current_spec['type'].lower()
+            current_ports = current_spec['ports']
+
+            if current_type != self.svc_type.lower() or self.check_port_change(current_ports, port_defs):
+                self.LOG.info("Removing old version of service '{}'".format(name))
+                self.rm_svc(name)
+                time.sleep(15) if current_type == KubeConst.LOAD_BALANCER.lower() else None  # LB rm is not immediate
+            else:
+                self.LOG.info("Skipping service re-creation since no changes were made")
+                return
+
         svc = dict(
             apiVersion='v1',
             kind='Service',
             metadata={'name': name},
             spec=dict(
                 selector={'app': name},
-                type='LoadBalancer' if self.compass.get_use_lb() else 'NodePort',
+                type=self.svc_type,
                 ports=port_defs
             )
         )
@@ -1029,11 +1045,12 @@ class KubeCaptain(Captain):
     def copy_to(self, src: str, dest: str, pod: Pod):
         
         out, err = Popen(
-            'kubectl cp --namespace={namespace} {src} {pod}:{dest}'.format(
+            'kubectl cp --namespace={namespace} {src} {pod}:{dest} --container={cont}'.format(
                 src=src,
                 dest=dest,
                 pod=pod.name,
-                namespace=self.namespace
+                namespace=self.namespace,
+                cont=pod.name
             ).split(' '),
             stdout=PIPE, stderr=PIPE
         ).communicate()
@@ -1050,7 +1067,7 @@ class KubeCaptain(Captain):
                 stream(
                     k8s_backend.core_api.connect_get_namespaced_pod_exec,
                     name=pod.name, namespace=self.namespace, command=c.strip().split(' '),
-                    stderr=stderr, stdin=stdin, stdout=stdout, tty=tty
+                    stderr=stderr, stdin=stdin, stdout=stdout, tty=tty, container=pod.name
                 )
                 for c in Regex.CMD_DELIMITER.split(cmd)
             ])
@@ -1079,7 +1096,8 @@ class KubeCaptain(Captain):
             MappedCargo(
                 name='extra-mount-{}'.format(index),
                 mount_to=mount['dest'],
-                src=mount['src']
+                src=mount['src'],
+                nfs=True  # kube directory mount always reference nfs
             )
             for index, mount in enumerate(mounts)
         ]
@@ -1135,6 +1153,11 @@ class KubeCaptain(Captain):
                 tgt = int(parts[1])
             else:
                 raise NotImplementedError()
+
+            if self.svc_type == KubeConst.CLUSTER_IP and src is not None:
+                self.LOG.warn("Ignoring port definition '{}', prioritizing service type: {}"
+                              .format(port, KubeConst.CLUSTER_IP))
+                src = None
             
             refs.append({'containerPort': tgt})
             defs.append(self.cleaner({
@@ -1159,12 +1182,14 @@ class KubeCaptain(Captain):
             return None
         
         res = {}
-        
+
         for key in ['requests', 'limits']:
-            res[key] = dict(
-                cpu=self.resources[key]['cpu'],
-                memory=self.kube_memory(self.resources[key]['memory'])
-            )
+
+            if self.resources.get(key):
+                res[key] = self.cleaner(dict(
+                    cpu=self.resources[key].get('cpu'),
+                    memory=self.kube_memory(self.resources[key].get('memory'))
+                ))
 
         if self.resources.get('enable_gpu', False):
             res['limits'] = join_dicts(res['limits'], {"nvidia.com/gpu": 1})
@@ -1172,6 +1197,9 @@ class KubeCaptain(Captain):
         return res
     
     def kube_memory(self, mem):
+
+        if not mem:
+            return None
         
         if mem >= 1024:
             mem = int(mem/1024)
@@ -1211,7 +1239,22 @@ class KubeCaptain(Captain):
         svc = self.find_svc(svc_name)
         svc = svc.to_dict() if svc is not None else {}
         ports = svc.get('spec', {}).get('ports', [])
-        return ports[0]['node_port'] if len(ports) == 1 else None
+        return ports[0].get('node_port') if len(ports) == 1 else None
+
+    def check_port_change(self, old_ports: List[dict], new_ports: List[dict]) -> bool:
+
+        if len(old_ports) != len(new_ports):
+            return True
+
+        old_ports = sorted(old_ports, key=lambda x: x.get('target_port'))
+        new_ports = sorted(new_ports, key=lambda x: x.get('targetPort'))
+
+        for old, new in zip(old_ports, new_ports):
+
+            if old.get('node_port') != new.get('nodePort', old.get('node_port')):  # ignore if new definition is empty
+                return True
+
+        return False
 
 
 def get_captain(section: str = DockerConst.Section.IDE, **kwargs):
