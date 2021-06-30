@@ -4,7 +4,7 @@
 This example demonstrates the end-to-end workflow of a Machine
 Learning project that works with tabular data.
 
-All steps required for running this example can be found in its [script](https://github.com/noronha-dataops/noronha/tree/master/examples/iris/script.sh).
+All steps required for running this example can be found in its [script](https://github.com/noronha-dataops/noronha/tree/master/examples/1_iris/script.sh).
 
 ## Dataset
 

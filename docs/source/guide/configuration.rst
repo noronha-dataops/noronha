@@ -197,6 +197,9 @@ Additional configuration may be added to these profiles in order to further cust
 
 .. parsed-literal::
 
+    nha_secure:
+      service_type: ClusterIP
+
     gpu_training:
       enable_gpu: true
       requests:
@@ -217,6 +220,8 @@ Additional configuration may be added to these profiles in order to further cust
       limits:
         memory: 512
         cpu: 2
+
+You can change the type of Kubernetes service that Noronha creates using the *service_type* keyword. Accepted values are: ClusterIP, NodePort, LoadBalancer
 
 GPU support is added through the *enable_gpu* keyword. Currently, Noronha does not support ID-specific GPU assignment or multiple GPUs per Pod.
 
