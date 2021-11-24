@@ -17,7 +17,7 @@
 from noronha.api.main import NoronhaAPI
 from noronha.bay.barrel import MoversBarrel
 from noronha.common.annotations import validate
-from noronha.common.errors import NhaAPIError
+from noronha.common.errors import NhaAPIError, DBError
 from noronha.common.logging import LOG
 from noronha.db.ds import Dataset
 from noronha.db.model import Model
@@ -37,6 +37,14 @@ class ModelVersionAPI(NoronhaAPI):
     def rm(self, name, model):
         
         mv = self.doc().find_one(name=name, model=model)
+
+        try:
+            train = Training().find_one(mover=mv)
+        except DBError.NotFound:  # ignore if no training was found
+            pass
+        else:
+            train.modify(mover=None)
+
         # TODO: check if movers is not being used in a depl right now
         mv.delete()
         return dict(
