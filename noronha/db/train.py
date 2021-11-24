@@ -19,8 +19,10 @@
 
 from mongoengine import CASCADE
 from mongoengine.fields import *
+from mongoengine.queryset.base import NULLIFY
 
 from noronha.db.bvers import EmbeddedBuildVersion
+from noronha.db.ds import Dataset
 from noronha.db.main import SmartDoc, SmartEmbeddedDoc
 from noronha.db.proj import Project, EmbeddedProject
 from noronha.db.utils import TaskDoc
@@ -61,5 +63,5 @@ class Training(SmartDoc):
     task = EmbeddedDocumentField(TrainTask, default=TrainTask())
     details = DictField(default={})
     mover = ReferenceField('ModelVersion', default=None)
-    ds = ReferenceField('Dataset', default=None)
+    ds = ReferenceField('Dataset', default=None, reverse_delete_rule=NULLIFY)
     deploy_update = BooleanField(default=False)
