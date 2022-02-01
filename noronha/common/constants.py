@@ -24,7 +24,7 @@ import re
 class FrameworkConst(object):
     
     FW_NAME = 'noronha-dataops'
-    FW_VERSION = '1.6.4'  # framework version
+    FW_VERSION = '1.6.5'  # framework version
     FW_TAG = 'latest'  # framework tag
 
 
@@ -40,6 +40,7 @@ class NoteConst(object):
     
     ORIGINAL_PORT = 8888
     HOST_PORT = 30088
+    START_TIMEOUT = 20
 
 
 class Encoding(object):
