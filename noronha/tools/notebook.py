@@ -19,7 +19,7 @@ import papermill as pm
 
 from noronha.bay.barrel import NotebookBarrel
 from noronha.common.annotations import Patient, PatientError, patient
-from noronha.common.constants import OnBoard, Task, Extension
+from noronha.common.constants import OnBoard, Task, Extension, NoteConst
 from noronha.common.errors import NhaStorageError
 from noronha.common.logging import LOG
 from noronha.db.proj import Project
@@ -52,7 +52,7 @@ class NotebookRunner(Patient):
     
     def _handle_exc(self, e: Exception):
         
-        if str(e) == "Kernel didn't respond in -1 seconds":
+        if str(e) == "Kernel didn't respond in {} seconds".format(NoteConst.START_TIMEOUT):
             raise PatientError(original_exception=e, raise_callback=self._print_exc)
         else:
             self._print_exc(e)

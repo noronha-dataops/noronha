@@ -15,6 +15,7 @@
 # limitations under the License.
 
 from papermill.engines import NBConvertEngine, NotebookExecutionManager
+from noronha.common.constants import NoteConst
 from noronha.common.logging import LOG
 
 
@@ -115,7 +116,7 @@ class NoronhaEngine(NBConvertEngine):
             kernel_name=kernel_name,
             log_output=True,
             execution_timeout=-1,
-            start_timeout=-1
+            start_timeout=NoteConst.START_TIMEOUT
         )
         
         nb_man.nb = nha_nb_man.nb

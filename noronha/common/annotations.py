@@ -182,6 +182,7 @@ class Patient(object):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    attempt += 1
                     if attempt < self.timeout:
                         if attempt == 1 and isinstance(e, PatientError):
                             e.wait_callback()

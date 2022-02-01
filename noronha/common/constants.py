@@ -40,6 +40,7 @@ class NoteConst(object):
     
     ORIGINAL_PORT = 8888
     HOST_PORT = 30088
+    START_TIMEOUT = 20
 
 
 class Encoding(object):
