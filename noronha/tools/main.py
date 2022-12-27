@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from papermill.engines import NBConvertEngine, NotebookExecutionManager
+from papermill.engines import NBClientEngine, NotebookExecutionManager
 from noronha.common.constants import NoteConst
 from noronha.common.logging import LOG
 
@@ -97,7 +97,7 @@ class NoronhaNBExecManager(NotebookExecutionManager):
             self.prog_cb(prog)
 
 
-class NoronhaEngine(NBConvertEngine):
+class NoronhaEngine(NBClientEngine):
     
     alias = 'noronha_engine'
     nb_man = None

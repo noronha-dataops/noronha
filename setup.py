@@ -30,7 +30,7 @@ if os.environ.get('include_tests'):
 
 setup(
     name='noronha-dataops',
-    version='1.6.5',
+    version='1.6.6',
     url='https://github.com/noronha-dataops/noronha',
     author='Noronha Development Team',
     author_email='noronha.mlops@everis.com',
