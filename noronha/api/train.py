@@ -107,6 +107,8 @@ class TrainingAPI(NoronhaAPI):
             resource_profile=kwargs.pop('resource_profile', None),
             log=self.LOG
         )
+        
+        kwargs['is_job'] = True
         exp.launch(**kwargs)
         train.reload()
 

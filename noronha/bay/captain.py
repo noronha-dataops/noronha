@@ -33,6 +33,7 @@ from kaptan import Kaptan
 from kubernetes import utils as k8s_utils
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+from kubernetes import watch as k8s_watch
 from kubernetes.client.rest import ApiException as K8sApiException
 from kubernetes.stream import stream
 import random_name
@@ -43,7 +44,7 @@ from noronha.bay.cargo import Cargo, EmptyCargo, MappedCargo, HeavyCargo, Shared
 from noronha.bay.compass import DockerCompass, CaptainCompass, SwarmCompass, KubeCompass
 from noronha.bay.shipyard import ImageSpec
 from noronha.bay.utils import Workpath
-from noronha.common.annotations import Configured, Patient, patient
+from noronha.common.annotations import Configured, Patient, patient, retry_when_none
 from noronha.common.conf import CaptainConf
 from noronha.common.constants import DockerConst, Encoding, DateFmt, Regex, LoggerConst, KubeConst
 from noronha.common.errors import ResolutionError, NhaDockerError, PatientError, ConfigurationError
@@ -542,7 +543,7 @@ class KubeCaptain(Captain):
         self.api_client = k8s_client.ApiClient()
         self.svc_type = self.compass.get_svc_type(self.resources)
     
-    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
+    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False, is_job=False):
         
         [self.load_vol(v, name) for v in cargos]
         self.make_name_available(name)
@@ -561,26 +562,26 @@ class KubeCaptain(Captain):
             ports=port_refs,
         )
         
-        template = self.cleaner(dict(
-            apiVersion="v1",
-            kind="Pod",
-            metadata=dict(name=name, labels={'app': name}),
-            spec={
-                'containers': [container],
-                'volumes': vol_defs + mount_defs,
-                'imagePullSecrets': [{'name': self.secret}]
-            }
-        ))
+        cont_spec = {
+            'restartPolicy': "Never",
+            'containers': [container],
+            'volumes': vol_defs + mount_defs,
+            'imagePullSecrets': [{'name': self.secret}]
+        }
         
-        self.LOG.info("Creating Pod '{}'".format(name))
-        self.LOG.debug(template)
+        if is_job:
+            self.LOG.info("Creating Job '{}'".format(name))
+            pod = self.create_job(name, cont_spec)
         
-        pod = Pod(namespace=self.namespace, from_template=template)
+        else:
+            self.LOG.info("Creating Pod '{}'".format(name))
+            pod = self.create_pod(name, cont_spec)
+        
         self.handle_svc(name, port_defs)
         self.wait_for_pod(pod)
         
         if foreground:
-            self.watch_pod(pod)
+            self.watch_pod(pod, name)
         
         return pod
     
@@ -643,8 +644,38 @@ class KubeCaptain(Captain):
 
         return depl
 
+    def create_pod(self, name: str, cont_spec: dict) -> Pod:
+        
+        template = self.cleaner(dict(
+            apiVersion="v1",
+            kind="Pod",
+            metadata=dict(name=name, labels={'app': name}),
+            spec=cont_spec
+        ))
+        self.LOG.debug(template)
+        
+        return Pod(namespace=self.namespace, from_template=template)
+    
+    def create_job(self, name: str, cont_spec: dict) -> Pod:
+        
+        template = self.cleaner(dict(
+            apiVersion="batch/v1",
+            kind="Job",
+            metadata=dict(name=name, labels={'app': name}),
+            spec=dict(
+                backoffLimit=0,
+                template=dict(spec=cont_spec))
+        ))
+        self.LOG.debug(template)
+        
+        _ = k8s_client.BatchV1Api(self.api_client).create_namespaced_job(namespace=self.namespace, body=template)
+        pod_name = self.find_pod_from_job(name).metadata.name
+        
+        return Pod(namespace=self.namespace, name=pod_name)
+    
     def dispose_run(self, name: str):
         
+        self.rm_job(name)
         self.rm_pod(name)
         self.rm_svc(name)
     
@@ -680,18 +711,28 @@ class KubeCaptain(Captain):
             else:
                 raise e
 
-    @patient
+    def rm_job(self, name: str, ignore=True):
+        
+        try:
+            k8s_client.BatchV1Api(self.api_client).delete_namespaced_job(namespace=self.namespace,
+                                                                         name=name,
+                                                                         grace_period_seconds=0,
+                                                                         propagation_policy="Background")
+        except Exception as e:
+            self.LOG.debug("Could not delete Job: {}".format(name))
+            if ignore:
+                self.LOG.debug(repr(e))
+            else:
+                raise e
+    
     def rm_pod(self, name: str, ignore=True):
         
         try:
-            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
-                k8s_backend.core_api.delete_namespaced_pod(
-                    name=name, namespace=self.namespace, grace_period_seconds=0)
-        except (ConuException, K8sApiException) as e:
-            msg = "Waiting up to {} seconds to kill Pod '{}'".format(self.timeout, name)
-            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
+            k8s_client.CoreV1Api(self.api_client).delete_namespaced_pod(namespace=self.namespace,
+                                                                        name=name,
+                                                                        grace_period_seconds=0)
         except Exception as e:
-            self.LOG.info("Could not patiently delete Pod: {}".format(name))
+            self.LOG.debug("Could not delete Pod: {}".format(name))
             if ignore:
                 self.LOG.debug(repr(e))
             else:
@@ -726,6 +767,22 @@ class KubeCaptain(Captain):
                 self.LOG.debug(repr(e))
             else:
                 raise e
+    
+    @patient
+    def find_pod_from_job(self, job_name):
+        
+        selector = "job-name={}".format(job_name)
+        
+        try:        
+            with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
+                pod = k8s_backend.core_api.list_namespaced_pod(namespace=self.namespace,
+                                                                label_selector=selector
+                                                                ).items[0]
+        except (ConuException, K8sApiException, IndexError) as e:
+            msg = "Waiting up to {} seconds to find pod from job: '{}'".format(self.timeout, job_name)
+            raise PatientError(wait_callback=lambda: self.LOG.info(msg), original_exception=e)
+        
+        return pod
     
     def close(self):
         
@@ -858,22 +915,25 @@ class KubeCaptain(Captain):
             self.LOG.warn("Removing old pod '{}'".format(name))
             self.rm_pod(existing.name)
     
-    def watch_pod(self, pod: Pod):
+    @retry_when_none(3)
+    def watch_pod(self, pod: Pod, cont_name):
 
-        with K8sBackend(logging_level=logging.ERROR) as k8s_backend:
-            logs = k8s_backend.core_api.read_namespaced_pod_log(
-                name=pod.name,
-                namespace=self.namespace,
-                follow=True,
-                _preload_content=False,
-                container=pod.name
-            )
-        
+        w = k8s_watch.Watch()
         try:
-            for line in logs:
-                self.LOG.echo(line.decode(Encoding.UTF_8).strip())
+            for line in w.stream(k8s_client.CoreV1Api(self.api_client).read_namespaced_pod_log,
+                                 namespace=self.namespace,
+                                 name=pod.name,
+                                 container=cont_name,
+                                ):
+                self.LOG.echo(line.strip())
         except (KeyboardInterrupt, InterruptedError):
             self.interrupted = True
+        else:
+            if pod.get_phase() == PodPhase.RUNNING:
+                self.LOG.debug("Pod didn't finish, retrying to read logs")
+                return False
+        
+        return True
     
     @patient
     def wait_for_pod(self, pod: Pod):
