@@ -1,7 +1,10 @@
 FROM debian:stretch
 
 # OS configuration
-RUN apt -y update \
+RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list \
+ && sed -i 's|security.debian.org|archive.debian.org/|g' /etc/apt/sources.list \
+ && sed -i '/stretch-updates/d' /etc/apt/sources.list \
+ && apt -y update \
  && apt -y --no-install-recommends install gnupg curl wget zip unzip bzip2 python-pip git vim \
  && apt clean \
  && rm -rf /var/lib/apt/lists/*
