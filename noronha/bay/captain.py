@@ -71,7 +71,7 @@ class Captain(ABC, Configured, Patient, Logged):
     
     @abstractmethod
     def run(self, img: ImageSpec, env_vars, mounts: List[str], cargos: List[Cargo], ports, cmd: list, name: str,
-            foreground=False):
+            foreground=False, is_job=False):
         
         pass
     
@@ -151,7 +151,7 @@ class SwarmCaptain(Captain):
         self.docker_api = self.docker_compass.get_api()
         self.docker_backend = DockerBackend(logging_level=logging.ERROR)
     
-    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False):
+    def run(self, img: ImageSpec, env_vars, mounts, cargos, ports, cmd: list, name: str, foreground=False, is_job=False):
         
         self.make_name_available(name)
         [self.load_vol(v, name) for v in cargos]
